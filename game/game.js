@@ -1,0 +1,2617 @@
+// 盆盆餐厅 · 试玩版（横屏 1280×720 逻辑分辨率，Canvas + HTML 界面）
+// 依赖：catSVG（由构建脚本从 art/cats.js 内联进来）
+(() => {
+  'use strict';
+  const W = 1280, H = 720, TS = 40, COLS = W / TS, ROWS = H / TS;
+  const DAY_LEN = 150; // 每天营业秒数
+  const cv = document.getElementById('game');
+  const ctx = cv.getContext('2d');
+  const stage = document.getElementById('stage');
+  const ui = document.getElementById('ui');
+  const $ = (s) => document.querySelector(s);
+  let scale = 1;
+  const dpr = Math.min(window.devicePixelRatio || 1, 3);
+
+  // T-01（D-005）：界面层不再跟着场景一起缩。界面铺满安全区（手机横屏两侧的空白也能放按钮），
+  // 缩放取 uiScale = max(场景缩放, UI_MIN)，所以小屏上字和按钮比场景大一些；UW×UH 是界面层的逻辑尺寸。
+  const UI_MIN = 0.66; // 22–24 px 的字在 844×390 上约 15–16 CSS px（主人 D-006：字「还行」，不放特别大）
+  let uiScale = 1, UW = W, UH = H, OX = 0, OY = 0, SX = 0, SY = 0; // SX/SY：中间 16:9 场景在画布里的偏移（CSS px），两侧画延伸背景（T-15 / D-009 全屏）
+  const toUI = (x, y) => ({ x: (OX + x * scale) / uiScale, y: (OY + y * scale) / uiScale }); // 场景坐标 → 界面坐标
+  function resize() {
+    const vw = window.innerWidth, vh = window.innerHeight, cs = getComputedStyle(document.body);
+    const pl = parseFloat(cs.paddingLeft) || 0, pr = parseFloat(cs.paddingRight) || 0, pt = parseFloat(cs.paddingTop) || 0, pb = parseFloat(cs.paddingBottom) || 0;
+    const aw = Math.max(200, vw - pl - pr), ah = Math.max(150, vh - pt - pb);
+    scale = Math.min(aw / W, ah / H);
+    SX = (aw - W * scale) / 2; SY = (ah - H * scale) / 2; // 画布铺满安全区，场景居中
+    stage.style.width = aw + 'px';
+    stage.style.height = ah + 'px';
+    cv.width = Math.round(aw * dpr);
+    cv.height = Math.round(ah * dpr);
+    uiScale = Math.max(scale, UI_MIN); UW = aw / uiScale; UH = ah / uiScale;
+    const sr = stage.getBoundingClientRect(); OX = sr.left - pl + SX; OY = sr.top - pt + SY;
+    Object.assign(ui.style, { left: pl + 'px', top: pt + 'px', width: UW + 'px', height: UH + 'px', transform: `scale(${uiScale})` });
+    placeTeaMenu(); fitPanels();
+    document.getElementById('rotate').style.display = vh > vw ? 'flex' : 'none';
+  }
+  window.addEventListener('resize', resize);
+  window.addEventListener('orientationchange', () => setTimeout(resize, 200));
+
+  // ---------- 声音（点一下后才能播放） ----------
+  let actx = null;
+  function beep(freq = 660, dur = 0.08, type = 'sine', vol = 0.06) {
+    try {
+      if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
+      const o = actx.createOscillator(), g = actx.createGain();
+      o.type = type; o.frequency.value = freq; g.gain.value = vol;
+      o.connect(g); g.connect(actx.destination);
+      const t = actx.currentTime;
+      g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      o.start(t); o.stop(t + dur + 0.02);
+    } catch (e) { /* 没声音也不影响 */ }
+  }
+  const sfx = {
+    tap: () => beep(720, 0.05),
+    coin: () => { beep(988, 0.07, 'triangle'); setTimeout(() => beep(1319, 0.1, 'triangle'), 70); },
+    bad: () => beep(220, 0.18, 'sawtooth', 0.04),
+    ding: () => beep(1175, 0.12, 'triangle'),
+    dance: () => [523, 659, 784, 1047].forEach((f, i) => setTimeout(() => beep(f, 0.1, 'square', 0.03), i * 110)),
+  };
+
+  // ---------- 图片 ----------
+  // GPT 生成的美术（assets/*.webp）；没加载出来的就先用程序画的顶上
+  const ART = (typeof ART_MANIFEST !== 'undefined') ? ART_MANIFEST : {};
+  const IMGS = {};
+  const A = (k) => { if (!ART[k]) return null; if (!IMGS[k]) { const i = new Image(); i.src = 'assets/' + k + '.webp'; IMGS[k] = i; } return IMGS[k]; };
+  const ok = (im) => im && im.complete && im.naturalWidth > 0;
+  // 精灵：按底部中心放，给宽度（或高度）缩放
+  function spr(k, x, by, w, opt = {}) {
+    const im = A(k); if (!ok(im)) return false;
+    const m = ART[k], h = opt.h || (w * m.h / m.w), ww = opt.h ? opt.h * m.w / m.h : w;
+    ctx.save(); if (opt.alpha != null) ctx.globalAlpha = opt.alpha;
+    if (opt.flip) { ctx.translate(x, 0); ctx.scale(-1, 1); ctx.drawImage(im, -ww / 2, by - h, ww, h); } else ctx.drawImage(im, x - ww / 2, opt.top ? by : by - h, ww, h);
+    ctx.restore(); return true;
+  }
+  const svgImg = (svg) => { const i = new Image(); i.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg); return i; };
+  const BIG = { w: 400, h: 440 };
+  const SPR = {
+    chef: svgImg(catSVG('laoda', 'front', BIG)),
+    dancer: svgImg(catSVG('shuai', 'front', BIG)),
+    vendor: svgImg(catSVG({ fur: 'white', pattern: 'calico', eye: 'amber', build: 'chonk', collar: 'bandana', outfit: 'apron' }, 'front', BIG)),
+    pF: null, pB: null, pBlink: null,
+  };
+  let ROOM = svgImg(roomSVG2()), CUR_SE = 'spring'; const ROOM_FG = svgImg(roomFgSVG()), TABLE2 = svgImg(tableSVG2(2)), TABLE4 = svgImg(tableSVG2(4));
+  const DISH_IMG = {};
+  for (const k of ['mapo', 'mian', 'chashao', 'xiajiao', 'gongbao', 'dandan', 'baozai', 'shuizhu', 'qingzheng', 'dirty', 'tea', 'snack', 'water']) DISH_IMG[k] = svgImg(dishSVG(k));
+  DISH_IMG.guihua = DISH_IMG.snack;
+  const WARE_IMG = {}; for (const k of ['wok', 'pot', 'steamer', 'clay']) WARE_IMG[k] = svgImg(cookwareSVG(k));
+  const ING_IMG = {}; for (const k of ['tofu', 'beef', 'pork', 'chili', 'peanut', 'shrimp', 'egg', 'fish', 'rice', 'tealeaf']) ING_IMG[k] = svgImg(ingSVG(k));
+  const ICON_IMG = {}; const icon = (k) => ICON_IMG[k] || (ICON_IMG[k] = svgImg(iconSVG(k)));
+  const FISH_IMG = {}; const fishImg = (k) => FISH_IMG[k] || (FISH_IMG[k] = svgImg(fishSVG(k)));
+  const CROP_IMG = {}; for (const k of ['chili', 'peanut']) { CROP_IMG[k + 1] = svgImg(cropSVG(k, true)); CROP_IMG[k + 0] = svgImg(cropSVG(k, false)); }
+  const MAP_SPR = !!ART.m_shop;
+  let WORLD_IMG = svgImg(worldSVG('spring', MAP_SPR));
+  function setSeason(se) { if (se === CUR_SE) return; CUR_SE = se; WORLD_IMG = svgImg(worldSVG(se, MAP_SPR)); WORLD_CV = null; ROOM = svgImg(roomSVG2(se)); }
+  const CUST_IMG = {};
+  const custImg = (id) => CUST_IMG[id] || (CUST_IMG[id] = svgImg(catSVG(id, 'front', BIG)));
+  const custBack = {};
+  const custImgBack = (id) => custBack[id] || (custBack[id] = svgImg(catSVG(id, 'back', BIG)));
+  function buildPlayerSprites(look) {
+    SPR.pF = svgImg(catSVG(look, 'front', BIG));
+    SPR.pB = svgImg(catSVG(look, 'back', BIG));
+    SPR.pBlink = svgImg(catSVG(look, 'front', { ...BIG, blink: true }));
+  }
+
+  // ---------- 数据：炊具、食材、菜单 ----------
+  // 同一种炊具一次只能做一道菜（排队），不同炊具可以同时开火
+  const WARES = {
+    wok: { n: '炒锅', x: 62, y: 404 }, pot: { n: '面锅', x: 150, y: 400 },
+    steamer: { n: '蒸笼', x: 254, y: 388, up: 'steamer' }, clay: { n: '砂锅', x: 332, y: 388, up: 'clay' },
+  };
+  const ING = {
+    tofu: { n: '豆腐', src: '早市', price: 4 }, beef: { n: '牛肉', src: '早市', price: 6 }, pork: { n: '叉烧肉', src: '早市', price: 6 },
+    chili: { n: '辣椒', src: '菜地', price: 5 }, peanut: { n: '花生', src: '菜地', price: 4 },
+    shrimp: { n: '鲜虾', src: '池塘', price: 7 }, fish: { n: '鲜鱼', src: '池塘', price: 8 }, egg: { n: '鸡蛋', src: '鸡舍', price: 4 },
+    rice: { n: '糯米粉', src: '早市', price: 3 }, tealeaf: { n: '茶叶', src: '茶园', price: 9 },
+  };
+  // tops：最多两样可选配料 [名字, 默认放不放]
+  const DISH = {
+    mapo: { n: '麻婆豆腐', tags: ['麻', '辣', '肉'], price: 30, cook: 6, ware: 'wok', ing: 'tofu', tops: [['花椒', 1], ['葱花', 1]] },
+    gongbao: { n: '宫保鸡丁', tags: ['辣', '甜', '肉', '花生'], price: 34, cook: 7, ware: 'wok', ing: 'chili', tops: [['花生', 1], ['干辣椒', 1]] },
+    mian: { n: '清汤牛肉面', tags: ['面', '肉', '香菜'], price: 28, cook: 6, ware: 'pot', ing: 'beef', tops: [['香菜', 1], ['辣油', 0]] },
+    dandan: { n: '担担面', tags: ['麻', '辣', '面', '花生'], price: 24, cook: 5, ware: 'pot', ing: 'peanut', tops: [['花生碎', 1], ['辣油', 1]] },
+    xiajiao: { n: '虾饺', tags: ['海鲜', '清淡'], price: 26, cook: 5, ware: 'steamer', ing: 'shrimp', tops: [['醋', 0], ['辣油', 0]] },
+    chashao: { n: '叉烧饭', tags: ['米饭', '肉', '甜'], price: 32, cook: 7, ware: 'clay', ing: 'pork', tops: [['青菜', 1], ['煎蛋', 0]] },
+    baozai: { n: '煲仔饭', tags: ['米饭', '肉', '蛋', '清淡'], price: 36, cook: 8, ware: 'clay', ing: 'egg', tops: [['青菜', 1], ['腊肠', 1]] },
+    shuizhu: { n: '水煮鱼', tags: ['麻', '辣', '海鲜'], price: 38, cook: 8, ware: 'wok', ing: 'fish', tops: [['花椒', 1], ['香菜', 1]] },
+    qingzheng: { n: '清蒸鱼', tags: ['海鲜', '清淡'], price: 36, cook: 7, ware: 'steamer', ing: 'fish', tops: [['葱丝', 1], ['姜丝', 1]] },
+    guihua: { n: '桂花糕', tags: ['甜', '清淡'], price: 16, cook: 4, ware: 'steamer', ing: 'rice', tops: [], dessert: true }, // 甜品：饭后加点
+  };
+  // ---------- 第一周成长节奏：每天只开放一点新东西（之后沿用第 7 天） ----------
+  const PROG_ADD = {
+    1: { title: '开张啦', tables: [1, 3], dishes: ['mapo', 'mian'], slots: 2, ings: ['tofu', 'beef'] },
+    2: { title: '种菜', tables: [2], map: ['market', 'plot', 'mirror'], plots: 1, seeds: ['chili'], water: true },
+    3: { title: '收菜 · 钓鱼', tables: [4], map: ['pond', 'mail'], plots: 2, seeds: ['peanut'], ings: ['chili', 'peanut'], dishes: ['gongbao'], slots: 3, staff: ['laoer'], dance: true },
+    4: { title: '喝茶', plots: 3, map: ['tea'], ings: ['tealeaf'], drinks: ['jasmine'] },
+    5: { title: '点心', tables: [5], map: ['coop'], wares: ['steamer'], drinks: ['plum', 'soy'], slots: 4, ings: ['rice'] },
+    6: { title: '咪咪管外面', plots: 4, staff: ['mimi'], drinks: ['puer'], ings: ['pork'] },
+    7: { title: '猫猫日报', slots: 5, news: true },
+  };
+  const PROG_CACHE = {};
+  function prog(day = save ? save.day : 1) {
+    day = Math.min(7, Math.max(1, day));
+    if (PROG_CACHE[day]) return PROG_CACHE[day];
+    const p = { tables: [], map: ['door'], plots: 0, seeds: [], dishes: [], drinks: [], staff: [], wares: ['wok', 'pot'], ings: [], slots: 2, water: false, dance: false, news: false };
+    for (let d = 1; d <= day; d++) for (const [k, v] of Object.entries(PROG_ADD[d])) p[k] = Array.isArray(v) ? p[k].concat(v) : v;
+    return (PROG_CACHE[day] = p);
+  }
+  const openDay = (key, val) => { for (let d = 1; d <= 7; d++) { const v = PROG_ADD[d][key]; if (Array.isArray(v) ? v.includes(val) : v !== undefined && v >= val) return d; } return 99; };
+  const hasWare = (w) => prog().wares.includes(w) || (WARES[w].up && has(WARES[w].up));
+  const stockOf = (ing) => (save && save.stock && save.stock[ing]) || 0;
+  // 会做的菜：按天学会的 + 呆猫寄来的食谱 + 老大试菜发明的
+  const knownDish = (k) => prog().dishes.includes(k) || ((save && save.recipes) || []).includes(k);
+  const dishList = () => Object.keys(DISH).filter(knownDish);
+  const isNewDish = (k) => openDay('dishes', k) === save.day || (save.recipeDay || {})[k] === save.day;
+  function learnRecipe(k) { save.recipes = save.recipes || []; if (save.recipes.includes(k)) return false; save.recipes.push(k); save.recipeDay = save.recipeDay || {}; save.recipeDay[k] = save.day; save.menuNew = true; return true; }
+  // 老大试菜：到了那天、有那件炊具，就会冒出一个灵感；选对食材和炊具就发明出来
+  const INVENT = {
+    shuizhu: { ing: 'fish', ware: 'wok', day: 4, idea: '鱼片下炒锅，浇一勺滚烫的红油……' },
+    qingzheng: { ing: 'fish', ware: 'steamer', day: 5, idea: '这么鲜的鱼，放蒸笼里蒸一蒸最好。' },
+    baozai: { ing: 'egg', ware: 'clay', day: 6, idea: '砂锅焖一锅饭，上面卧个蛋。' },
+  };
+  const ideaNow = () => Object.keys(INVENT).find((k) => !knownDish(k) && save.day >= INVENT[k].day && hasWare(INVENT[k].ware));
+  const SPD = () => 0.8 + 0.07 * Math.min(3, (save && save.spd) || 0); // 走路速度：一开始慢一点，泡温泉、练广场舞、呆猫寄的钙片会变快
+  function speedUp(why, x, y) { save.spd = Math.min(3, (save.spd || 0) + 1); if (G) float(x, y, `${why}，跑得更快了！`, '#3f7a34', 'heart', 2.4); sfx.ding(); }
+  const onMenu = (k) => knownDish(k) && hasWare(DISH[k].ware);
+  const canCook = (k) => onMenu(k) && stockOf(DISH[k].ing) > 0;
+  const menuSlots = () => prog().slots;
+  const mains = (list) => list.filter((k) => !DISH[k].dessert);
+  // 主菜按菜单位选；甜品解锁后自动上，不占菜单位
+  const menuNow = () => { const m = ((save && save.menu) || []).filter((k) => DISH[k] && onMenu(k) && !DISH[k].dessert); return (m.length ? m : Object.keys(DISH).filter((k) => onMenu(k) && !DISH[k].dessert).slice(0, menuSlots())).concat(Object.keys(DISH).filter((k) => DISH[k].dessert && onMenu(k))); };
+  const useStock = (k, n = 1) => { save.stock[DISH[k].ing] = Math.max(0, stockOf(DISH[k].ing) - n); };
+
+  // 顾客：menu = 普通客，直接点菜，配料要求很简单（也常常没要求）；omakase = 随缘客，说个口味让你挑
+  const CT = [
+    { id: 'shiba', tip: 'fixed', n: '柴犬上班族', kind: 'menu', w: 3, pat: 1.35, eat: 4, water: 0.1, picky: 0.5, sizes: [1, 1, 2, 2, 3],
+      add: ['辣油', '干辣椒', '花椒'], no: ['香菜', '葱花'], blurb: '午休只有半小时，永远在看手表。',
+      say: { order: '老板，快点！', happy: '好吃！下午开会有劲了！', angry: '太慢了，我走了！', bad: '说了不要的！', water: '先来杯水，渴死了。' } },
+    { id: 'bunny', tip: 'candy', n: '兔子小学生', kind: 'menu', w: 2, pat: 1.0, eat: 6, water: 0.4, picky: 0.7, sizes: [1, 2, 2, 3, 4],
+      add: ['煎蛋', '醋'], no: ['香菜', '花生', '花生碎', '辣油', '干辣椒', '花椒'], blurb: '放学和同学一起来，挑食但很有礼貌。',
+      say: { order: '我想好啦！', happy: '耶！好好吃！', angry: '呜呜，好饿……', bad: '我不吃这个……', water: '可以先给我一杯水吗？' } },
+    { id: 'raccoon', tip: 'goods', n: '狸猫阿姨', kind: 'menu', w: 3, pat: 0.95, eat: 7, water: 0.5, picky: 0.4, sizes: [1, 2, 3, 4, 4],
+      add: ['煎蛋', '醋', '腊肠'], no: ['香菜'], blurb: '买菜路过，最爱打听今天有没有特价。',
+      say: { order: '老板，今天有特价吗？', happy: '划算！下次带姐妹来！', angry: '不吃了不吃了！', bad: '这个我不要的呀！', water: '先倒杯水，走得口干。' } },
+    { id: 'neko', tip: 'fishy', n: '猫街坊', kind: 'menu', w: 2.5, pat: 1.1, eat: 6, water: 0.35, picky: 0.5, sizes: [1, 2, 2, 3, 4],
+      add: ['醋', '煎蛋'], no: ['辣油', '花椒', '香菜'], blurb: '胖橘、波斯、三花、奶牛……巷子里的猫邻居，一桌各有各的样子。',
+      say: { order: '喵，就这个！', happy: '吃饱了，回去晒太阳~', angry: '哼，不等了。', bad: '这个味道不对喵。', water: '先来碗水。' } },
+    { id: 'panda', tip: 'generous', n: '熊猫奶奶', kind: 'omakase', w: 1.5, pat: 0.6, eat: 9, water: 0.7, sizes: [1, 1, 2],
+      likes: ['清淡', '面', '米饭', '海鲜', '蛋', '甜'], dislikes: ['香菜', '花生'], hates: ['辣', '麻'], blurb: '不着急，你看着做就好。',
+      say: { order: '你看着做吧，奶奶不挑。', happy: '真好吃，跟我做的一样香。', angry: '唉，等不动啦。', bad: '哎呀，奶奶吃不了这个呀。', water: '先给奶奶倒杯温水。' } },
+    { id: 'fox', tip: 'perfect', n: '狐狸美食家', kind: 'omakase', w: 1, pat: 1.0, eat: 7, water: 0.2, sizes: [1, 1, 2],
+      likes: ['麻', '辣', '海鲜', '花生', '面'], dislikes: ['清淡', '米饭', '香菜'], hates: ['甜'], blurb: '拿着小本子，吃一口记一笔。',
+      say: { order: '主厨推荐吧，让我看看你的手艺。', happy: '嗯……可以写进我的美食笔记。', angry: '服务太慢，减分。', bad: '不合格，这个我不吃。', water: '先上一杯水，清清口。' } },
+  ];
+  // 小费习惯：每种客人不一样，写在笔记里
+  const TIP_TXT = { fishy: '照常给小费，开心了还会叼来一条鱼', fixed: '固定给一点点，吃得特别满意翻倍', candy: '零花钱不多，开心了送你一颗糖（人气 +1）', goods: '小费给一半，另一半塞点菜给你', generous: '心情好就多给，最大方', perfect: '每道都合口味才给大红包，不然一分不给' };
+  const TAG_WORD = { '清淡': '想吃点清淡的', '米饭': '想吃点米饭', '海鲜': '想吃点海鲜', '蛋': '想吃带蛋的', '甜': '想吃点甜口的', '麻': '想吃麻的', '辣': '想吃辣的', '花生': '想吃点带花生的', '面': '想吃碗面', '肉': '想吃肉' };
+  const rand = (a, b) => a + Math.random() * (b - a);
+  const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+  const shuffle = (a) => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+  const pickW = (arr) => { let r = Math.random() * arr.reduce((s, x) => s + x.w, 0); for (const x of arr) { r -= x.w; if (r <= 0) return x; } return arr[0]; };
+  // 图鉴记录
+  const dexOf = (id) => { save.dex = save.dex || {}; const d = (save.dex[id] = save.dex[id] || { met: 0, likes: [], hates: [], reqs: [] }); d.dislikes = d.dislikes || []; return d; };
+  const markNote = (id) => { save.noteNew = id; };
+  function learn(c, list, tags) {
+    const d = dexOf(c.type.id), got = [];
+    for (const t of tags) if (!d[list].includes(t)) { d[list].push(t); got.push(t); }
+    if (got.length) { markNote(c.type.id); const a = anchor(c); float(a.x, a.y - 96, `记进笔记：${c.type.n}${{ likes: '喜欢', dislikes: '不太喜欢', hates: '不吃' }[list]}「${got.join('、')}」`, list === 'likes' ? '#3f7a34' : '#a8322a', null, 2.6); }
+  }
+
+  // 茶水：除了白开水，客人还会点饮料（在茶水台现泡，不占炊具）
+  const DRINKS = {
+    water: { n: '白水', s: '白水', price: 0, sweet: false, col: '#cfe6f2', cup: 'glass', brew: 0.6, verb: '倒', x: 150, y: 588 },
+    // 每种饮品在茶水台有自己的器具、做法和时间
+    jasmine: { n: '茉莉花茶', s: '茉莉', leaf: true, price: 8, sweet: false, col: '#e0cf7a', cup: 'tea', brew: 3, verb: '泡', x: 22, y: 586 },
+    puer: { n: '普洱', s: '普洱', leaf: true, price: 8, sweet: false, col: '#7a4a2a', cup: 'tea', brew: 4, verb: '冲', x: 54, y: 586 },
+    plum: { n: '酸梅汤', s: '酸梅', price: 10, sweet: true, col: '#8a2f2a', cup: 'glass', brew: 1.5, verb: '舀', x: 86, y: 586 },
+    soy: { n: '豆浆', s: '豆浆', price: 6, sweet: true, col: '#f3eee0', cup: 'bowl', brew: 1.5, verb: '盛', x: 118, y: 588 },
+  };
+  const drinkList = () => (prog().water ? ['water'] : []).concat(prog().drinks);
+  function pickDrink(c) {
+    if (c.script) return null; // 白水和饮品合在一起：一位客人最多要一杯
+    const can = prog().drinks.filter((k) => !DRINKS[k].leaf || stockOf('tealeaf') > 0); // 没茶叶就不卖茶
+    if (can.length && Math.random() < (c.type.kind === 'omakase' ? 0.55 : 0.45)) {
+      const sweet = c.type.kind === 'omakase' ? c.type.likes.includes('甜') : Math.random() < 0.4;
+      const fit = can.filter((k) => DRINKS[k].sweet === sweet), k = pick(fit.length ? fit : can);
+      if (DRINKS[k].leaf) save.stock.tealeaf = stockOf('tealeaf') - 1;
+      return k;
+    }
+    if (prog().water && Math.random() < (c.type.water || 0.3) * (can.length ? 0.6 : 1)) return 'water';
+    return null;
+  }
+  // 给一伙客人里的一位生成点单
+  function makeOrder(c) {
+    const t = c.type, plan = c.script && c.script[c.members.length];
+    if (plan && plan.dish) {
+      const k = plan.dish; useStock(k);
+      const tops = {}; DISH[k].tops.forEach(([n, d]) => { tops[n] = !!d; });
+      const req = plan.req || null;
+      if (req) { const d = dexOf(t.id), s = (req.t === 'no' ? '不要' : '加') + req.top; if (!d.reqs.includes(s)) { d.reqs.push(s); markNote(t.id); } }
+      return { kind: 'menu', dish: k, tops, req, st: 'none', reserved: true, drink: null, dst: null };
+    }
+    if (plan && plan.want) { const d = dexOf(t.id); if (!d.likes.includes(plan.want)) { d.likes.push(plan.want); markNote(t.id); } return { kind: 'omakase', dish: null, want: plan.want, st: 'none', drink: null, dst: null }; }
+    if (t.kind === 'menu') {
+      const ok = mains(menuNow()).filter(canCook);
+      if (!ok.length) return null;
+      const wt = (k) => (trendOf(k) === 'hot' ? 3 : trendOf(k) === 'cold' ? 0.4 : 1);
+      let r = Math.random() * ok.reduce((a, k) => a + wt(k), 0), k = ok[0];
+      for (const x of ok) { r -= wt(x); if (r <= 0) { k = x; break; } }
+      useStock(k);
+      const tops = {}; DISH[k].tops.forEach(([n, d]) => { tops[n] = !!d; });
+      const cand = DISH[k].tops.filter(([n, d]) => (d && t.no.includes(n)) || (!d && t.add.includes(n)));
+      const req = cand.length && Math.random() < t.picky * (save.day <= 3 ? 0.3 : 1) ? (([n, d]) => ({ t: d ? 'no' : 'add', top: n }))(pick(cand)) : null;
+      if (req) { const d = dexOf(t.id), s = (req.t === 'no' ? '不要' : '加') + req.top; if (!d.reqs.includes(s)) d.reqs.push(s); }
+      const dr = pickDrink(c);
+      return { kind: 'menu', dish: k, tops, req, st: 'none', reserved: true, drink: dr, dst: dr ? 'none' : null };
+    }
+    const okDishes = mains(menuNow()).filter((k) => canCook(k) && !DISH[k].tags.some((x) => t.hates.includes(x)));
+    const wants = shuffle(t.likes).filter((w) => okDishes.some((k) => DISH[k].tags.includes(w)));
+    const hot = save.trend && save.trend.day === save.day && wants.includes(save.trend.hot) && Math.random() < 0.6 ? save.trend.hot : null;
+    if (!okDishes.length) return null;
+    const want = hot || wants[0] || okDishes.map((k) => DISH[k].tags.find((x) => !t.dislikes.includes(x))).find(Boolean) || DISH[okDishes[0]].tags[0];
+    const d = dexOf(t.id); if (!d.likes.includes(want)) { d.likes.push(want); markNote(t.id); } // 说出口的口味直接记进笔记
+    const dr = pickDrink(c);
+    return { kind: 'omakase', dish: null, want, st: 'none', drink: dr, dst: dr ? 'none' : null };
+  }
+  const orderLine = (m) => (m.kind === 'menu' ? `${DISH[m.dish].n}${m.req ? `，${m.req.t === 'no' ? '不要' : '多加'}${m.req.top}！` : '。'}` : `${TAG_WORD[m.want] || '想吃点' + m.want + '的'}。`)
+    + (m.drink ? `再来一杯${DRINKS[m.drink].n}。` : '');
+
+  // ---------- 场景布局：坐标来自 layout.json（构建时内联为 PENPEN_LAYOUT），缺了就用下面的老数值 ----------
+  const LAYOUT = typeof PENPEN_LAYOUT !== 'undefined' ? PENPEN_LAYOUT : null;
+  const LI = {}; if (LAYOUT) for (const it of LAYOUT.items) LI[it.id] = it;
+  const LP = (id, i = 0) => { const it = LI[id]; const s = it && it.stand && it.stand[i]; return s ? { x: s[0], y: s[1] } : null; };
+  const LA = (id) => { const it = LI[id]; return it && it.anchor ? { x: it.anchor[0], y: it.anchor[1] } : null; };
+  for (const w in WARES) { const a = LA('stove.' + w); if (a) { WARES[w].x = a.x; WARES[w].y = a.y; } }
+  // 坐标按 GPT 店内底图换算（源图 1536×1024，裁掉上 60 下 100，缩到 1280×720）
+  const K = (y) => Math.max(0.7, Math.min(0.95, 0.7 + (y - 380) * 0.0009)); // 远小近大（比以前小两成，好放下更多桌）
+  const TW = { 2: 124, 4: 176 };
+  // 座位：后排（面朝我们）+ 前排（背对我们），先坐后排
+  const SEATS = { 2: [[0, -30, 0], [0, 54, 1]], 4: [[-44, -30, 0], [44, -30, 0], [-44, 54, 1], [44, 54, 1]] };
+  // 后排三张、前排两张；第 1 天两张 2 人桌，之后按天加（见 PROG_ADD.tables）
+  const TABLES = LAYOUT ? LAYOUT.items.filter((it) => it.kind === 'table').map((it) => ({ id: +it.id.split('.')[1], cx: it.anchor[0], cy: it.anchor[1], size: it.seats, L: it })) : [
+    { id: 1, cx: 505, cy: 440, size: 2 }, { id: 2, cx: 545, cy: 628, size: 2 },
+    { id: 3, cx: 745, cy: 438, size: 4 }, { id: 4, cx: 815, cy: 628, size: 4 },
+    { id: 5, cx: 985, cy: 440, size: 2 },
+  ];
+  TABLES.forEach((t) => {
+    t.k = K(t.cy + 40); const k = t.k, hw = TW[t.size] / 2 * k;
+    t.seats = SEATS[t.size].map(([dx, dy, f]) => ({ x: t.cx + dx * k, y: t.cy + dy * k, front: !!f }));
+    t.spot = { x: t.cx + hw + 40, y: t.cy + 30 };
+    t.chip = { x: t.cx + hw + 10, y: t.cy - 44 * k };
+    t.rx = hw + 22; t.ry = 70 * k;
+    const L = t.L; if (!L) return; // 用 layout.json 的数值覆盖
+    if (L.seatPos) t.seats = L.seatPos.map(([x, y]) => ({ x, y, front: y > t.cy }));
+    if (L.stand) t.spot = { x: L.stand[0][0], y: L.stand[0][1] };
+    if (L.chip) t.chip = { x: L.chip[0], y: L.chip[1] };
+    if (L.footprint) t.foot = L.footprint;
+    if (L.hit) t.hit = L.hit;
+  });
+  const WIN = { x: 274.2, y: 32.5, w: 730, h: 198.3 }; // 窗户（品红区）
+  const PASS = { slots: (LI.pass && LI.pass.slots) || [[292, 466], [276, 488], [260, 510], [244, 532], [228, 554]], spot: LP('pass') || { x: 408, y: 520 } };
+  const WATER = { ...(LA('tea') || { x: 206, y: 596 }), spot: LP('tea') || { x: 372, y: 600 } };
+  const SINK = { ...(LA('sink') || { x: 410, y: 370 }), spot: LP('sink') || { x: 414, y: 428 } }; // 洗碗池：左上角，紧挨厨房
+  const DOOR = LP('door') || LA('door') || { x: 1162, y: 396 }; // 客人进出走门槛内侧的站位（G-003）
+  const QSPOTS = [1, 2, 3, 4].map((i, j) => LA('queue.' + i) || [{ x: 1192, y: 662 }, { x: 1240, y: 606 }, { x: 1192, y: 550 }, { x: 1240, y: 502 }][j]); // 先来的排在最下面，左右错开
+  const IDLE = LP('idle.penpen') || { x: 712, y: 526 };
+  const TEA = (() => { const a = LA('teacart'); return a ? { cx: a.x, cy: a.y, spot: LP('teacart') } : { cx: 1070, cy: 712, spot: { x: 1070, y: 660 } }; })(); // 茶台放在右前角
+  const RACK = LA('menurack') || { x: 1056, y: 166 }; // 窗和门之间那块墙上挂的菜单木牌
+  const RACK_HIT = LI.menurack && LI.menurack.hit; // G-006：点按区统一用 layout.json
+  const SINK_HIT = (LI.sink && LI.sink.hit) || { x: 360, y: 312, w: 100, h: 88 };
+  const SINK2 = SINK.spot;
+  // 厨房台子的范围（不能走）
+  const KITCHEN_POLY = [[0, 348], [208, 348], [382, 355], [377, 450], [358, 450], [358, 608], [248, 796], [0, 796]];
+  const inPoly = (x, y, P) => { let c = false; for (let i = 0, j = P.length - 1; i < P.length; j = i++) { const [xi, yi] = P[i], [xj, yj] = P[j]; if ((yi > y) !== (yj > y) && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) c = !c; } return c; };
+  const MAXQ = 6, PASS_MAX = 5;
+  const STAFF_DEF = {
+    laoer: { name: '老二', wage: 30, home: LP('staff.laoer') || { x: 450, y: 560 }, rest: (LI['staff.laoer'] && { x: LI['staff.laoer'].rest[0], y: LI['staff.laoer'].rest[1] }) || { x: 470, y: 690 } },
+    mimi: { name: '咪咪', wage: 30, home: LP('staff.mimi') || { x: 960, y: 712 }, rest: (LI['staff.mimi'] && { x: LI['staff.mimi'].rest[0], y: LI['staff.mimi'].rest[1] }) || { x: 1180, y: 700 } },
+  };
+  const JOBS = [{ id: 'serve', n: '上菜' }, { id: 'drink', n: '上茶水' }, { id: 'bus', n: '收盘子' }, { id: 'farm', n: '农活' }, { id: 'rest', n: '休息' }];
+  const DEFAULT_JOBS = { laoer: ['serve', 'drink'], mimi: ['farm'] }; // 咪咪负责外面：菜园、茶园、院子
+  const UPGRADES = [
+    { id: 'tea', n: '茶台', desc: '客人心情不好时端一杯茶过去，+2 颗心（每杯 ¥2）', day: 4, cost: 80 },
+    { id: 'snack', n: '点心柜', desc: '送一碟点心，+3 颗心；客人退菜时也能哄回来（每碟 ¥5）', day: 5, cost: 150 },
+    { id: 'clay', n: '砂锅', desc: '新炊具：能做叉烧饭、煲仔饭（要叉烧肉、鸡蛋）', day: 6, cost: 160 },
+  ];
+  const has = (k) => !!(save && save.upgrades && save.upgrades[k]);
+  const staffIds = () => prog().staff.slice();
+  const jobsOf = (id) => { let j = save && save.jobs && save.jobs[id]; if (typeof j === 'string') j = [j]; if (j) j = [...new Set(j.map((x) => (x === 'water' ? 'drink' : x)))]; return j && j.length ? j : DEFAULT_JOBS[id]; };
+  const resting = (id) => jobsOf(id)[0] === 'rest';
+
+  // 寻路（店里、白天大地图各一张网格）
+  function makeGrid(cols, rows, isBlocked) {
+    const b = [];
+    for (let r = 0; r < rows; r++) { b.push([]); for (let c = 0; c < cols; c++) b[r].push(isBlocked(c * TS + TS / 2, r * TS + TS / 2)); }
+    return { cols, rows, b };
+  }
+  let SHOP_GRID = null;
+  // 墙、台体、洗碗池、茶车（茶车买了才挡路，G-003）；开店时按存档重算
+  const wallsNow = () => LAYOUT.items.filter((it) => it.footprint && it.kind !== 'table' && (!it.needs || it.needs.some((k) => { try { return has(k); } catch (e) { return false; } }))).map((it) => it.footprint);
+  const buildShopGrid = (tables) => { const WALLS = LAYOUT ? wallsNow() : null; return (SHOP_GRID = WALLS ? makeGrid(COLS, ROWS, (x, y) => WALLS.some((P) => inPoly(x, y, P)) || tables.some((t) => (t.foot ? inPoly(x, y, t.foot) : ((x - t.cx) / t.rx) ** 2 + ((y - t.cy - 12) / t.ry) ** 2 < 1)))
+    : makeGrid(COLS, ROWS, (x, y) => y < 340 || inPoly(x, y, KITCHEN_POLY) || x < 380 && y < 460
+    || tables.some((t) => ((x - t.cx) / t.rx) ** 2 + ((y - t.cy - 12) / t.ry) ** 2 < 1)
+    || (x > 1188 && y > 350 && y < 492) || ((() => { try { return has('tea') || has('snack'); } catch (e) { return false; } })() && Math.abs(x - TEA.cx) < 66 && y > TEA.cy - 50 && y < TEA.cy + 10) || (Math.abs(x - RACK.x) < 60 && y > RACK.y - 30 && y < RACK.y + 8) || (Math.abs(x - SINK.x) < 36 && y > SINK.y - 40 && y < SINK.y + 12))); };
+  buildShopGrid(TABLES);
+  const TEA_HIT = LI.teacart && LI.teacart.hit;
+  const qCard = (c) => ({ x: c.x - 118, y: c.y - 95, w: 68, h: 50 }); // 排队人数牌（左上）
+  const qBody = (c) => ({ x: c.x - 50, y: c.y - 100, w: 100, h: 120 }); // 排队这组人的身子
+  const inRect = (x, y, r, pad = 0) => x > r.x - pad && x < r.x + r.w + pad && y > r.y - pad && y < r.y + r.h + pad;
+  const DOCK = { x: 1400, y: 960, w: 150, h: 60 };
+  const cubP = (a, b, c, d, t) => ({ x: a[0] * (1 - t) ** 3 + 3 * b[0] * t * (1 - t) ** 2 + 3 * c[0] * t * t * (1 - t) + d[0] * t ** 3, y: a[1] * (1 - t) ** 3 + 3 * b[1] * t * (1 - t) ** 2 + 3 * c[1] * t * t * (1 - t) + d[1] * t ** 3 });
+  const STREAM = []; for (const sg of [[[1930, 230], [1880, 380], [1990, 520], [1925, 630]], [[1925, 630], [1880, 720], [1900, 820], [1880, 900]]]) for (let t = 0; t <= 1; t += 0.04) STREAM.push(cubP(...sg, t));
+  const BRIDGE = { x: 1876, y: 596, w: 100, h: 64 };
+  const WORLD_GRID = makeGrid(Math.ceil(WORLD_W / TS), Math.ceil(WORLD_H / TS), (x, y) => {
+    const M = WMAP;
+    if (inRect(x, y, M.shop) || inRect(x, y, { x: M.market.x, y: M.market.y + 60, w: M.market.w, h: 110 }) || inRect(x, y, { x: M.coop.x, y: M.coop.y + 40, w: M.coop.w, h: M.coop.h - 40 })) return true;
+    if (M.farm.plots.some(([px, py]) => Math.abs(x - px) < M.farm.pw / 2 && Math.abs(y - py) < M.farm.ph / 2)) return true;
+    if (((x - M.pond.cx) / (M.pond.rx + 10)) ** 2 + ((y - M.pond.cy) / (M.pond.ry + 10)) ** 2 < 1 && !inRect(x, y, DOCK)) return true;
+    if (STREAM.some((p) => Math.hypot(p.x - x, p.y - y) < 26) && !inRect(x, y, BRIDGE)) return true;
+    if (((x - 2200) / 150) ** 2 + ((y - 262) / 56) ** 2 < 1) return true;
+    return y < 240;
+  });
+  // 走不到的记一笔（灰盒和测试会读 G.unreach），画面上冒一句「走不过去」，同一处 3 秒内只提示一次
+  function noWay(who, to) {
+    if (!G) return;
+    const u = (G.unreach = G.unreach || []), x = Math.round(to.x), y = Math.round(to.y), last = u[u.length - 1];
+    if (last && last.who === who && last.x === x && last.y === y && G.t - last.t < 3) return;
+    u.push({ who, x, y, t: Math.round(G.t * 10) / 10, mode: G.mode });
+    if (typeof float === 'function') float(x, y - 40, '走不过去', '#a8322a');
+  }
+  // 座位在桌子占地里面：入座先走到桌边（店员站位），再坐下；离座先回到桌边，再去门口
+  function viaTable(c, t, end, sitting) {
+    if (!t || !t.spot) return findPath(c, end) || (noWay('客人', end), sitting ? null : []);
+    if (sitting) { const p = findPath(c, t.spot); if (!p) { noWay('客人', t.spot); return null; } return p.concat([end]); } // 坐不过去：交给调用方放回排队
+    const p = findPath(t.spot, end); if (p) return [t.spot].concat(p);
+    const q = findPath(c, end); if (q) return q;
+    noWay('客人', end); return []; // 哪儿都走不出去：原地离开，不卡住客流
+  }
+  function findPath(from, to, grid = SHOP_GRID) {
+    const { cols: C, rows: R, b: blocked } = grid;
+    const cell = (p) => ({ c: Math.max(0, Math.min(C - 1, Math.floor(p.x / TS))), r: Math.max(0, Math.min(R - 1, Math.floor(p.y / TS))) });
+    const s = cell(from), g = cell(to);
+    if (grid === SHOP_GRID && grid.b[g.r][g.c]) return null; // 店里的终点不能在墙里、桌子里（座位另走桌边中转，G-003）
+    const key = (c, r) => r * C + c;
+    const open = [{ c: s.c, r: s.r, g: 0, f: 0 }], came = new Map(), gs = new Map([[key(s.c, s.r), 0]]);
+    const closed = new Set();
+    while (open.length) {
+      let bi = 0; for (let i = 1; i < open.length; i++) if (open[i].f < open[bi].f) bi = i;
+      const cur = open.splice(bi, 1)[0]; const ck = key(cur.c, cur.r);
+      if (closed.has(ck)) continue; closed.add(ck);
+      if (cur.c === g.c && cur.r === g.r) {
+        const pts = [to]; let k = ck;
+        while (came.has(k)) { k = came.get(k); const c = k % C, r = Math.floor(k / C); if (k !== key(s.c, s.r)) pts.unshift({ x: c * TS + TS / 2, y: r * TS + TS / 2 }); }
+        return pts;
+      }
+      for (let dc = -1; dc <= 1; dc++) for (let dr = -1; dr <= 1; dr++) {
+        if (!dc && !dr) continue;
+        const nc = cur.c + dc, nr = cur.r + dr;
+        if (nc < 0 || nr < 0 || nc >= C || nr >= R) continue;
+        const goal = nc === g.c && nr === g.r;
+        if (blocked[nr][nc] && !goal) continue;
+        if (dc && dr && (blocked[cur.r][nc] || blocked[nr][cur.c])) continue;
+        const ng = cur.g + (dc && dr ? 1.414 : 1);
+        const nk = key(nc, nr);
+        if (ng < (gs.get(nk) ?? Infinity)) { gs.set(nk, ng); came.set(nk, ck); open.push({ c: nc, r: nr, g: ng, f: ng + Math.hypot(nc - g.c, nr - g.r) }); }
+      }
+    }
+    return null; // 走不到：调用方自己决定取消还是兜底（T-05）
+  }
+
+  // ---------- 存档 ----------
+  const GREY = typeof PENPEN_GREYBOX !== 'undefined' && PENPEN_GREYBOX; // 灰盒入口（greybox.html）
+  const SAVE_KEY = GREY ? 'penpen.greybox.v1' : 'penpen.saves.v1'; // 灰盒用自己的存档，碰不到正式版
+  const loadSaves = () => { try { return JSON.parse(localStorage.getItem(SAVE_KEY)) || []; } catch (e) { return []; } };
+  const storeSaves = (list) => { try { localStorage.setItem(SAVE_KEY, JSON.stringify(list)); } catch (e) { toast('存档没保存成功（浏览器不允许）'); } };
+  let save = null; // 当前存档
+  const START_STOCK = { tofu: 8, beef: 8, pork: 0, chili: 0, peanut: 0, shrimp: 0, fish: 0, egg: 0, rice: 0 };
+  function fixSave(s) { // 老存档补字段
+    s.stock = { ...START_STOCK, ...(s.stock || {}) };
+    // 菜地：每块 3×3 九格，每格种一颗种子（老存档：原来种着的算前三格）
+    s.farm = (s.farm || []).concat([{}, {}, {}, {}]).slice(0, 4).map((f) => (f.cells ? f : { cells: Array.from({ length: 9 }, (_, j) => ((f.st === 'grow' || (!f.st && f.crop)) && j < 3 ? { k: f.crop, ready: f.ready || 1 } : null)) }));
+    s.seeds = s.seeds || {}; s.did = s.did || {}; s.recipes = s.recipes || []; s.recipeDay = s.recipeDay || {}; s.history = s.history || [];
+    s.dex = s.dex || {}; s.dishDex = s.dishDex || {}; s.fishDex = s.fishDex || {};
+    return s;
+  }
+
+  // ---------- 游戏状态 ----------
+  let G = null, TEA_IMG = null;
+  const ENERGY = 10;
+  function newDay() {
+    G = {
+      mode: 'day', t: 0, spawnT: 2, paused: false, over: false, soldOut: false,
+      coins: 0, tips: 0, served: 0, angry: 0, rep: 0, wrong: 0,
+      customers: [], floats: [], nextId: 1,
+      tables: TABLES.filter((t) => prog().tables.includes(t.id)).map((t) => ({ ...t, cust: null, dirty: false, reserved: null, busClaim: null })),
+      plates: { clean: 4 + prog().tables.reduce((n, id) => n + (TABLES.find((t) => t.id === id) || { size: 2 }).size, 0), dirty: 0, washT: 0 }, kitchen: { wares: Object.fromEntries(Object.keys(WARES).map((w) => [w, { q: [], cur: null }])), pass: [], drinkQ: [], drinkCur: null, drinkReady: [], rail: [] },
+      waiter: { x: IDLE.x, y: IDLE.y, path: [], hands: [], queue: [], tickets: [], face: 1, back: false, blinkT: 2 },
+      staff: staffIds().filter((id) => !jobsOf(id).includes('farm')).map((id) => ({ id, x: STAFF_DEF[id].home.x, y: STAFF_DEF[id].home.y, path: [], hands: [], task: null, face: 1, back: false })),
+      danceCD: 0, selected: null, orderOpen: null, dancer: null,
+      D: { x: WMAP.shop.door.x, y: WMAP.shop.door.y + 30, path: [], face: 1, back: false, task: null, energy: ENERGY, fish: 0, cam: { x: 360, y: 300 }, manual: false },
+    };
+    TEA_IMG = (has('tea') || has('snack')) ? svgImg(teaCartSVG(has('tea'), has('snack'))) : null;
+    setSeason(seasonOf(save.day)); G.parts = []; rollTrend();
+    // 安排了农活的店员：一早去摘茶、收熟了的菜
+    save.farmLog = [];
+    for (const id of staffIds()) if (jobsOf(id).includes('farm')) {
+      const got = [];
+      if (spotOpen('tea')) { save.stock.tealeaf = stockOf('tealeaf') + 3; got.push('茶叶×3'); }
+      save.farm.forEach((f, i) => { if (plotReady(i)) { const g = harvestPlot(i); for (const k in g) got.push(`${ING[k].n}×${g[k]}`); } });
+      let re = 0; // 收完顺手补种：家里有哪样种子就种哪样
+      save.farm.forEach((f, i) => { if (!plotOpen(i)) return; f.cells.forEach((c, j) => { const k = prog().seeds.filter((x) => save.seeds[x] > 0).sort((a, b) => save.seeds[b] - save.seeds[a])[0]; if (!c && k) { save.seeds[k]--; f.cells[j] = { k, ready: save.day + 1 }; re++; } }); });
+      if (re) got.push(`补种 ${re} 格`);
+      if (got.length) save.farmLog.push({ id, got });
+    }
+    // 呆猫的信：每隔两三天到一封
+    if (!save.mail && spotOpen('mail') && save.day >= (save.mailDay || 3)) {
+      const next = POSTCARDS.find((p) => !(save.cards || []).includes(p.id)); // 按呆猫的旅行路线一站一站寄
+      if (next) save.mail = next.id;
+    }
+    setMode('day');
+  }
+  function setMode(m) {
+    G.mode = m;
+    $('#hud-screen').classList.toggle('mode-day', m === 'day');
+    $('#hud-screen').classList.toggle('mode-shop', m === 'shop');
+  }
+  function openShop() {
+    if (!G || G.mode !== 'day') return;
+    if (save.day === 1) { save.menu = ['mapo', 'mian']; save.menuDay = 1; }
+    if (save.menuDay !== save.day && !G.menuAsked) { G.menuAsked = true; openMenuPick(); return; }
+    buildShopGrid(G.tables); setMode('shop'); G.t = 0; G.spawnT = 3; G.script = save.day === 1 ? DAY1.map((x) => ({ ...x })) : null; G.omaAt = save.day <= 3 ? rand(50, 90) : null; persist(); did('open');
+  }
+
+  // ---------- 白天：大地图 ----------
+  const HOT = [ // 地图上能点的地方
+    { id: 'door', r: { x: 930, y: 480, w: 140, h: 180 }, spot: () => WMAP.shop.door },
+    { id: 'market', r: { x: 200, y: 290, w: 340, h: 230 }, spot: () => WMAP.market.spot },
+    ...WMAP.farm.plots.map(([x, y], i) => ({ id: 'plot', i, r: { x: x - 85, y: y - 70, w: 170, h: 130 }, spot: () => ({ x, y: y + 82 }) })),
+    { id: 'coop', r: { x: 2040, y: 300, w: 240, h: 230 }, spot: () => WMAP.coop.spot },
+    { id: 'pond', r: { x: 1380, y: 880, w: 720, h: 330 }, spot: () => ({ x: 1520, y: 992 }) },
+    { id: 'mail', r: { x: 1290, y: 570, w: 56, h: 120 }, spot: () => ({ x: 1317, y: 720 }) },
+    { id: 'plaza', r: { x: 410, y: 900, w: 300, h: 200 }, spot: () => ({ x: 560, y: 1110 }) },
+    { id: 'mirror', r: { x: 726, y: 540, w: 88, h: 120 }, spot: () => ({ x: 770, y: 700 }) },
+    { id: 'tea', r: { x: 1060, y: 890, w: 230, h: 140 }, spot: () => ({ x: 1170, y: 1060 }) },
+    { id: 'onsen', r: { x: 2050, y: 200, w: 300, h: 120 }, spot: () => ({ x: 2200, y: 340 }) },
+  ];
+  const plotOpen = (i) => i < prog().plots;
+  const cellRipe = (c) => !!c && c.ready <= save.day;
+  const plotReady = (i) => plotOpen(i) && save.farm[i].cells.some(cellRipe);
+  const plotEmpty = (i) => plotOpen(i) && save.farm[i].cells.some((c) => !c);
+  function harvestPlot(i) { // 收这块地里熟了的格子，返回 {辣椒: 5}
+    const got = {}; save.farm[i].cells = save.farm[i].cells.map((c) => { if (!cellRipe(c)) return c; got[c.k] = (got[c.k] || 0) + 1; return null; });
+    for (const k in got) save.stock[k] = stockOf(k) + got[k];
+    return got;
+  }
+  const seedBuyable = () => prog().seeds.find((k) => mktLeft(k + '_seed') >= 3 && save.coins >= SEED_PRICE[k] * 3);
+  const spotOpen = (id) => ['door', 'plaza', 'onsen'].includes(id) || prog().map.includes(id);
+  const did = (k) => { save.did[k] = (save.did[k] || 0) + 1; };
+  function dayTap(p) {
+    const D = G.D;
+    const h = HOT.find((h) => inRect(p.x, p.y, h.r));
+    if (D.fish > 0) return;
+    if (h && (!spotOpen(h.id) || (h.id === 'plot' && !plotOpen(h.i)))) { // 还没开放：只冒一句「第几天开」
+      const d = h.id === 'plot' ? openDay('plots', h.i + 1) : openDay('map', h.id);
+      float(p.x, p.y - 30, `第 ${d} 天开放`, '#8a6a50'); sfx.tap(); return;
+    }
+    if (h) { const sp = h.spot(); D.task = h; D.path = findPath(D, sp, WORLD_GRID) || (noWay('盆盆', sp), (D.task = null), []); D.manual = false; D.camGoal = null; sfx.tap(); return; }
+    D.task = null; D.path = findPath(D, p, WORLD_GRID) || (noWay('盆盆', p), []); D.manual = false; D.camGoal = null;
+  }
+  const spend = () => { if (G.D.energy <= 0) { toast('今天累了，没体力了；去开店吧'); return false; } G.D.energy--; return true; };
+  function gain(ing, n, x, y) { save.stock[ing] = stockOf(ing) + n; float(x, y, `${ING[ing].n} +${n}`, '#3f7a34'); sfx.ding(); }
+  function dayArrive(h) {
+    const D = G.D;
+    if (h.id === 'door') { ask(`收拾好了，开门营业吗？${D.energy ? `（体力还剩 ${D.energy}）` : ''}`, '开店').then((ok) => ok && openShop()); return; }
+    if (h.id === 'market') { openMarket(); did('market'); return; }
+    if (h.id === 'tea') {
+      if (save.teaDay === save.day) { float(1170, 900, '明天再来摘', '#8a6a50'); return; }
+      if (!spend()) return;
+      save.teaDay = save.day; gain('tealeaf', 4, 1170, 940); did('tea'); return;
+    }
+    if (h.id === 'mirror') { G.paused = true; openCreator(save, false); did('mirror'); return; }
+    if (h.id === 'plot') {
+      if (plotOpen(h.i)) openPlot(h.i);
+      return;
+    }
+    if (h.id === 'coop') {
+      if (save.coopDay === save.day) { float(2160, 400, '明天再来', '#8a6a50'); return; }
+      if (!spend()) return;
+      save.coopDay = save.day; gain('egg', 3, 2160, 420); did('egg'); return;
+    }
+    if (h.id === 'pond') { if (!spend()) return; D.fish = 2.2; D.face = 1; did('fish'); return; }
+    if (h.id === 'mail') { if (save.mail) { openMail(); did('mail'); } else float(1317, 520, '今天没有信', '#8a6a50'); return; }
+    if (h.id === 'onsen') { if (!save.soaked) { save.soaked = true; speedUp('泡了个温泉', 2200, 220); } else float(2200, 200, '店员休息时来泡温泉', '#3f6680'); return; }
+    if (h.id === 'plaza') { if (!save.danced && save.day >= 3) { save.danced = true; speedUp('跟着帅老头练了练广场舞', 560, 900); } else float(560, 880, '帅老头在广场练舞', '#b04a3c'); return; }
+  }
+  function updateDay(dt) {
+    const D = G.D;
+    if (D.fish > 0) { D.fish -= dt; if (D.fish <= 0) { D.fish = 0; catchFish(); } }
+    else if (D.path.length) { if (moveAlong(D, 340 * SPD(), dt) && D.task) { const h = D.task; D.task = null; dayArrive(h); } }
+    const tx = Math.max(0, Math.min(WORLD_W - W, D.x - W / 2)), ty = Math.max(0, Math.min(WORLD_H - H, D.y - H * 0.74));
+    if (D.camGoal) { // 引导要指的地方不在画面里：镜头慢慢移过去
+      D.cam.x += (D.camGoal.x - D.cam.x) * Math.min(1, dt * 3); D.cam.y += (D.camGoal.y - D.cam.y) * Math.min(1, dt * 3);
+      if (Math.hypot(D.camGoal.x - D.cam.x, D.camGoal.y - D.cam.y) < 4) D.camGoal = null;
+    } else if (!D.manual) { D.cam.x += (tx - D.cam.x) * Math.min(1, dt * 4); D.cam.y += (ty - D.cam.y) * Math.min(1, dt * 4); }
+    G.floats = G.floats.filter((f) => (f.t += dt) < (f.life || 1.6));
+    // 季节飘落物：春花瓣、秋叶、冬雪
+    const se = CUR_SE;
+    if (se !== 'summer' && G.parts.length < 40 && Math.random() < dt * 8) G.parts.push({ x: D.cam.x + Math.random() * (W + 200) - 100, y: D.cam.y - 20, vx: rand(-20, 30), vy: rand(30, 60), r: rand(0, 6), t: 0 });
+    G.parts.forEach((q) => { q.t += dt; q.x += (q.vx + Math.sin(q.t * 2 + q.r) * 20) * dt; q.y += q.vy * dt; });
+    G.parts = G.parts.filter((q) => q.y < D.cam.y + H + 30);
+  }
+  function openMail() {
+    const pc = POSTCARDS.find((p) => p.id === save.mail); if (!pc) return;
+    G.paused = true;
+    const gift = pc.gift.calcium ? '一瓶钙片（盆盆跑得更快）' : pc.gift.coins ? `存款 +¥${pc.gift.coins}` : `${ING[pc.gift.ing].n} +${pc.gift.n}`;
+    const rec = (pc.recipes || []).map((k) => `<div class="prec"><img alt="" src="${dishURL(k)}"><b>${DISH[k].n}</b><small>新食谱</small></div>`).join('');
+    $('#mail-body').innerHTML = `<img class="pcard" alt="${pc.n}" src="${dataURL(postcardSVG(pc.id))}"><div class="pmsg"><b>呆猫从「${pc.from}」寄来：${pc.n}</b><p>「${pc.msg}」</p>${rec ? `<div class="precs">${rec}</div>` : ''}<p class="gift">还寄来：${gift}</p>${pc.invite ? '<p class="invite">✈ 呆猫邀请盆盆去樱花之国开分店！（下一版开放）</p>' : ''}</div>`;
+    show('mail');
+  }
+  $('#mail-ok').addEventListener('click', () => {
+    const pc = POSTCARDS.find((p) => p.id === save.mail);
+    if (pc) {
+      if (pc.gift.calcium) speedUp('吃了呆猫寄的钙片', G.D.x, G.D.y - 120); else if (pc.gift.coins) save.coins += pc.gift.coins; else save.stock[pc.gift.ing] = stockOf(pc.gift.ing) + pc.gift.n;
+      (pc.recipes || []).forEach(learnRecipe); if (pc.invite) save.invite = pc.invite;
+      save.cards = (save.cards || []).concat(pc.id); save.mail = null; save.mailDay = save.day + 2; persist(); sfx.coin();
+    }
+    G.paused = false; show('hud-screen');
+  });
+  function catchFish() {
+    const se = CUR_SE, pool = FISH.filter((f) => f.se.includes(se));
+    const f = pickW(pool), cm = Math.round(rand(f.size[0], f.size[1]));
+    const rec = (save.fishDex[f.id] = save.fishDex[f.id] || { n: 0, max: 0 }), first = !rec.n;
+    rec.n++; rec.max = Math.max(rec.max, cm);
+    const x = 1600, y = 900;
+    if (f.ing) { const n = f.ing === 'shrimp' ? 2 : 1; save.stock[f.ing] = stockOf(f.ing) + n; }
+    if (f.coins) save.coins += f.coins;
+    if (f.luck) save.luckDay = save.day;
+    float(x, y, `钓到${f.n} ${cm}cm${f.ing ? ` · ${ING[f.ing].n}+${f.ing === 'shrimp' ? 2 : 1}` : f.coins ? ` · 卖了¥${f.coins}` : ' · 放生了'}`, '#3f6680', { fish: f.id }, 2.2);
+    if (first) setTimeout(() => toast(`新的鱼：${f.n}！记进笔记啦`), 300);
+    sfx.ding();
+  }
+  // 今日菜单：开店前先选；没食材的地方在地图上高亮
+  const needIngs = () => { const n = {}; for (const k of menuNow()) { const ing = DISH[k].ing; if (stockOf(ing) < 6) n[ing] = true; } return n; };
+  function openMenuPick() {
+    if (!G) return; G.paused = true;
+    const pick = new Set(mains(menuNow()));
+    for (const k of dishList()) if (isNewDish(k) && pick.size < menuSlots() && onMenu(k) && !DISH[k].dessert) pick.add(k); // 新菜先帮你放上
+    const box = $('#menu-list');
+    const render = () => {
+      box.innerHTML = dishList().filter((k) => !DISH[k].dessert).map((k) => {
+        const d = DISH[k], ok = onMenu(k), st = stockOf(d.ing), nw = isNewDish(k), tr = trendOf(k);
+        return `<button class="mcard ${pick.has(k) ? 'on' : ''}" data-k="${k}" ${ok ? '' : 'disabled'}>${nw ? '<i class="newb">新</i>' : ''}${tr ? `<i class="trb ${tr}">${tr === 'hot' ? '流行' : '冷门'}</i>` : ''}${d.dessert ? '<i class="desb">甜品</i>' : ''}<img alt="" src="${dishURL(k)}"><b>${d.n}</b><span class="dt">${d.tags.map((t) => tagTiny(t)).join('')}</span>
+          <span class="need ${st < 3 ? 'low' : ''}"><img alt="" src="${ingURL(d.ing)}">${ING[d.ing].n} × ${st}</span><small>${ok ? `${WARES[d.ware].n} · ¥${d.price}` : `要先买${WARES[d.ware].n}`}</small></button>`;
+      }).join('');
+      $('#menu-count').textContent = `已选 ${pick.size} / ${menuSlots()} 道`;
+      box.querySelectorAll('.mcard').forEach((b) => b.addEventListener('click', () => {
+        const k = b.dataset.k;
+        if (pick.has(k)) pick.delete(k); else if (pick.size < menuSlots()) pick.add(k); else { toast(`今天最多上 ${menuSlots()} 道菜`); return; }
+        sfx.tap(); render();
+      }));
+    };
+    render();
+    $('#menu-ok').onclick = () => {
+      if (!mains([...pick]).length) { toast('至少选一道主菜'); return; }
+      save.menu = [...pick]; save.menuDay = save.day; persist();
+      const need = Object.keys(needIngs()).map((k) => ING[k].n);
+      G.paused = false; show('hud-screen');
+
+    };
+    show('menu');
+  }
+  // 早市（妈妈特价：每天一样东西半价）
+  const SEED_PRICE = { chili: 1, peanut: 1 }; // 一颗种子种一格，收一个
+  // 猫猫日报：第 7 天起每天一个流行口味、一个冷门口味
+  const TREND_TAGS = ['辣', '麻', '甜', '面', '海鲜', '清淡', '肉', '米饭', '花生'];
+  function rollTrend() {
+    if (!prog().news) { save.trend = null; return; }
+    if (save.trend && save.trend.day === save.day) return;
+    const tags = TREND_TAGS.filter((t) => dishList().some((k) => !DISH[k].dessert && DISH[k].tags.includes(t)));
+    const hot = tags[(save.day * 5 + 1) % tags.length], rest = tags.filter((t) => t !== hot);
+    save.trend = { day: save.day, hot, cold: rest[(save.day * 3) % rest.length] };
+  }
+  const trendOf = (k) => { const tr = save && save.trend; if (!tr || tr.day !== save.day || !DISH[k]) return null; return DISH[k].tags.includes(tr.hot) ? 'hot' : DISH[k].tags.includes(tr.cold) ? 'cold' : null; };
+  const special = () => { const ks = prog().ings; return ks[(save.day * 7 + 3) % ks.length]; };
+  const dayHash = (k) => { let x = save.day * 131 + [...k].reduce((a, c) => a * 31 + c.charCodeAt(0), 7); x = Math.imul(x ^ (x >>> 13), 1274126177); return Math.abs(x ^ (x >>> 16)) % 1000; };
+  const priceRate = (k) => [0.8, 0.9, 1, 1, 1.1, 1.3][dayHash(k) % 6]; // 每天价钱有涨有跌
+  const priceOf = (k) => (k === special() ? Math.ceil(ING[k].price / 2) : Math.max(1, Math.round(ING[k].price * priceRate(k))));
+  function mktLeft(k) { // 每样今天只有这么多
+    if (!save.mkt || save.mkt.day !== save.day) save.mkt = { day: save.day, left: {} };
+    if (save.mkt.left[k] == null) save.mkt.left[k] = k.endsWith('_seed') ? 12 + dayHash(k) % 10 : 8 + dayHash(k) % 9;
+    return save.mkt.left[k];
+  }
+  function openMarket() {
+    G.paused = true;
+    const sp = special();
+    const box = $('#market-list');
+    box.innerHTML = prog().seeds.map((k) => { const p = SEED_PRICE[k], nw = openDay('seeds', k) === save.day;
+      const left = mktLeft(k + '_seed');
+      return `<div class="mrow seed"><img alt="" src="${ingURL(k)}"><div><b>${ING[k].n}种子</b>${nw ? '<span class="tag-new">新</span>' : ''}<small>一颗种一格，明天收　·　有 ${save.seeds[k] || 0} 颗　·　<em class="left">今天还剩 ${left}</em></small></div>
+        <span class="mp">¥${p}</span><button class="buy1" data-k="${k}" data-seed="1" data-n="3" ${save.coins >= p * 3 && left >= 3 ? '' : 'disabled'}>买 3</button><button class="buy1" data-k="${k}" data-seed="1" data-n="9" ${save.coins >= p * 9 && left >= 9 ? '' : 'disabled'}>买 9</button></div>`; }).join('')
+    + prog().ings.map((k) => {
+      const p = priceOf(k), uses = Object.keys(DISH).filter((d) => DISH[d].ing === k && knownDish(d)).map((d) => DISH[d].n).join('、') || '泡茶';
+      const nd = needIngs()[k];
+      const left = mktLeft(k), r = priceRate(k), trend = k === sp ? '' : r < 1 ? '<span class="tag-dn">今天便宜</span>' : r > 1 ? '<span class="tag-up">今天贵</span>' : '';
+      return `<div class="mrow ${k === sp ? 'sp' : ''} ${nd ? 'nd' : ''} ${left ? '' : 'out'}"><img alt="" src="${ingURL(k)}"><div><b>${ING[k].n}</b>${k === sp ? '<span class="tag-sp">妈妈特价 半价</span>' : trend}${nd ? '<span class="tag-nd">菜单要用</span>' : ''}<small>做 ${uses}　·　家里有 ${stockOf(k)}　·　<em class="left">${left ? `今天还剩 ${left}` : '卖完了'}</em></small></div>
+        <span class="mp">¥${p}${p !== ING[k].price ? `<s>¥${ING[k].price}</s>` : ''}</span><button class="buy1" data-k="${k}" data-n="1" ${save.coins >= p && left >= 1 ? '' : 'disabled'}>买 1</button><button class="buy1" data-k="${k}" data-n="5" ${save.coins >= p * 5 && left >= 5 ? '' : 'disabled'}>买 5</button></div>`;
+    }).join('');
+    $('#market-coins').textContent = `存款 ¥ ${save.coins}`;
+    box.querySelectorAll('.buy1').forEach((b) => b.addEventListener('click', () => {
+      const k = b.dataset.k, n = +b.dataset.n, seed = !!b.dataset.seed, cost = (seed ? SEED_PRICE[k] : priceOf(k)) * n;
+      const lk = seed ? k + '_seed' : k; if (save.coins < cost || mktLeft(lk) < n) return;
+      save.mkt.left[lk] -= n; save.coins -= cost; if (seed) { save.seeds[k] = (save.seeds[k] || 0) + n; did('seed'); } else { save.stock[k] = stockOf(k) + n; did('buy'); } sfx.coin(); openMarket();
+    }));
+    show('market');
+  }
+  function openPantry() {
+    if (!G) return; G.paused = true;
+    $('#pantry-list').innerHTML = Object.keys(ING).filter((k) => stockOf(k) > 0 || (Object.keys(DISH).some((d) => DISH[d].ing === k && knownDish(d)) || (k === 'tealeaf' && prog().drinks.length))).map((k) => {
+      const ds = Object.keys(DISH).filter((d) => DISH[d].ing === k);
+      return `<div class="prow ${stockOf(k) ? '' : 'zero'} ${needIngs()[k] ? 'nd' : ''}"><img alt="" src="${ingURL(k)}"><b>${ING[k].n}</b><span class="cnt">× ${stockOf(k)}</span><small>${ING[k].src} · 做 ${ds.map((d) => DISH[d].n + (onMenu(d) ? '' : `（要${WARES[DISH[d].ware].n}）`)).join('、')}</small></div>`;
+    }).join('');
+    show('pantry');
+  }
+
+  // ---------- 顾客（一桌一伙人，1–4 位，每人各点各的） ----------
+  // 第一天：①没要求的柴犬 ②狸猫两位（一位不要香菜）③兔子 ④收尾来熊猫奶奶，教随缘客
+  const DAY1 = [
+    { type: 'shiba', size: 1, plan: [{ dish: 'mapo' }], when: 'start' },
+    { type: 'raccoon', size: 2, plan: [{ dish: 'mian', req: { t: 'no', top: '香菜' } }, { dish: 'mapo' }], when: 'prevFed' },
+    { type: 'bunny', size: 1, plan: [{ dish: 'mian' }], when: 'prevFed' },
+    { type: 'panda', size: 1, plan: [{ want: '面' }], when: 'empty' },
+  ];
+  function scriptSpawn() {
+    const sc = G.script; if (!sc.length) return;
+    const nx = sc[0], last = G.lastScripted, since = G.t - (G.lastSpawnT || 0);
+    const ok = nx.when === 'start' ? G.t > 1.5
+      : nx.when === 'prevFed' ? since > 6 && (!last || !G.customers.includes(last) || ['waitFood', 'eating', 'bill', 'linger', 'leaving'].includes(last.state))
+        : since > 3 && G.customers.length === 0;
+    if (!ok) return;
+    sc.shift(); G.lastScripted = spawnCustomer(nx); G.lastSpawnT = G.t;
+  }
+  function chooseType() {
+    if (G.omaAt != null && G.t >= G.omaAt) { G.omaAt = null; return pickW(CT.filter((t) => t.kind === 'omakase')); }
+    return pickW(save.day <= 3 ? CT.filter((t) => t.kind === 'menu') : CT);
+  }
+  const inLine = (c) => ['queue', 'enter', 'called'].includes(c.state);
+  const SEATED = ['toSeat', 'thirsty', 'reading', 'ordering', 'ordering-open', 'waitFood', 'eating', 'bill', 'linger'];
+  const seated = (c) => c.table && SEATED.includes(c.state);
+  function spawnCustomer(sc) {
+    if (G.customers.filter(inLine).length >= QSPOTS.length) return null;
+    const type = sc ? CT.find((t) => t.id === sc.type) : chooseType();
+    let size = sc ? sc.size : pick(type.sizes); if (!sc && save.day <= 3) size = Math.min(size, 2);
+    const c = { id: G.nextId++, type, size, state: 'enter', x: DOOR.x, y: DOOR.y, path: [], hearts: 5, timer: 0, table: null, script: sc ? sc.plan : null,
+      members: [], say: '', sayT: 0, bob: Math.random() * 6, upset: false, watered: false, wantsWater: false,
+      looks: Array.from({ length: size }, () => { const n = (CUSTOMER_VARIANTS[type.id] || [0]).length; return n > 1 ? `${type.id}#${Math.floor(Math.random() * n)}` : type.id; }) };
+    dexOf(type.id).met++;
+    G.customers.push(c);
+    if (!wouldEat(c)) { c.state = 'browse'; c.timer = 2.4; return c; } // 主人 11/25：不想吃的，在门口看完菜单就走，不进来排队
+    layoutQueue(); sfx.tap();
+    return c;
+  }
+  function wouldEat(c) { // 今天的菜单里有没有这桌能吃的（只看，不占食材）
+    if (c.script) return true;
+    const ok = mains(menuNow()).filter(canCook);
+    return c.type.kind === 'menu' ? ok.length > 0 : ok.some((k) => !DISH[k].tags.some((x) => c.type.hates.includes(x)));
+  }
+  function layoutQueue() { // 候位也按格子找路（G-004：门站位到候位 4 的直线会穿门侧墙）
+    G.customers.filter(inLine).forEach((c, i) => {
+      if (c.qi === i && c.path.length && c.path[c.path.length - 1] === QSPOTS[i]) return;
+      c.qi = i; c.path = findPath(c, QSPOTS[i]) || (noWay('客人', QSPOTS[i]), []);
+    });
+  }
+  function speak(c, key) { c.say = c.type.say[key]; c.sayT = 2.6; }
+  function addHeart(c, n = 1) { c.hearts = Math.min(5, c.hearts + n); }
+  function leave(c, angry) {
+    const fromT = c.table && seated(c) && c.state !== 'toSeat' ? c.table : null; // 坐着走的：先回桌边
+    // 还没下单就走：预留的食材退回库存
+    for (const m of c.members) if (m.reserved && m.st === 'none') save.stock[DISH[m.dish].ing] = stockOf(DISH[m.dish].ing) + 1;
+    if (c.table) { // 桌上吃过的盘子都留下，等着收（包括生气走掉的、加过甜品的）
+      const t = c.table, used = c.members.filter((m) => m.st === 'served').length + (c.extraPlates || 0);
+      if (t.cust === c) t.cust = null; c.table = null; if (used) t.dirty = (+t.dirty || 0) + used;
+    }
+    const k = G.kitchen;
+    for (const w of Object.values(k.wares)) { w.q = w.q.filter((o) => o.cust !== c); if (w.cur && w.cur.cust === c) w.cur = null; }
+    const gone = k.pass.filter((o) => o.cust === c).length; if (gone) { k.pass = k.pass.filter((o) => o.cust !== c); G.plates.dirty += gone; } // 出菜台上的菜撤下：盘子算脏盘
+    k.drinkQ = k.drinkQ.filter((o) => o.cust !== c); k.drinkReady = k.drinkReady.filter((o) => o.cust !== c); if (k.drinkCur && k.drinkCur.cust === c) k.drinkCur = null;
+    const w = G.waiter;
+    w.tickets = w.tickets.filter((t) => t.c !== c);
+    G.plates.dirty += w.hands.filter((h) => h.cust === c && h.kind === 'dish').length; // 盆盆手上的菜撤下：盘子算脏盘
+    w.hands = w.hands.filter((h) => h.cust !== c);
+    if (G.selected === c) G.selected = null;
+    for (const t of G.tables) if (t.reserved === c) t.reserved = null;
+    if (w.busyAct && w.busyAct.cust === c) { w.busyAct = null; w.path = []; }
+    w.queue = w.queue.filter((a) => a.cust !== c);
+    c.state = 'leaving'; c.path = viaTable(c, fromT, DOOR, false);
+    if (angry) { G.angry++; G.rep--; speak(c, 'angry'); sfx.bad(); }
+    layoutQueue();
+  }
+  // 心情下降速度（每秒掉几颗心）
+  const DRAIN = { queue: 1 / 32, called: 1 / 32, thirsty: 1 / 20, ordering: 1 / 22, waitFood: 1 / 26, bill: 1 / 18 };
+  function startOrdering(c) {
+    for (let i = c.members.length; i < c.size; i++) c.members.push(makeOrder(c));
+    c.members = c.members.filter(Boolean);
+    if (!c.members.length) { c.say = '没有想吃的……下次再来。'; c.sayT = 2.4; const t = c.table; leave(c, false); if (t) t.dirty = 0; return; }
+    c.state = 'ordering'; speak(c, 'order'); sfx.ding();
+  }
+  function giveWater(c) {
+    c.watered = true; addHeart(c, 1); did('water');
+    const a = anchor(c); float(a.x, a.y - 20, '喝口水 +♥', '#4a7fb5');
+    if (c.state === 'thirsty') { c.state = 'reading'; c.timer = 2; }
+  }
+
+  // ---------- 盆盆的动作 ----------
+  function enqueue(act) {
+    const w = G.waiter;
+    if (w.queue.length >= MAXQ) { toast(`盆盆一口气最多记 ${MAXQ} 件事，先等一等`); return false; }
+    w.queue.push(act); sfx.tap(); return true;
+  }
+  function targetSpot(act) {
+    if (act.kind === 'table') return act.table.spot;
+    if (act.kind === 'seat') return act.phase === 1 ? { x: act.cust.x + 56, y: act.cust.y + 6 } : act.table.spot;
+    if (act.kind === 'give') return act.cust.table ? act.cust.table.spot : { x: act.cust.x + 56, y: act.cust.y + 6 };
+    if (act.kind === 'tea' || act.kind === 'snack') return TEA.spot;
+    if (act.kind === 'pass') return PASS.spot;
+    if (['water', 'dump', 'pour'].includes(act.kind)) return WATER.spot;
+    if (act.kind === 'sink') return SINK.spot;
+    return IDLE;
+  }
+  const COMFORT = { tea: { hearts: 2, cost: 2 }, snack: { hearts: 3, cost: 5 } };
+  function giveComfort(c) {
+    const w = G.waiter;
+    const i = w.hands.findIndex((h) => h.kind === 'tea' || h.kind === 'snack');
+    if (i < 0 || !c || c.state === 'leaving') return false;
+    const it = w.hands.splice(i, 1)[0];
+    addHeart(c, COMFORT[it.kind].hearts);
+    if (it.kind === 'snack' && c.upset) { c.upset = false; speak(c, 'happy'); }
+    const a = anchor(c);
+    float(a.x, a.y - 20, it.kind === 'tea' ? '喝口茶 +♥♥' : '吃点心 +♥♥♥', '#c0506a'); sfx.ding();
+    return true;
+  }
+  const full = () => G.waiter.hands.length >= 2;
+  const sameTops = (a = {}, b = {}) => Object.keys({ ...a, ...b }).every((k) => !!a[k] === !!b[k]);
+  // 端给了点同样东西的另一桌：把原来给这位的那份（还在锅里 / 出菜台 / 谁手上）改给原主人
+  function swapOwner(h, c2, mi2) {
+    const c1 = h.cust, mi1 = h.mi;
+    const pools = [G.kitchen.pass, G.waiter.hands, ...Object.values(G.kitchen.wares).flatMap((wr) => [wr.q, wr.cur ? [wr.cur] : []]), ...G.staff.flatMap((sf) => [sf.hands, sf.task && sf.task.o ? [sf.task.o] : [], sf.brew ? [sf.brew.o] : []])];
+    for (const pool of pools) for (const o of pool) if (o !== h && o.cust === c2 && o.mi === mi2 && (h.kind === 'drink' ? o.drink === h.drink : o.dish === h.dish)) { o.cust = c1; o.mi = mi1; o.table = c1.table ? c1.table.id : o.table; }
+    if (h.kind === 'drink') { c1.members[mi1].dClaim = c2.members[mi2].dClaim; c2.members[mi2].dClaim = 'w'; }
+    h.cust = c2; h.mi = mi2; h.table = c2.table.id;
+  }
+  // 还没做的饮品单：已经下单、没人在泡
+  const drinkWants = () => { const out = []; for (const c of G.customers) if (c.table && c.state !== 'leaving') c.members.forEach((m, i) => { if (m.drink && m.dst === 'make' && !m.dClaim) out.push({ c, m, mi: i, drink: m.drink, table: c.table.id }); }); return out; };
+  function doAction(act) {
+    const w = G.waiter;
+    if (act.kind === 'seat') { // 第二段：把客人领到桌边
+      const c = act.cust, t = act.table;
+      t.reserved = null;
+      if (c.state !== 'following') return;
+      const seatPath = viaTable(c, t, t.seats[0], true);
+      if (!seatPath) { c.state = 'queue'; layoutQueue(); return; } // 坐不过去：放掉桌子，回去排队
+      t.cust = c; c.table = t; c.state = 'toSeat'; c.path = seatPath; addHeart(c); sfx.tap(); did('seat');
+      return;
+    }
+    if (act.kind === 'tea' || act.kind === 'snack') {
+      if (full()) return;
+      const cf = COMFORT[act.kind];
+      w.hands.push({ kind: act.kind }); G.coins -= cf.cost; float(TEA.cx, TEA.cy - 120, `-¥${cf.cost}`, '#8a6a50'); sfx.tap();
+      return;
+    }
+    if (act.kind === 'water') { if (full()) return; w.hands.push({ kind: 'water' }); sfx.tap(); return; }
+    if (act.kind === 'dump') { const wi = w.hands.findIndex((h) => h.kind === 'water'); if (wi >= 0) { w.hands.splice(wi, 1); float(WATER.x, WATER.y - 40, '把水倒掉了', '#4a7fb5'); sfx.tap(); } return; }
+    if (act.kind === 'pour') { // 泡一杯客人点的饮品：站在茶水台等几秒
+      if (full()) return;
+      const o = drinkWants().filter((x) => x.drink === act.drink).sort((a, b) => a.c.id - b.c.id)[0];
+      if (!o) return;
+      o.m.dClaim = 'w'; w.brew = { drink: o.drink, t: 0, need: DRINKS[o.drink].brew, o: { kind: 'drink', drink: o.drink, table: o.table, cust: o.c, mi: o.mi } };
+      return;
+    }
+    if (act.kind === 'give') { giveComfort(act.cust); return; }
+    if (act.kind === 'pass') {
+      // 先把单子交给老大，菜和茶才开始做
+      if (w.tickets.length) {
+        for (const tk of w.tickets) { if (tk.c.state === 'leaving') continue; tk.items.forEach((o) => G.kitchen.wares[DISH[o.dish].ware].q.push(o)); const r = G.kitchen.rail; if (!r.includes(tk.c)) r.push(tk.c); tk.c.railDone = 0; }
+        float(PASS.spot.x - 60, PASS.spot.y - 90, `单子挂上去了（${w.tickets.length} 张）`, '#8a5a10', 'order'); w.tickets = []; sfx.ding(); did('pass');
+      }
+      let got = 0;
+      const wanted = w.queue.filter((a) => a.kind === 'table' && a.table.cust).map((a) => a.table.cust);
+      const order = G.kitchen.pass.filter((o) => !o.claim).sort((a, b) => (wanted.includes(b.cust) ? 1 : 0) - (wanted.includes(a.cust) ? 1 : 0));
+      for (const o of order) { if (w.hands.length >= 2) break; G.kitchen.pass.splice(G.kitchen.pass.indexOf(o), 1); w.hands.push({ kind: 'dish', ...o }); got++; }
+      if (got) { sfx.tap(); did('pick'); }
+      return;
+    }
+    if (act.kind === 'sink') { // 收碗处：脏盘子放下，多余的水、茶、点心也可以倒掉
+      const junk = (h) => ['plate', 'water', 'tea', 'snack'].includes(h.kind);
+      const n = w.hands.filter(junk).length, plates = w.hands.reduce((a, h) => a + (h.kind === 'plate' ? h.n || 1 : 0), 0); // 一摞几个盘子就算几个（以前一摞只算 1 个）
+      w.hands = w.hands.filter((h) => !junk(h));
+      if (plates) G.plates.dirty += plates;
+      if (n) { sfx.tap(); float(SINK.x + 20, SINK.y - 70, plates ? '放进洗碗池' : '倒掉了', '#4a7fb5'); if (plates) did('sink'); }
+      else if (G.plates.dirty > 0 && !w.hands.length) G.waiter.wash = { t: 0, n: Math.min(4, G.plates.dirty) };
+      return;
+    }
+    if (act.kind === 'table') {
+      const t = act.table, c = t.cust;
+      if (c && c.state !== 'leaving') {
+        const mine = w.hands.filter((h) => (h.kind === 'dish' || h.kind === 'drink') && h.cust === c);
+        if (mine.length) { mine.forEach((h) => { w.hands.splice(w.hands.indexOf(h), 1); h.kind === 'drink' ? serveDrink(c, h) : serve(c, h); }); return; }
+        const other = w.hands.filter((h) => (h.kind === 'dish' || h.kind === 'drink') && h.cust !== c);
+        if (other.length && c.members.some((m) => m.st === 'cook' || m.dst === 'make')) {
+          for (const h of other) { // 这桌也点了一样的：直接给这桌，原来那桌的那份顺延
+            const mi = h.kind === 'dish' ? c.members.findIndex((m) => m.st === 'cook' && m.dish === h.dish && sameTops(m.tops, h.tops)) : c.members.findIndex((m) => m.dst === 'make' && m.drink === h.drink);
+            if (mi >= 0) { swapOwner(h, c, mi); w.hands.splice(w.hands.indexOf(h), 1); h.kind === 'drink' ? serveDrink(c, h) : serve(c, h); return; }
+          }
+          const a = anchor(c); speak(c, 'bad'); float(a.x, a.y - 20, '这不是我点的', '#d0453a', 'cross'); c.hearts = Math.max(0.5, c.hearts - 1); sfx.bad(); G.wrong++; return;
+        }
+        const wi = w.hands.findIndex((h) => h.kind === 'water');
+        if (wi >= 0 && c.state === 'thirsty') { w.hands.splice(wi, 1); giveWater(c); return; }
+        if (c.state === 'ordering' && c.members.some((m) => m.dessert && m.st === 'none') && c.members.every((m) => m.st !== 'none' || m.dessert)) { // 甜品：客人说了就记，不用开面板
+          sendTicket(c, c.members.map((m, i) => [m, i]).filter(([m]) => m.st === 'none')); const a = anchor(c); float(a.x, a.y - 20, '加一份桂花糕', '#8a5a10', 'order'); return;
+        }
+        if (c.state === 'ordering' || c.state === 'reading') { if (c.state === 'reading') startOrdering(c); if (c.state === 'ordering') { openOrder(c); did('order'); } return; }
+        if (!['eating', 'linger', 'bill'].includes(c.state) && (c.hearts < 4.5 || c.upset) && giveComfort(c)) return;
+        if (wi >= 0 && !c.watered && !['bill', 'linger'].includes(c.state)) { w.hands.splice(wi, 1); giveWater(c); return; }
+        if (c.state === 'bill') { pay(c); return; }
+        return; // 这会儿没事可做：直接换下一件
+      }
+      if (!c && t.dirty) {
+        if (full()) return;
+        w.hands.push({ kind: 'plate', n: t.dirty }); t.dirty = 0; t.busClaim = null; sfx.tap(); did('bus'); return;
+      }
+    }
+  }
+  function serve(c, o) {
+    const m = c.members[o.mi], d = DISH[o.dish], a = anchor(c);
+    if (!m || m.st !== 'cook' || c.state === 'leaving') { G.plates.dirty++; return; } // 菜已离手但用不上：盘子算脏盘
+    const refuse = (why) => {
+      speak(c, 'bad'); sfx.bad(); float(a.x, a.y - 20, why, '#d0453a');
+      c.hearts = Math.max(0.6, c.hearts - 2); c.upset = true; G.rep--; G.wrong++;
+    };
+    if (m.dessert) { float(a.x, a.y - 20, '甜甜的～', '#c0506a', 'heart', 1.6); }
+    else if (m.kind === 'menu') {
+      if (m.req && m.req.t === 'no' && o.tops[m.req.top]) { // 放了不要的配料：老大马上重做一份
+        refuse(`说了不要${m.req.top}！`);
+        const fix = { ...o, tops: { ...o.tops, [m.req.top]: false }, claim: null };
+        G.kitchen.wares[d.ware].q.push(fix);
+        toast(has('snack') ? '老大重新做一份；可以送点心哄一哄' : '老大重新做一份');
+        G.plates.dirty++; return; // 退回的那盘算脏盘，重做的出锅再领新盘
+      }
+      m.good = !m.req || (m.req.t === 'add' ? !!o.tops[m.req.top] : true);
+      if (!m.good) { c.hearts -= 1; float(a.x, a.y - 20, `没加${m.req.top}……`, '#b06a3a'); }
+    } else {
+      const hate = d.tags.filter((t) => c.type.hates.includes(t));
+      if (hate.length) {
+        refuse(`不吃${hate[0]}！要换一道`); learn(c, 'hates', hate);
+        m.st = 'none'; m.dish = null; c.state = 'ordering';
+        G.plates.dirty++; return; // 退回的那盘算脏盘
+      }
+      const likes = d.tags.filter((t) => c.type.likes.includes(t)), dis = d.tags.filter((t) => c.type.dislikes.includes(t));
+      m.good = d.tags.includes(m.want); m.likeN = likes.length; m.disN = dis.length;
+      // 像夜雀食堂一样：每个喜欢的口味冒一颗爱心，不喜欢的冒一个皱眉
+      let k = 0;
+      if (m.good) float(a.x, a.y - 20, '正合我意！', '#c0506a', 'heart', 1.8);
+      else { c.hearts -= 0.5; float(a.x, a.y - 20, '嗯……不太是我想吃的', '#b06a3a', 'meh', 1.8); }
+      for (const t of likes) { k++; const kk = k; setTimeout(() => G && float(a.x - 70 + kk * 46, a.y - 52, `♥${t}`, '#c0506a', t, 1.6), kk * 260); }
+      for (const t of dis) { k++; const kk = k; c.hearts -= 0.5; setTimeout(() => G && float(a.x - 70 + kk * 46, a.y - 52, `✕${t}`, '#a8322a', t, 1.6), kk * 260); }
+      learn(c, 'likes', likes); learn(c, 'dislikes', dis);
+    }
+    m.st = 'served'; addHeart(c, 0.5); sfx.ding(); did('serve');
+    if (trendOf(o.dish) === 'hot') { m.hot = true; addHeart(c, 1); setTimeout(() => G && float(a.x + 60, a.y - 70, '流行！+♥', '#b04a3c', 'heart', 1.6), 500); }
+    else if (trendOf(o.dish) === 'cold') c.hearts -= 0.5;
+    save.dishDex[o.dish] = (save.dishDex[o.dish] || 0) + 1;
+    if (c.members.every((x) => x.st === 'served')) { c.state = 'eating'; c.timer = c.type.eat + c.size; }
+  }
+  function serveDrink(c, o) {
+    const m = c.members[o.mi]; if (!m || m.dst !== 'make' || c.state === 'leaving') return;
+    m.dst = 'served'; addHeart(c, 0.5);
+    const a = anchor(c); float(a.x, a.y - 20, DRINKS[o.drink].n, '#4a7fb5', 'water', 1.4); sfx.ding();
+  }
+  function pay(c) {
+    let price = 0, bonus = 0, allGood = true;
+    for (const m of c.members) {
+      if (m.dst === 'served') price += DRINKS[m.drink].price;
+      const p = DISH[m.dish].price; price += p + (m.prevPaid || 0);
+      if (!m.good) { allGood = false; continue; }
+      bonus += m.kind === 'menu' ? p * (m.req ? 0.25 : 0.1) : p * Math.max(0, 0.25 + 0.12 * Math.max(0, (m.likeN || 1) - 1) - 0.1 * (m.disN || 0));
+    }
+    const base = c.upset ? 0 : Math.round(c.hearts * 1.5 * c.size + bonus), happy = !c.upset && c.hearts >= 3;
+    let tip = base, gift = null, candy = false;
+    if (c.type.tip === 'fixed') tip = c.upset ? 0 : 3 * c.members.length * (c.hearts >= 4 ? 2 : 1);
+    else if (c.type.tip === 'candy') { tip = 0; candy = happy; }
+    else if (c.type.tip === 'goods') { tip = Math.round(base / 2); const pool = prog().ings.filter((k) => k !== 'tealeaf'); if (happy && pool.length) { gift = pick(pool); save.stock[gift] = stockOf(gift) + c.members.length; } }
+    else if (c.type.tip === 'fishy') { if (happy && Math.random() < 0.5) { gift = 'fish'; save.stock.fish = stockOf('fish') + 1; } }
+    else if (c.type.tip === 'generous') tip = happy ? Math.round(base * 1.5) : base;
+    else if (c.type.tip === 'perfect') tip = allGood && !c.upset ? Math.round(base * 2.5) : 0;
+    if (candy) G.rep++;
+    const hotN = c.members.filter((m) => m.hot).length; if (hotN) tip += Math.round(tip * hotN / c.members.length); // 流行菜小费翻倍
+    if (allGood && !c.upset) G.rep++;
+    G.coins += price + tip; G.tips += tip; G.served += c.members.length;
+    const a = anchor(c);
+    float(a.x + 40, a.y, `+¥${price + tip}`, '#c98a12', 'bill');
+    if (tip > 0) setTimeout(() => G && float(a.x + 40, a.y - 36, `小费 ¥${tip}${c.members.some((m) => m.kind === 'omakase' && m.likeN > 1) ? ' ♥' : ''}`, '#c0506a', 'heart'), 300);
+    if (candy) setTimeout(() => G && float(a.x + 40, a.y - 72, '送你一颗糖 · 人气+1', '#c0506a', 'heart', 1.6), 700);
+    if (gift) setTimeout(() => G && float(a.x + 40, a.y - 72, gift === 'fish' && c.type.tip === 'fishy' ? '叼来一条鱼！' : `塞给你 ${ING[gift].n}×${c.members.length}`, '#3f7a34', null, 1.6), 700);
+    if (c.type.tip === 'perfect' && !tip && !c.upset) setTimeout(() => G && float(a.x + 40, a.y - 72, '没有全合口味，不给小费', '#8a6a50', null, 1.6), 700);
+    speak(c, 'happy'); sfx.coin(); did('pay');
+    if (Math.random() < (c.size > 1 ? 0.6 : 0.25)) { c.state = 'linger'; c.timer = c.size > 1 ? rand(4, 7) : rand(2, 4); return; } // 一伙人吃饱了聊会儿天；一个人偶尔坐一会
+    finishLeave(c);
+  }
+  function finishLeave(c) { leave(c, false); } // 盘子数在 leave 里按实际上过的菜算
+
+  // ---------- 点单面板：普通客勾一两样配料，随缘客挑一道菜 ----------
+  const dataURL = (svg) => 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+  const URLS = {};
+  const dishURL = (k) => URLS['d' + k] || (URLS['d' + k] = dataURL(dishSVG(k === 'guihua' ? 'snack' : k)));
+  const ingURL = (k) => URLS['i' + k] || (URLS['i' + k] = dataURL(ingSVG(k)));
+  const iconURL = (k) => URLS['ic' + k] || (URLS['ic' + k] = dataURL(iconSVG(k)));
+  const tagChip = (t, cls = '') => `<span class="chip ${cls}"><img alt="" src="${iconURL(t)}">${t}</span>`;
+  const tagTiny = (t, cls = '') => `<span class="tg ${cls}"><img alt="" src="${iconURL(t)}">${t}</span>`;
+  const custURL = (id) => URLS['c' + id] || (URLS['c' + id] = dataURL(catSVG(id, 'front', { w: 120, h: 132 })));
+  function openOrder(c) {
+    G.orderOpen = c; c.state = 'ordering-open';
+    const panel = $('#order');
+    const pend = c.members.map((m, i) => [m, i]).filter(([m]) => m.st === 'none');
+    const dx = dexOf(c.type.id);
+    // 一位客人一列，最多 4 列，整桌一屏放下；要求用醒目的牌子标出来
+    const reqTag = (m) => m.req ? `<div class="req ${m.req.t}"><img alt="" src="${iconURL(m.req.t === 'no' ? 'cross' : 'heart')}"><b>${m.req.t === 'no' ? '不要' : '多加'}${m.req.top}</b></div>` : '<div class="req none">没有特别要求</div>';
+    const drinkTag = (m) => m.drink ? `<div class="drk"><span class="cupdot" style="background:${DRINKS[m.drink].col}"></span>饮品：<b>${DRINKS[m.drink].n}</b> <small>¥${DRINKS[m.drink].price} · 茶水台${DRINKS[m.drink].verb}${DRINKS[m.drink].brew}秒</small></div>` : '<div class="drk none">不要饮品</div>';
+    const cols = pend.map(([m, i]) => {
+      const head = `<div class="ohd"><img class="av" alt="" src="${custURL((c.looks && c.looks[0]) || c.type.id)}"></div>`;
+      if (m.kind === 'menu') {
+        const tops = DISH[m.dish].tops.map(([n]) => `<button class="tp ${m.tops[n] ? 'on' : ''} ${m.req && m.req.top === n ? 'must' : ''}" data-i="${i}" data-t="${n}">${n}</button>`).join('');
+        return `<div class="ocol">${head}<div class="od"><img alt="" src="${dishURL(m.dish)}"><b>${DISH[m.dish].n}</b></div>${reqTag(m)}<div class="tops">${tops}</div>${drinkTag(m)}</div>`;
+      }
+      const unk = (list, known) => list.filter((x) => !known.includes(x)).length;
+      const kl = c.type.likes.filter((x) => dx.likes.includes(x)), kd = c.type.dislikes.filter((x) => dx.dislikes.includes(x)), kh = c.type.hates.filter((x) => dx.hates.includes(x));
+      const row = (lab, all, known, cls) => `<span class="prow2"><span class="plab">${lab}</span>${known.map((x) => tagTiny(x, cls)).join('')}${unk(all, known) ? `<span class="tg unk">？×${unk(all, known)}</span>` : ''}</span>`;
+      const cards = mains(menuNow()).map((k) => {
+        const d = DISH[k], left = stockOf(d.ing);
+        const tg = d.tags.map((t) => `<img class="${t === m.want ? 'want' : kl.includes(t) ? 'good' : kh.includes(t) ? 'bad' : kd.includes(t) ? 'meh' : ''}" alt="${t}" title="${t}" src="${iconURL(t)}">`).join('');
+        return `<button class="dcard ${m.dish === k ? 'on' : ''}" data-i="${i}" data-k="${k}" ${left ? '' : 'disabled'}><img class="di" alt="" src="${dishURL(k)}"><span class="dn">${d.n}</span><span class="dt">${tg}</span></button>`;
+      }).join('');
+      return `<div class="ocol oma"><div class="ohd">${head.replace(/^<div class="ohd">|<\/div>$/g, '')}<div class="req want"><img alt="" src="${iconURL(m.want)}"><b>想吃${m.want}</b></div></div><div class="pref">${row('喜欢', c.type.likes, kl, 'good')}${row('不吃', c.type.hates, kh, 'bad')}${kd.length ? row('不太喜欢', c.type.dislikes, kd, 'meh') : ''}</div><div class="dlist">${cards}</div>${drinkTag(m)}</div>`;
+    }).join('');
+    panel.style.setProperty('--n', pend.length);
+    panel.innerHTML = `<button class="oclose" aria-label="等一下再点">✕</button><div class="ohead"><b>${c.table.id} 号桌 · ${c.type.n}${c.size > 1 ? ` 一行 ${c.size} 位` : ''}</b><span>「${c.upset ? '上一道不行，换一道吧。' : c.type.say.order}」　${c.type.kind === 'omakase' ? '随缘客：按口味挑菜（绿=喜欢 红=不吃）' : '点菜客：照红色 / 绿色的要求点配料'}</span></div>
+      <div class="ocols">${cols}</div><button class="go"></button>`;
+    const go = panel.querySelector('.go');
+    panel.querySelector('.oclose').addEventListener('click', () => { G.orderOpen = null; panel.classList.remove('show'); if (c.state === 'ordering-open') c.state = 'ordering'; sfx.tap(); });
+    const refresh = () => {
+      const left = pend.filter(([m]) => !m.dish).length;
+      go.disabled = left > 0; go.textContent = left ? `还有 ${left} 位没选菜` : `下单（${pend.length} 道）`;
+    };
+    panel.querySelectorAll('.tp').forEach((b) => b.addEventListener('click', () => {
+      const m = c.members[+b.dataset.i], n = b.dataset.t; m.tops[n] = !m.tops[n]; b.classList.toggle('on', m.tops[n]); sfx.tap();
+    }));
+    // 同一桌可以点一样的，也可以不一样；只看库存够不够（同桌已选的会占用份数）
+    const chosen = (k, i) => pend.filter(([m, j]) => j !== i && m.kind === 'omakase' && m.dish && DISH[m.dish].ing === DISH[k].ing).length;
+    const sync = () => panel.querySelectorAll('.dcard').forEach((x) => { x.disabled = x.classList.contains('on') ? false : stockOf(DISH[x.dataset.k].ing) - chosen(x.dataset.k, +x.dataset.i) <= 0; });
+    panel.querySelectorAll('.dcard').forEach((b) => b.addEventListener('click', () => {
+      const i = +b.dataset.i;
+      c.members[i].dish = b.dataset.k; sfx.tap();
+      panel.querySelectorAll(`.dcard[data-i="${i}"]`).forEach((x) => x.classList.toggle('on', x === b)); sync(); refresh();
+    }));
+    sync();
+    go.addEventListener('click', () => {
+      if (pend.some(([m]) => !m.dish)) return;
+      sendTicket(c, pend); did('go'); if (pend.some(([m]) => m.req)) did('req'); if (pend.some(([m]) => m.kind === 'omakase')) did('oma');
+      G.orderOpen = null; panel.classList.remove('show');
+    });
+    refresh(); panel.classList.add('show');
+  }
+
+  function sendTicket(c, pend) {
+    const ticket = { c, items: [], drinks: [] };
+    for (const [m, i] of pend) {
+      if (m.kind === 'omakase' && !m.dessert) { useStock(m.dish); m.tops = {}; DISH[m.dish].tops.forEach(([n, d]) => { m.tops[n] = !!d; }); }
+      m.st = 'cook'; m.reserved = false;
+      ticket.items.push({ table: c.table.id, dish: m.dish, tops: { ...m.tops }, cust: c, mi: i, cook: DISH[m.dish].cook });
+      if (m.drink && m.dst === 'none') { m.dst = 'make'; ticket.drinks.push({ table: c.table.id, drink: m.drink, cust: c, mi: i }); }
+    }
+    const w = G.waiter; w.tickets.push(ticket); // 单子拿在手上，点出菜台才挂上去（去取菜时也会顺便挂）
+    c.state = 'waitFood'; addHeart(c, 0.5); sfx.ding();
+  }
+  // 吃完有的客人再加一份甜品（第 5 天解锁桂花糕）
+  function dessertAsk(c) {
+    if (c.dessertDone || c.script || !menuNow().includes('guihua') || !canCook('guihua')) return false;
+    c.dessertDone = true;
+    const t = c.type, p = t.kind === 'omakase' ? (t.hates.includes('甜') ? 0 : t.likes.includes('甜') ? 0.7 : 0.25) : 0.35;
+    if (Math.random() > p) return false;
+    const m = pick(c.members); m.prevPaid = (m.prevPaid || 0) + DISH[m.dish].price;
+    if (m.st === 'served') c.extraPlates = (c.extraPlates || 0) + 1; // 主菜的盘子还在桌上（以前这个盘子会凭空消失）
+    Object.assign(m, { dish: 'guihua', st: 'none', tops: {}, req: null, reserved: true, dessert: true }); useStock('guihua');
+    c.state = 'ordering'; c.say = '再来一份甜的！'; c.sayT = 2.4; sfx.ding();
+    return true;
+  }
+  // ---------- 输入 ----------
+  function toLogical(e) {
+    const r = cv.getBoundingClientRect();
+    return { x: (e.clientX - r.left - SX) / scale, y: (e.clientY - r.top - SY) / scale };
+  }
+  let drag = null;
+  cv.addEventListener('pointerdown', (e) => {
+    if (!G || G.paused || G.orderOpen || G.over) return;
+    G.idle = 0;
+    if (G.teaOpen) { closeTea(); return; }
+    const p = toLogical(e);
+    if (G.mode === 'day') { G.idle = 0; drag = { x: p.x, y: p.y, cx: G.D.cam.x, cy: G.D.cam.y, moved: false }; return; }
+    shopTap(p);
+  });
+  cv.addEventListener('pointermove', (e) => {
+    if (!drag || !G || G.mode !== 'day') return;
+    const p = toLogical(e), dx = p.x - drag.x, dy = p.y - drag.y;
+    if (!drag.moved && Math.hypot(dx, dy) < 14) return;
+    drag.moved = true; G.D.manual = true; G.D.camGoal = null;
+    G.D.cam.x = Math.max(0, Math.min(WORLD_W - W, drag.cx - dx)); G.D.cam.y = Math.max(0, Math.min(WORLD_H - H, drag.cy - dy));
+  });
+  const endDrag = (e) => {
+    if (!drag) return;
+    const d = drag; drag = null;
+    if (!d.moved && G && G.mode === 'day' && !G.paused) { const p = toLogical(e); dayTap({ x: p.x + G.D.cam.x, y: p.y + G.D.cam.y }); }
+  };
+  cv.addEventListener('pointerup', endDrag);
+  cv.addEventListener('pointercancel', () => { drag = null; });
+  // 点茶壶：还没解锁饮品时直接拿水（拿着没人要的水就倒掉）；解锁后展开一排饮品选
+  function teaTap() {
+    if (!prog().drinks.length) { // 只有白水：点茶壶直接倒
+      if (drinkWants().some((o) => o.drink === 'water')) enqueue({ kind: 'pour', drink: 'water' }); else toast('现在没人要水');
+      return;
+    }
+    openTeaMenu();
+  }
+  function placeTeaMenu() { // 茶水选单的小尖角指着茶水台（场景坐标换成界面坐标）
+    const box = document.getElementById('teamenu'); if (!box) return;
+    const tip = toUI(194, 540);
+    box.style.left = Math.max(8, tip.x - 170) + 'px'; box.style.top = 'auto'; box.style.bottom = Math.max(8, UH - tip.y + 14) + 'px';
+  }
+  function fitPanels() { // 弹窗比屏幕高/宽时整体缩小放进来（不滚动）
+    document.querySelectorAll('#ui .modal.show > *, #plot > *, #choose > *, #order').forEach((el) => {
+      if (!el.offsetWidth) return;
+      const f = Math.min(1, (UH - 16) / el.offsetHeight, (UW - 16) / el.offsetWidth);
+      el.style.scale = f < 0.999 ? String(f) : '';
+    });
+  }
+  setInterval(fitPanels, 250);
+  function openTeaMenu() {
+    const box = $('#teamenu'), w = G.waiter, wants = drinkWants(), opts = [];
+    for (const k of drinkList()) opts.push({ k, n: DRINKS[k].n, who: wants.filter((o) => o.drink === k).map((o) => o.c), sec: `${DRINKS[k].verb} ${DRINKS[k].brew} 秒` });
+    box.innerHTML = opts.map((o) => `<button class="topt ${o.who.length ? 'want' : ''}" data-k="${o.k}" ${o.free || o.who.length ? '' : 'disabled'}><img alt="" src="${o.k === 'dump' ? iconURL('cross') : cupURL(o.k)}"><b>${o.n}</b><small>${o.who.length ? o.who.map((c) => `<span class="tno">${c.table ? c.table.id : ''}</span><img class="fc" alt="" src="${custURL(c.type.id)}">`).join('') : o.free ? '' : '没人点'}</small>${o.sec ? `<em>${o.sec}</em>` : ''}</button>`).join('');
+    box.querySelectorAll('.topt').forEach((b) => b.addEventListener('click', (e) => {
+      e.stopPropagation(); const k = b.dataset.k;
+      enqueue({ kind: 'pour', drink: k }); closeTea();
+    }));
+    box.classList.add('show'); G.teaOpen = true; sfx.tap();
+  }
+  function closeTea() { $('#teamenu').classList.remove('show'); if (G) G.teaOpen = false; }
+  function shopTap(p) {
+    const w = G.waiter;
+    { // G-006：先看点没点到人数牌，再按离哪组身子最近；和 queueChip 用同一套矩形
+      const line = G.customers.filter(inLine);
+      const c = line.find((q) => inRect(p.x, p.y, qCard(q))) || line.filter((q) => inRect(p.x, p.y, qBody(q))).sort((a, b) => Math.hypot(p.x - a.x, p.y - a.y + 40) - Math.hypot(p.x - b.x, p.y - b.y + 40))[0];
+      if (c) {
+        if (w.hands.some((h) => h.kind === 'tea' || h.kind === 'snack')) { enqueue({ kind: 'give', cust: c }); return; }
+        if (c.state === 'called') { toast('盆盆马上来领位'); return; }
+        G.selected = G.selected === c ? null : c; sfx.tap(); return;
+      }
+    }
+    if (inRect(p.x, p.y, SINK_HIT)) { enqueue({ kind: 'sink' }); return; } // G-006：洗碗池先于桌 1 判
+    if (!G.selected && (RACK_HIT ? inRect(p.x, p.y, RACK_HIT) : Math.abs(p.x - RACK.x) < 40 && p.y > RACK.y - 10 && p.y < RACK.y + 175)) { openRack(); return; }
+    for (const t of G.tables) {
+      if (t.hit ? inRect(p.x, p.y, t.hit) : p.x > t.cx - t.rx - 10 && p.x < t.chip.x + 90 && p.y > t.cy - 120 * t.k && p.y < t.cy + 96 * t.k) {
+        if (G.selected && (t.cust || t.dirty || t.reserved)) G.selected = null; // 点到有人的桌：当作对这桌做事
+        if (G.selected) {
+          const c = G.selected;
+          if (c.size > t.size) { toast(`这是 ${t.size} 人桌，坐不下 ${c.size} 位`); return; }
+          if (!enqueue({ kind: 'seat', cust: c, table: t, phase: 1 })) return;
+          G.selected = null; c.state = 'called'; t.reserved = c; c.say = '来啦～'; c.sayT = 1.2;
+          return;
+        }
+        const c = t.cust;
+        const room = (n) => w.queue.length + n <= MAXQ || (toast(`盆盆一口气最多记 ${MAXQ} 件事，先等一等`), false);
+        // 顺路：要水的桌先去拿水；等菜的桌、菜已在出菜口就先去拿菜
+        if (c && c.state === 'thirsty' && !w.hands.some((h) => h.kind === 'water') && !w.queue.some((a) => a.kind === 'water')) {
+          if (!room(2)) return; enqueue({ kind: 'water' }); enqueue({ kind: 'table', table: t }); toast('先去倒杯水'); return;
+        }
+        if (c && ['waitFood', 'ordering'].includes(c.state) && !w.hands.some((h) => h.kind === 'dish' && h.cust === c)
+          && G.kitchen.pass.some((o) => o.cust === c && !o.claim) && !w.queue.some((a) => a.kind === 'pass')) {
+          if (!room(2)) return; enqueue({ kind: 'pass' }); enqueue({ kind: 'table', table: t }); toast('顺路去出菜口拿菜'); return;
+        }
+        enqueue({ kind: 'table', table: t }); return;
+      }
+    }
+    if (Math.hypot(p.x - WATER.x, p.y - WATER.y + 20) < 50) { teaTap(); return; }
+    if (inPoly(p.x, p.y, [[222, 420], [380, 420], [262, 590], [120, 590]])) { enqueue({ kind: 'pass' }); return; }
+    if (TEA_HIT ? inRect(p.x, p.y, TEA_HIT) : p.x > TEA.cx - 85 && p.x < TEA.cx + 85 && p.y > TEA.cy - 120 && p.y < TEA.cy + 20) {
+      const want = p.x < TEA.cx ? 'tea' : 'snack';
+      const kind = has(want) ? want : has('tea') ? 'tea' : has('snack') ? 'snack' : null;
+      if (!kind) { toast('茶台还没开，每天结算时可以在「店铺升级」里买'); return; }
+      enqueue({ kind }); return;
+    }
+    if (Math.abs(p.x - w.x) < 30 && p.y > w.y - 95 && p.y < w.y - 10 && w.queue.length) { w.queue = []; w.busyAct = null; w.path = []; toast('已清空动作'); return; }
+    if (G.selected) G.selected = null;
+  }
+
+  // ---------- 店员（老二、咪咪）按安排的工作自己干活 ----------
+  function staffThink(sf) {
+    const def = STAFF_DEF[sf.id];
+    if (sf.blockT > G.t) return; // 回不了家：歇两秒再想
+    if (sf.hands.length) return carryRetry(sf); // 手上还拿着东西：先把它送到
+    sf.skip = sf.skip || new Map();
+    const skipped = (obj) => (sf.skip.get(obj) || 0) > G.t; // 刚才走不到的那一单，3 秒内先跳过，去看别的单
+    const go = (task, to) => {
+      const pth = findPath(sf, to);
+      if (!pth) { // 走不到：放掉认领，这一单先跳过
+        noWay(STAFF_DEF[sf.id].name, to); sf.task = null; sf.path = [];
+        sf.skip.set(task.o ? (task.kind === 'brewDrink' ? task.o.cust.members[task.o.mi] : task.o) : task.c || task.t || task, G.t + 3);
+        if (task.o && task.o.claim === sf.id) task.o.claim = null;
+        if (task.kind === 'brewDrink' && task.o.cust.members[task.o.mi]) task.o.cust.members[task.o.mi].dClaim = null;
+        if (task.c && task.c.waterClaim === sf.id) task.c.waterClaim = null;
+        if (task.t && task.t.busClaim === sf.id) task.t.busClaim = null;
+        return;
+      }
+      sf.task = task; sf.path = pth;
+    };
+    for (const job of resting(sf.id) ? [] : jobsOf(sf.id)) { // 按安排的顺序，先干第一件
+      if (job === 'serve') {
+        const o = G.kitchen.pass.find((o) => !o.claim && o.cust.table && o.cust.state !== 'leaving' && !skipped(o));
+        if (o) { o.claim = sf.id; return go({ kind: 'pickDish', o }, { x: PASS.spot.x - 10, y: PASS.spot.y + 30 }); }
+      } else if (job === 'drink') {
+        const o = drinkWants().find((o) => !skipped(o.m));
+        if (o) { o.m.dClaim = sf.id; return go({ kind: 'brewDrink', o: { drink: o.drink, table: o.table, cust: o.c, mi: o.mi } }, { x: WATER.spot.x, y: WATER.spot.y + 30 }); }
+      } else if (job === 'water') {
+        const need = (c) => c.table && !c.waterClaim && (c.state === 'thirsty' || (!c.watered && ['reading', 'ordering', 'ordering-open', 'waitFood'].includes(c.state)));
+        const c = G.customers.find((c) => need(c) && c.state === 'thirsty') || G.customers.find(need);
+        if (c) { c.waterClaim = sf.id; return go({ kind: 'getWater', c }, WATER.spot); }
+      } else if (job === 'bus') {
+        const t = G.tables.find((t) => t.dirty && !t.cust && !t.reserved && !t.busClaim && !skipped(t));
+        if (t) { t.busClaim = sf.id; return go({ kind: 'toTable', t }, { x: t.spot.x, y: t.spot.y + 20 }); }
+      }
+    }
+    const home = resting(sf.id) ? def.rest : def.home;
+    if (Math.hypot(sf.x - home.x, sf.y - home.y) > 4) { const pth = findPath(sf, home); if (pth) { sf.task = { kind: 'home' }; sf.path = pth; } else { noWay(STAFF_DEF[sf.id].name, home); sf.blockT = G.t + 2; } }
+  }
+  // 店员拿着东西却走不到：东西留在手上（不丢、不重复认领），过两秒换条路再送（G-003：守住盘子和饮品的账）
+  function staffCarry(sf, to) {
+    const pth = findPath(sf, to); if (pth) { sf.path = pth; return true; }
+    noWay(STAFF_DEF[sf.id].name, to);
+    sf.task = null; sf.path = []; sf.carryT = G.t + 2;
+    return false;
+  }
+  function carryRetry(sf) {
+    if ((sf.carryT || 0) > G.t) return;
+    const h = sf.hands[0], alive = (c) => c && c.table && c.state !== 'leaving';
+    if (h.kind === 'plate') { sf.task = { kind: 'toSink' }; staffCarry(sf, SINK2); return; }
+    if ((h.kind === 'dish' || h.kind === 'drink') && alive(h.cust)) { sf.task = { kind: h.kind === 'dish' ? 'deliver' : 'deliverDrink', o: h }; staffCarry(sf, h.cust.table.spot); return; }
+    if (h.kind === 'dish') G.plates.dirty++; // 客人走了：这盘菜撤下，盘子算脏盘
+    sf.hands.shift();
+  }
+  function staffArrive(sf) {
+    const tk = sf.task, home = resting(sf.id) ? STAFF_DEF[sf.id].rest : STAFF_DEF[sf.id].home;
+    const goHome = () => { const pth = findPath(sf, home); if (pth) { sf.task = { kind: 'home' }; sf.path = pth; } else { noWay(STAFF_DEF[sf.id].name, home); sf.task = null; sf.path = []; sf.blockT = G.t + 2; } };
+    const alive = (c) => c && c.table && c.state !== 'leaving';
+    if (tk.kind === 'pickDish') {
+      const i = G.kitchen.pass.indexOf(tk.o);
+      if (i >= 0 && alive(tk.o.cust)) {
+        G.kitchen.pass.splice(i, 1); sf.hands = [{ kind: 'dish', ...tk.o }];
+        sf.task = { kind: 'deliver', o: tk.o }; staffCarry(sf, tk.o.cust.table.spot);
+      } else { if (tk.o) tk.o.claim = null; goHome(); }
+    } else if (tk.kind === 'deliver') {
+      sf.hands = []; if (alive(tk.o.cust)) serve(tk.o.cust, tk.o); else G.plates.dirty++; goHome(); // 送到时客人已走：盘子算脏盘
+    } else if (tk.kind === 'brewDrink') {
+      if (alive(tk.o.cust)) { sf.brew = { drink: tk.o.drink, t: 0, need: DRINKS[tk.o.drink].brew, o: tk.o }; sf.task = { kind: 'brewing', o: tk.o }; sf.path = []; } else goHome();
+    } else if (tk.kind === 'pickDrink') {
+      const i = G.kitchen.drinkReady.indexOf(tk.o);
+      if (i >= 0 && alive(tk.o.cust)) { G.kitchen.drinkReady.splice(i, 1); sf.hands = [{ kind: 'drink', ...tk.o }]; sf.task = { kind: 'deliverDrink', o: tk.o }; staffCarry(sf, tk.o.cust.table.spot); }
+      else { if (tk.o) tk.o.claim = null; goHome(); }
+    } else if (tk.kind === 'deliverDrink') {
+      sf.hands = []; if (alive(tk.o.cust)) serveDrink(tk.o.cust, tk.o); goHome();
+    } else if (tk.kind === 'getWater') {
+      const c = tk.c;
+      if (alive(c)) { sf.hands = [{ kind: 'water' }]; sf.task = { kind: 'giveWater', c }; staffCarry(sf, c.table.spot); } else goHome();
+    } else if (tk.kind === 'giveWater') {
+      const c = tk.c; sf.hands = []; c.waterClaim = null;
+      if (alive(c) && !c.watered) giveWater(c);
+      goHome();
+    } else if (tk.kind === 'toTable') {
+      const t = tk.t; t.busClaim = null;
+      if (t.dirty && !t.cust) { sf.hands = [{ kind: 'plate', n: t.dirty }]; t.dirty = 0; sf.task = { kind: 'toSink' }; staffCarry(sf, SINK2); } else goHome();
+    } else if (tk.kind === 'toSink') { G.plates.dirty += (sf.hands[0] && sf.hands[0].n) || 1; sf.hands = []; float(SINK.x + 40, SINK.y - 60, '放进洗碗池', '#4a7fb5'); goHome(); }
+    else sf.task = null;
+  }
+
+  // ---------- 更新 ----------
+  function moveAlong(e, speed, dt) {
+    if (!e.path.length) return true;
+    const tgt = e.path[0];
+    const dx = tgt.x - e.x, dy = tgt.y - e.y, d = Math.hypot(dx, dy);
+    const step = speed * dt;
+    if (d <= step) { e.x = tgt.x; e.y = tgt.y; e.path.shift(); }
+    else { e.x += (dx / d) * step; e.y += (dy / d) * step; if (Math.abs(dx) > 2) e.face = dx > 0 ? 1 : -1; e.back = dy < -Math.abs(dx) * 0.6; }
+    return !e.path.length;
+  }
+  const anyCookable = () => menuNow().some(canCook);
+  function update(dt) {
+    if (!G || G.paused || G.over) return;
+    if (G.mode === 'day') { G.idle = (G.idle || 0) + dt; updateDay(dt); hud(); return; }
+    dt *= G.orderOpen ? 0.5 : 1;
+    if (dt <= 0) return;
+    G.t += dt; G.danceCD = Math.max(0, G.danceCD - dt);
+    if (G.script) scriptSpawn();
+    if (G.t < DAY_LEN && !G.soldOut) {
+      G.spawnT -= dt;
+      if (G.script) G.spawnT = 99;
+      if (G.spawnT <= 0) {
+        if (!anyCookable()) { G.soldOut = true; toast('食材用完了，招待完这几桌就打烊'); }
+        else { spawnCustomer(); G.spawnT = rand(18, 25) - Math.min(4, G.t / 40); }
+      }
+    }
+    const w = G.waiter;
+    for (const c of G.customers.slice()) {
+      c.bob += dt * 3; if (c.sayT > 0) c.sayT -= dt;
+      if (c.state === 'enter') { if (moveAlong(c, 170, dt)) c.state = 'queue'; }
+      else if (c.state === 'browse') { // 门口看菜单 → 说一句 → 走
+        c.timer -= dt;
+        if (c.timer <= 0 && !c.say) { c.say = '没有想吃的……下次再来。'; c.sayT = 1.8; c.timer = 1.8; c.face = 1; }
+        else if (c.timer <= 0) { G.customers.splice(G.customers.indexOf(c), 1); continue; }
+      }
+      else if (c.state === 'queue' || c.state === 'called') moveAlong(c, 170, dt);
+      else if (c.state === 'following') {
+        const tx = w.x - (w.face || 1) * 56, ty = w.y - 2;
+        const dx = tx - c.x, dy = ty - c.y, d = Math.hypot(dx, dy);
+        if (d > 6) { const st = Math.min(d, 330 * dt); c.x += (dx / d) * st; c.y += (dy / d) * st; c.face = dx > 0 ? 1 : -1; }
+      }
+      else if (c.state === 'toSeat') { if (moveAlong(c, 190, dt)) { if (c.wantsWater) { c.state = 'thirsty'; speak(c, 'water'); } else { c.state = 'reading'; c.timer = 2.5; } } }
+      else if (c.state === 'reading') { c.timer -= dt; if (c.timer <= 0) startOrdering(c); }
+      else if (c.state === 'eating') { c.timer -= dt; if (c.timer <= 0 && !dessertAsk(c)) c.state = 'bill'; }
+      else if (c.state === 'linger') { c.timer -= dt; if (c.timer <= 0) { finishLeave(c); continue; } }
+      else if (c.state === 'leaving') { if (moveAlong(c, 200, dt)) G.customers.splice(G.customers.indexOf(c), 1); continue; }
+      const dr = DRAIN[c.state === 'enter' ? 'queue' : c.state];
+      if (dr) { c.hearts -= dr * c.type.pat * (c.watered ? 0.75 : 1) * (save.luckDay === save.day ? 0.8 : 1) * dt; if (c.hearts <= 0) { c.hearts = 0; leave(c, true); } }
+    }
+    // 厨房：每种炊具一次一道
+    const k = G.kitchen;
+    for (const [wid, ws] of Object.entries(k.wares)) {
+      if (!ws.cur && ws.q.length) ws.cur = { ...ws.q.shift(), t: 0 };
+      if (ws.cur) { ws.cur.t += dt; if (ws.cur.t >= ws.cur.cook && k.pass.length < PASS_MAX && G.plates.clean > 0) { G.plates.clean--; k.pass.push(ws.cur); ws.cur = null; sfx.ding(); } }
+    }
+    // 老大没菜做的时候，顺手去洗碗（慢一点）
+    const pl = G.plates, chefFree = !Object.values(k.wares).some((ws) => ws.cur || ws.q.length);
+    G.chefWash = chefFree && pl.dirty > 0;
+    if (G.chefWash) { pl.washT += dt; if (pl.washT >= 2.2) { pl.washT = 0; pl.dirty--; pl.clean++; } } else if (!G.waiter.wash) pl.washT = 0;
+    // 盆盆洗碗：站在洗碗池前，一只一秒
+    const ww = G.waiter.wash;
+    if (ww) { ww.t += dt; if (ww.t >= 1) { ww.t = 0; if (pl.dirty > 0) { pl.dirty--; pl.clean++; ww.n--; sfx.tap(); } if (ww.n <= 0 || pl.dirty <= 0) { G.waiter.wash = null; did('wash'); } } }
+    // 茶水台：一杯一杯泡
+    w.blinkT -= dt; if (w.blinkT < -0.15) w.blinkT = rand(2, 4);
+    G.idle = (G.idle || 0) + dt;
+    if (w.wash) { /* 洗碗中，站着不动 */ } else if (w.brew) {
+      w.brew.t += dt;
+      if (w.brew.t >= w.brew.need) { const o = w.brew.o; w.brew = null; if (o.cust.state !== 'leaving' && !full()) { w.hands.push(o); did('drink'); sfx.tap(); } else o.cust.members[o.mi].dClaim = null; }
+    } else if (w.busyAct) {
+      if (moveAlong(w, 300 * SPD(), dt)) {
+        const a = w.busyAct;
+        if (a.kind === 'seat' && a.phase === 1) {
+          if (a.cust.state === 'called') {
+            const pth = findPath(w, a.table.spot);
+            if (pth) { a.cust.state = 'following'; a.phase = 2; layoutQueue(); w.path = pth; sfx.tap(); }
+            else { noWay('盆盆', a.table.spot); a.cust.state = 'queue'; a.table.reserved = null; w.busyAct = null; w.queue.shift(); layoutQueue(); }
+          }
+          else { w.busyAct = null; w.queue.shift(); a.table.reserved = null; }
+        } else { w.busyAct = null; w.queue.shift(); doAction(a); }
+      }
+    } else if (w.queue.length && !G.orderOpen) {
+      const a = w.queue[0], to = targetSpot(a), pth = findPath(w, to);
+      if (pth) { w.busyAct = a; w.path = pth; }
+      else { // 走不到：这一步取消，放掉占位，手上的东西不动
+        noWay('盆盆', to); w.queue.shift();
+        if (a.kind === 'seat') { a.table.reserved = null; if (a.cust.state === 'called') a.cust.state = 'queue'; layoutQueue(); }
+      }
+    } else w.back = false;
+    if (GREY) { const n = gbPlates(); if (GB.plates != null && n !== GB.plates) GB.plateLog.push({ t: Math.round(G.t * 10) / 10, from: GB.plates, to: n, hands: w.hands.map((h) => h.kind + (h.cust ? ':' + h.cust.state : '')), staff: G.staff.map((sf) => sf.hands.map((h) => h.kind + (h.cust ? ':' + h.cust.state : '')).join('+')), pass: G.kitchen.pass.length, dirty: G.plates.dirty, clean: G.plates.clean }); GB.plates = n; }
+    if (GREY) { GB.tick = (GB.tick || 0) + dt; if (GB.tick > 0.25) { GB.tick = 0; GB.trail.push(['盆盆', w.x, w.y]); for (const sf of G.staff) GB.trail.push([sf.id, sf.x, sf.y]); for (const c of G.customers) if (['enter', 'queue', 'called', 'following'].includes(c.state)) GB.trail.push(['客人', c.x, c.y]); if (GB.trail.length > 6000) GB.trail.splice(0, 1000); } }
+    for (const sf of G.staff) {
+      if (sf.brew) {
+        sf.brew.t += dt;
+        if (sf.brew.t >= sf.brew.need) { const o = sf.brew.o; sf.brew = null;
+          if (o.cust.table && o.cust.state !== 'leaving') { sf.hands = [{ kind: 'drink', ...o }]; sf.task = { kind: 'deliverDrink', o }; staffCarry(sf, o.cust.table.spot); } else sf.task = null; }
+        continue;
+      }
+      if (sf.task) { if (moveAlong(sf, (save.sulk || []).includes(sf.id) ? 150 : 230, dt)) staffArrive(sf); }
+      else staffThink(sf);
+    }
+    G.floats = G.floats.filter((f) => (f.t += dt) < (f.life || 1.6));
+    if (G.dancer) { G.dancer.t -= dt; if (G.dancer.t <= 0) G.dancer = null; }
+    if ((G.script ? !G.script.length : (G.t >= DAY_LEN || G.soldOut)) && G.customers.length === 0 && !G.orderOpen) endDay();
+    hud();
+  }
+  function float(x, y, text, col, ico = null, life = 1.6) { G.floats.push({ x, y, text, col, t: 0, ico, life }); }
+
+  // ---------- 绘制 ----------
+  function rr(x, y, w, h, r) { ctx.beginPath(); ctx.roundRect(x, y, w, h, r); }
+  function heart(x, y, s, fill) {
+    ctx.beginPath();
+    ctx.moveTo(x, y + s * 0.3);
+    ctx.bezierCurveTo(x, y, x - s * 0.5, y, x - s * 0.5, y + s * 0.3);
+    ctx.bezierCurveTo(x - s * 0.5, y + s * 0.6, x, y + s * 0.8, x, y + s);
+    ctx.bezierCurveTo(x, y + s * 0.8, x + s * 0.5, y + s * 0.6, x + s * 0.5, y + s * 0.3);
+    ctx.bezierCurveTo(x + s * 0.5, y, x, y, x, y + s * 0.3);
+    ctx.fillStyle = fill; ctx.fill();
+  }
+  const FONT = '"ZCOOL KuaiLe","PingFang SC","Hiragino Sans GB","Noto Sans SC","Microsoft YaHei",sans-serif';
+  function label(t, x, y, size, fill, stroke, lw = 4) {
+    ctx.font = `${size}px ${FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineJoin = 'round';
+    if (stroke) { ctx.lineWidth = lw; ctx.strokeStyle = stroke; ctx.strokeText(t, x, y); }
+    ctx.fillStyle = fill; ctx.fillText(t, x, y);
+  }
+  function bubble(x, y, text, opts = {}) {
+    ctx.font = `${(opts.size || 20) + 1}px ${FONT}`;
+    const w = ctx.measureText(text).width + 24, h = (opts.size || 20) + 16;
+    ctx.fillStyle = opts.bg || '#fbf6ec'; ctx.strokeStyle = '#2c2420'; ctx.lineWidth = 2;
+    rr(x - w / 2, y - h, w, h, 12); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x - 7, y - 1); ctx.lineTo(x, y + 9); ctx.lineTo(x + 7, y - 1); ctx.fill();
+    ctx.fillStyle = opts.color || '#2c2420'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(text, x, y - h / 2 + 1);
+  }
+  function bubbleIcon(x, y, ic, text, bg = '#fbf6ec', size = 19) {
+    ctx.font = `${size + 1}px ${FONT}`;
+    const tw = text ? ctx.measureText(text).width : 0, w = 46 + (text ? tw + 12 : 0), h = 44;
+    ctx.fillStyle = bg; ctx.strokeStyle = '#2c2420'; ctx.lineWidth = 2;
+    rr(x - w / 2, y - h, w, h, 14); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x - 7, y - 1); ctx.lineTo(x, y + 9); ctx.lineTo(x + 7, y - 1); ctx.fill();
+    const im = icon(ic); if (im.complete) ctx.drawImage(im, x - w / 2 + 6, y - h + 5, 34, 34);
+    if (text) { ctx.fillStyle = '#2c2420'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillText(text, x - w / 2 + 44, y - h / 2 + 1); }
+  }
+  function bubbleDish(x, y, dish, note) {
+    const w = note ? 116 : 80, h = 50;
+    ctx.fillStyle = '#fbf6ec'; ctx.strokeStyle = '#2c2420'; ctx.lineWidth = 2;
+    rr(x - w / 2, y - h, w, h, 14); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x - 7, y - 1); ctx.lineTo(x, y + 9); ctx.lineTo(x + 7, y - 1); ctx.fill();
+    const img = DISH_IMG[dish];
+    if (img && img.complete) ctx.drawImage(img, x - w / 2 + 6, y - h + 6, 57, 38);
+    if (note) { ctx.font = `16px ${FONT}`; ctx.fillStyle = '#2c2420'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(note, x + 30, y - h / 2); }
+  }
+  const ART_ROOM = () => ok(A('room_courtyard'));
+  function drawRoom() {
+    if (!ART_ROOM()) { // 美术还没加载：先画旧的
+      if (ROOM.complete) ctx.drawImage(ROOM, 0, 0, W, H); else { ctx.fillStyle = '#efe3cc'; ctx.fillRect(0, 0, W, H); }
+      return;
+    }
+    // 窗外（四季）→ 窗外飘落物 → 抠掉品红的店内底图
+    const v = A('view_' + CUR_SE); if (ok(v)) ctx.drawImage(v, WIN.x, WIN.y, WIN.w, WIN.h);
+    drawWindowFx();
+    ctx.drawImage(A('room_courtyard'), 0, 0, W, H);
+    // 墙上：四季挂饰、蒜辫；窗台：四季插花、小盆栽
+    spr(CUR_SE + '_hanging', 662, 26, 52, { top: true });
+    spr('d_garlic', 240, 28, 36, { top: true });
+    spr(CUR_SE + '_vase', 440, 262, 40);
+    spr('d_pilea', 896, 262, 44);
+  }
+  // 窗外飘落：春桃花瓣、夏蝴蝶、秋枫叶、冬雪
+  // 菜单架：一道菜一块木牌，竖着写菜名，底下红印是价钱；卖完的木牌发灰盖「售完」
+  function drawMenuRack() {
+    const list = menuNow(), n = Math.max(1, list.length), rows = Math.ceil(n / 2), x0 = RACK.x, top = RACK.y, t = performance.now() / 1000;
+    const tw = 27, th = Math.min(84, (150 - (rows - 1) * 5) / rows), fs = rows <= 2 ? 15 : 12;
+    ctx.save();
+    ctx.strokeStyle = '#5a3b28'; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(x0 - 26, top + 2); ctx.lineTo(x0, top - 10); ctx.lineTo(x0 + 26, top + 2); ctx.stroke();
+    ctx.fillStyle = '#5a3b28'; ctx.beginPath(); ctx.arc(x0, top - 10, 2.5, 0, 7); ctx.fill();
+    ctx.fillStyle = '#8a5636'; ctx.strokeStyle = '#4a3020'; rr(x0 - 31, top, 62, 15, 3); ctx.fill(); ctx.stroke();
+    label('今日菜单', x0, top + 8, 11, '#f3e3c0');
+    list.forEach((dk, i) => {
+      const d = DISH[dk], out = stockOf(d.ing) <= 0, hot = trendOf(dk) === 'hot', row = Math.floor(i / 2);
+      const cx = n % 2 && i === n - 1 ? x0 : x0 + (i % 2 ? 1 : -1) * (tw / 2 + 2), ty = top + 19 + row * (th + 5);
+      const name = d.n.replace('黄土高原', ''), shown = rows <= 2 || name.length <= 3 ? name : name.slice(0, 2);
+      ctx.save(); ctx.translate(cx, ty); ctx.rotate(Math.sin(t * 1.1 + i * 1.7) * 0.02);
+      ctx.fillStyle = out ? '#d6cdc0' : '#f1dfbb'; ctx.strokeStyle = '#6b4a30'; ctx.lineWidth = 1.5; rr(-tw / 2, 0, tw, th, 3); ctx.fill(); ctx.stroke();
+      ctx.font = `bold ${fs}px ${FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = out ? '#9a8f82' : '#33241a';
+      const step = Math.min(fs + 1, (th - 22) / shown.length);
+      [...shown].forEach((ch, j) => ctx.fillText(ch, 0, 4 + step / 2 + j * step));
+      ctx.fillStyle = out ? '#b0a596' : '#b8402e'; rr(-tw / 2 + 3, th - 16, tw - 6, 13, 3); ctx.fill();
+      ctx.font = `bold 10px ${FONT}`; ctx.fillStyle = '#fff6e8'; ctx.fillText(d.price, 0, th - 9);
+      if (hot && !out) { ctx.fillStyle = '#d9453a'; ctx.beginPath(); ctx.arc(tw / 2 - 1, 2, 7, 0, 7); ctx.fill(); ctx.font = `bold 9px ${FONT}`; ctx.fillStyle = '#fff'; ctx.fillText('热', tw / 2 - 1, 2.5); }
+      if (out) { ctx.rotate(-0.35); ctx.strokeStyle = '#c0392b'; ctx.lineWidth = 1.6; rr(-14, th / 2 - 8, 28, 15, 2); ctx.stroke(); ctx.font = `bold 10px ${FONT}`; ctx.fillStyle = '#c0392b'; ctx.fillText('售完', 0, th / 2); }
+      ctx.restore();
+    });
+    ctx.restore();
+  }
+  // 饮品小图（选饮品、开局卡片用）
+  function cupSVG(k) {
+    const d = k === 'water' ? { col: '#cfe6f2', cup: 'glass' } : DRINKS[k], ink = '#2c2420';
+    const body = d.cup === 'glass' ? `<path d="M17 8 L43 8 L39 52 L21 52 Z" fill="#eef5f7" stroke="${ink}" stroke-width="2.4" stroke-linejoin="round"/><path d="M19.5 22 L40.5 22 L38.6 50 L21.4 50 Z" fill="${d.col}"/>`
+      : d.cup === 'bowl' ? `<path d="M7 24 Q9 52 30 52 Q51 52 53 24 Z" fill="#f6f1e6" stroke="${ink}" stroke-width="2.4"/><ellipse cx="30" cy="24" rx="23" ry="6" fill="${d.col}" stroke="${ink}" stroke-width="2"/><path d="M11 36 H49" stroke="#7fa9c9" stroke-width="2.4"/>`
+        : `<path d="M11 22 Q13 52 30 52 Q47 52 49 22 Z" fill="#f6f1e6" stroke="${ink}" stroke-width="2.4"/><ellipse cx="30" cy="22" rx="19" ry="5" fill="${d.col}" stroke="${ink}" stroke-width="2"/><path d="M24 14 q-4 -5 0 -10 M35 14 q-4 -5 0 -10" stroke="#b9a68c" stroke-width="2" fill="none"/>`;
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 60" width="120" height="120">${body}</svg>`;
+  }
+  const cupURL = (k) => URLS['c' + k] || (URLS['c' + k] = dataURL(cupSVG(k)));
+  // ---------- 菜地面板：3×3 九格，先选种子再点空地 ----------
+  const PLOT = { i: 0, seed: null, msg: '' };
+  const cropURL = (k, r) => URLS['cr' + k + r] || (URLS['cr' + k + r] = dataURL(cropSVG(k, r)));
+  function openPlot(i) {
+    G.paused = true; PLOT.i = i; PLOT.msg = '';
+    if (!(save.seeds[PLOT.seed] > 0)) PLOT.seed = prog().seeds.find((k) => save.seeds[k] > 0) || null;
+    renderPlot(); $('#plot').classList.add('show'); sfx.tap();
+  }
+  function plantCell(j) {
+    const f = save.farm[PLOT.i], k = PLOT.seed;
+    if (f.cells[j] || !k || !(save.seeds[k] > 0)) return false;
+    save.seeds[k]--; f.cells[j] = { k, ready: save.day + 1 }; did('plant');
+    if (!(save.seeds[k] > 0)) PLOT.seed = prog().seeds.find((x) => save.seeds[x] > 0) || null;
+    return true;
+  }
+  function renderPlot() {
+    const f = save.farm[PLOT.i], ripeN = f.cells.filter(cellRipe).length, emptyN = f.cells.filter((c) => !c).length;
+    $('#plot-no').textContent = `第 ${PLOT.i + 1} 块`;
+    $('#plot-grid').innerHTML = f.cells.map((c, j) => {
+      if (!c) return `<button class="pc empty" data-j="${j}">${PLOT.seed ? `<img class="ghost" alt="" src="${ingURL(PLOT.seed)}">` : ''}</button>`;
+      const r = cellRipe(c);
+      return `<button class="pc ${r ? 'ripe' : 'grow'}" data-j="${j}"><img alt="" src="${cropURL(c.k, r)}"><small>${r ? ING[c.k].n + ' 熟了' : '明天熟'}</small></button>`;
+    }).join('');
+    $('#plot-seeds').innerHTML = prog().seeds.map((k) => `<button class="sd ${PLOT.seed === k ? 'on' : ''}" data-k="${k}" ${save.seeds[k] > 0 ? '' : 'disabled'}><img alt="" src="${ingURL(k)}"><b>${ING[k].n}种子</b><i>×${save.seeds[k] || 0}</i></button>`).join('');
+    const hb = $('#plot-harvest'), fb = $('#plot-fill');
+    hb.disabled = !ripeN; hb.textContent = ripeN ? `收菜 ${ripeN} 格（用 1 体力）` : '还没熟';
+    fb.disabled = !emptyN || !PLOT.seed; fb.textContent = PLOT.seed && emptyN ? `空地全种${ING[PLOT.seed].n}` : '种满';
+    $('#plot-tip').textContent = PLOT.msg || (ripeN ? '熟了！点「收菜」一起收' : emptyN && PLOT.seed ? '先选种子，再点空地种下' : emptyN ? '没有种子了，去早市买' : '都种上了，明天来收');
+    $('#plot-grid').querySelectorAll('.pc').forEach((b) => { b.onclick = () => {
+      const c = f.cells[+b.dataset.j]; PLOT.msg = '';
+      if (!c) { if (plantCell(+b.dataset.j)) sfx.tap(); else PLOT.msg = '没有种子了，去早市买'; }
+      else if (cellRipe(c)) return plotHarvest();
+      else PLOT.msg = `${ING[c.k].n}明天才熟`;
+      renderPlot();
+    }; });
+    $('#plot-seeds').querySelectorAll('.sd').forEach((b) => { b.onclick = () => { PLOT.seed = b.dataset.k; PLOT.msg = ''; sfx.tap(); renderPlot(); }; });
+  }
+  function plotHarvest() {
+    if (!spend()) { PLOT.msg = '今天没体力了'; return renderPlot(); }
+    const g = harvestPlot(PLOT.i), [x, y] = WMAP.farm.plots[PLOT.i];
+    PLOT.msg = '收了 ' + Object.keys(g).map((k) => `${ING[k].n}×${g[k]}`).join('、');
+    Object.keys(g).forEach((k, n) => float(x, y - 60 - n * 30, `${ING[k].n} +${g[k]}`, '#3f7a34'));
+    sfx.ding(); did('harvest'); persist(); renderPlot();
+  }
+  $('#plot-harvest').addEventListener('click', plotHarvest);
+  $('#plot-fill').addEventListener('click', () => { let n = 0; save.farm[PLOT.i].cells.forEach((c, j) => { if (plantCell(j)) n++; }); PLOT.msg = n ? `种下 ${n} 格` : ''; if (n) sfx.ding(); renderPlot(); });
+  $('#plot-ok').addEventListener('click', () => { $('#plot').classList.remove('show'); did('plotok'); persist(); if (G) G.paused = false; });
+  // 多个按钮的选择框（比如种什么）
+  function choose(title, opts) {
+    return new Promise((resolve) => {
+      const box = $('#choose'); box.querySelector('h3').textContent = title;
+      box.querySelector('.opts').innerHTML = opts.map((o) => `<button data-v="${o.v}"><img alt="" src="${o.img}"><b>${o.t}</b></button>`).join('');
+      const done = (v) => { box.classList.remove('show'); resolve(v); };
+      box.querySelectorAll('.opts button').forEach((b) => { b.onclick = () => done(b.dataset.v); });
+      box.querySelector('.no').onclick = () => done(null);
+      box.classList.add('show');
+    });
+  }
+  function openRack() {
+    if (!G) return;
+    G.paused = true; sfx.tap();
+    $('#rack-list').innerHTML = menuNow().map((dk) => { const d = DISH[dk], left = stockOf(d.ing);
+      return `<div class="rrow ${left ? '' : 'out'}"><img alt="" src="${dishURL(dk)}"><b>${d.n}</b><span class="rt">${d.tags.map((x) => tagTiny(x)).join('')}</span><span class="rp">¥${d.price}</span><span class="rl">${left ? `还能做 ${left} 份` : '卖完了'}</span></div>`; }).join('');
+    show('rack');
+  }
+  function drawWindowFx() {
+    const t = performance.now() / 1000, se = CUR_SE;
+    ctx.save(); ctx.beginPath(); ctx.rect(WIN.x, WIN.y, WIN.w, WIN.h); ctx.clip();
+    for (let i = 0; i < 18; i++) {
+      const sp = 0.25 + (i % 5) * 0.05, ph = (i * 0.137 + t * sp / 6) % 1;
+      const x = WIN.x + ((i * 97 + t * (se === 'summer' ? 30 : 14) * (1 + i % 3)) % (WIN.w + 40)) - 20;
+      const y = se === 'summer' ? WIN.y + 60 + ((i * 41) % 120) + Math.sin(t * 2 + i) * 14 : WIN.y + ph * (WIN.h + 20) - 10;
+      ctx.save(); ctx.translate(x, y); ctx.rotate(t * (1 + i % 3) + i);
+      if (se === 'spring') { ctx.fillStyle = '#f6c3cf'; ctx.beginPath(); ctx.ellipse(0, 0, 5, 3, 0, 0, 7); ctx.fill(); }
+      else if (se === 'autumn') { ctx.fillStyle = ['#c4602f', '#d98c3a', '#b8452a'][i % 3]; ctx.scale(Math.cos(t * 3 + i), 1); ctx.beginPath(); ctx.moveTo(0, -6); ctx.lineTo(5, 0); ctx.lineTo(0, 6); ctx.lineTo(-5, 0); ctx.fill(); }
+      else if (se === 'winter') { ctx.fillStyle = '#ffffff'; ctx.globalAlpha = 0.85; ctx.beginPath(); ctx.arc(0, 0, 2.4 + (i % 3), 0, 7); ctx.fill(); }
+      else if (i < 4) { ctx.rotate(-(t * (1 + i % 3) + i)); const f = Math.abs(Math.sin(t * 9 + i)); ctx.fillStyle = ['#f2e6a8', '#f3f0f6', '#cfe2f0', '#f6d0a0'][i]; ctx.beginPath(); ctx.ellipse(-3, 0, 4 * f + 1, 3, -0.4, 0, 7); ctx.ellipse(3, 0, 4 * f + 1, 3, 0.4, 0, 7); ctx.fill(); }
+      ctx.restore();
+    }
+    ctx.restore();
+  }
+  function drawKitchen() {
+    const k = G.kitchen, t = performance.now();
+    const busy = Object.keys(WARES).filter((w) => hasWare(w) && k.wares[w].cur);
+    const cx = busy.length ? WARES[busy[Math.floor(t / 1600) % busy.length]].x + 34 : G.chefWash ? (LI.chef && LI.chef.wash ? LI.chef.wash[0] : 320) : 150; // 洗碗时走到洗碗池后面
+    G.chefX = G.chefX == null ? cx : G.chefX + (cx - G.chefX) * 0.06;
+    const bob = busy.length ? Math.sin(t / 120) * 3 : 0;
+    const art = ART_ROOM();
+    if (art) { // 老大站在灶台后面：先画人，再盖上灶台
+      drawCat(SPR.chef, Math.max(70, Math.min(320, G.chefX)), 376 + bob, 1, false, 1.12);
+      const kf = A('kitchen_fg'), m = ART.kitchen_fg, sc = W / 1536;
+      if (ok(kf) && !GREY) ctx.drawImage(kf, m.x * sc, m.y * sc, m.w * sc, m.h * sc);
+    } else if (SPR.chef.complete) ctx.drawImage(SPR.chef, G.chefX - 45, 2 + bob, 90, 99);
+    for (const [wid, wd] of Object.entries(WARES)) {
+      if (!hasWare(wid)) continue;
+      const ws = k.wares[wid];
+      if (!spr('ware_' + wid, wd.x, wd.y, wid === 'steamer' ? 44 : 60)) { const img = WARE_IMG[wid]; if (img.complete) ctx.drawImage(img, wd.x - 32, wd.y - 45, 64, 45); }
+      if (ws.cur) {
+        const p = Math.min(1, ws.cur.t / ws.cur.cook);
+        ctx.fillStyle = '#ffffff'; ctx.globalAlpha = 0.5 + 0.25 * Math.sin(t / 150);
+        ctx.beginPath(); ctx.arc(wd.x - 6, wd.y - 52 - p * 8, 8, 0, 7); ctx.arc(wd.x + 8, wd.y - 60 - p * 10, 10, 0, 7); ctx.fill(); ctx.globalAlpha = 1;
+        ctx.fillStyle = '#fbf6ecdd'; rr(wd.x - 28, wd.y + 2, 56, 8, 4); ctx.fill();
+        ctx.fillStyle = '#c9862f'; rr(wd.x - 28, wd.y + 2, 56 * p, 8, 4); ctx.fill();
+      }
+      if (ws.q.length) { ctx.fillStyle = '#b04a3c'; ctx.beginPath(); ctx.arc(wd.x + 26, wd.y - 40, 11, 0, 7); ctx.fill(); label(`${ws.q.length}`, wd.x + 26, wd.y - 39, 15, '#fff'); }
+    }
+    // 出菜台上的菜、水壶、收碗处
+    k.pass.forEach((o, i) => { const [x, y] = PASS.slots[i] || PASS.slots[PASS.slots.length - 1]; drawPlate(x, y, o, 0.72); });
+    if (!spr('water_set', WATER.x, WATER.y, 66) && DISH_IMG.water.complete) ctx.drawImage(DISH_IMG.water, WATER.x - 21, WATER.y - 28, 42, 28);
+    drawVessels();
+    drawRail(k); drawCleanPlates();
+    if (art) { label('出菜', 318, 432, 19, '#fbf3e2', '#5a3b28'); label('茶水台', 196, 640, 19, '#fbf3e2', '#3f6680'); }
+  }
+  function drawSink() { // 石砌洗碗池 + 旁边一摞脏碗；洗的时候冒泡泡
+    const x = SINK.x, y = SINK.y, pl = G.plates, t = performance.now() / 1000, washing = G.chefWash || G.waiter.wash;
+    ctx.fillStyle = '#00000020'; ctx.beginPath(); ctx.ellipse(x, y + 2, 40, 8, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = '#9a958c'; ctx.strokeStyle = '#4a4540'; ctx.lineWidth = 2.5; rr(x - 36, y - 34, 72, 36, 10); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#bfe0ec'; rr(x - 28, y - 30, 56, 14, 6); ctx.fill();
+    ctx.strokeStyle = '#6a7a84'; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(x + 24, y - 34); ctx.lineTo(x + 24, y - 50); ctx.lineTo(x + 12, y - 50); ctx.stroke();
+    if (washing) { ctx.fillStyle = '#ffffffdd'; for (let i = 0; i < 5; i++) { const ph = (t * 0.8 + i / 5) % 1; ctx.beginPath(); ctx.arc(x - 20 + i * 10, y - 26 - ph * 26, 4 + 2 * Math.sin(i), 0, 7); ctx.fill(); } }
+    if (pl.dirty > 0) { spr('dirty_dishes', x - 46, y + 6, 40 + Math.min(pl.dirty, 8) * 3) || drawPlate(x - 46, y - 4, null, 0.7); label(`脏×${pl.dirty}`, x - 46, y - 46, 16, '#fff', '#8a5a3a'); }
+    label(G.chefWash ? '老大在洗碗' : G.waiter.wash ? '洗碗中' : '洗碗池', x, y + 14, 18, '#fbf3e2', '#3f6680');
+  }
+  function drawCleanPlates() { // 出菜台边上一摞干净盘子；没了会闪红
+    const pl = G.plates, x = 356, y = 470, n = Math.min(pl.clean, 6);
+    for (let i = 0; i < n; i++) { ctx.fillStyle = '#fbfaf5'; ctx.strokeStyle = '#8a8478'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.ellipse(x, y - i * 4, 17, 6, 0, 0, 7); ctx.fill(); ctx.stroke(); }
+    if (pl.clean > 0) label(`盘子×${pl.clean}`, x, y + 16, 15, '#2c2420', '#fbf6ec');
+    else if (Math.floor(performance.now() / 400) % 2) label('没盘子了！', x, y, 17, '#fff', '#d0453a');
+  }
+  // 桌号小木牌（盘子、单子、饮品上都用它）
+  function tableTag(n, x, y, sz = 15) {
+    ctx.fillStyle = '#8a5636'; ctx.strokeStyle = '#4a3020'; ctx.lineWidth = 1.5; rr(x - sz * 0.75, y - sz * 0.72, sz * 1.5, sz * 1.44, 4); ctx.fill(); ctx.stroke();
+    label(`${n}`, x, y + 1, sz, '#fff6e0');
+  }
+  // 客人的小头像：圆圈里只露出头
+  function faceTag(c, x, y, r = 13) {
+    const im = custImg((c.looks && c.looks[0]) || c.type.id); if (!im || !im.complete) return;
+    ctx.save(); ctx.fillStyle = '#fbf6ec'; ctx.strokeStyle = '#2c2420'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.fill(); ctx.stroke(); ctx.clip();
+    ctx.drawImage(im, x - r * 1.5, y - r * 1.05, r * 3, r * 3.3); ctx.restore();
+  }
+  function drawPlate(x, y, o, s = 1) {
+    const img = o ? DISH_IMG[o.dish] : DISH_IMG.dirty;
+    if (img && img.complete) ctx.drawImage(img, x - 33 * s, y - 30 * s, 66 * s, 44 * s);
+    if (o && o.cust) { faceTag(o.cust, x + 30 * s, y - 30 * s, 17); if (o.table) tableTag(o.table, x - 26 * s, y - 30 * s); }
+  }
+  // 茶水台左边的四样器具：玻璃壶茉莉、紫砂壶普洱、酸梅汤坛、豆浆桶。正在做的那样会动、冒热气、头上转圈
+  function drawVessels() {
+    const act = []; if (G.waiter.brew) act.push(G.waiter.brew); for (const sf of G.staff) if (sf.brew) act.push(sf.brew);
+    act.forEach((b, i) => drawVessel(b.drink, 128 - i * 44, 590, Math.min(1, b.t / b.need), b.o.table));
+  }
+  function drawVessel(id, vx, vy, p, table) {
+    const t = performance.now() / 1000, d = { ...DRINKS[id], x: vx, y: vy }, on = true, cur = { table };
+    {
+      ctx.save(); ctx.translate(d.x, d.y); if (on) ctx.rotate(Math.sin(t * 6) * 0.06 - (id === 'jasmine' || id === 'puer' ? 0.12 : 0));
+      ctx.strokeStyle = '#2c2420aa'; ctx.lineWidth = 1.4;
+      ctx.fillStyle = '#00000018'; ctx.beginPath(); ctx.ellipse(0, 1, 15, 4, 0, 0, 7); ctx.fill();
+      if (id === 'jasmine') { // 玻璃壶，看得见黄茶和小白花
+        ctx.fillStyle = '#eaf3f3cc'; ctx.beginPath(); ctx.ellipse(0, -13, 13, 12, 0, 0, 7); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = d.col; ctx.beginPath(); ctx.ellipse(0, -10, 11, 8, 0, 0, Math.PI); ctx.fill();
+        ctx.fillStyle = '#fff'; for (const [a, b] of [[-4, -8], [3, -6], [0, -11]]) { ctx.beginPath(); ctx.arc(a, b, 1.8, 0, 7); ctx.fill(); }
+        ctx.beginPath(); ctx.moveTo(12, -16); ctx.quadraticCurveTo(20, -22, 22, -26); ctx.stroke(); ctx.beginPath(); ctx.arc(-14, -13, 5, Math.PI * 0.5, Math.PI * 1.5); ctx.stroke();
+        ctx.fillStyle = '#c9b48a'; rr(-4, -28, 8, 4, 2); ctx.fill();
+      } else if (id === 'puer') { // 紫砂壶
+        ctx.fillStyle = '#7b4a3a'; ctx.beginPath(); ctx.ellipse(0, -9, 13, 9, 0, 0, 7); ctx.fill(); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(11, -11); ctx.lineTo(20, -18); ctx.lineWidth = 3; ctx.strokeStyle = '#7b4a3a'; ctx.stroke(); ctx.lineWidth = 1.4; ctx.strokeStyle = '#2c2420aa';
+        ctx.beginPath(); ctx.arc(-13, -10, 5, Math.PI * 0.5, Math.PI * 1.5); ctx.stroke();
+        ctx.fillStyle = '#6a3c2e'; ctx.beginPath(); ctx.ellipse(0, -17, 7, 2.5, 0, 0, 7); ctx.fill(); ctx.beginPath(); ctx.arc(0, -20, 2.5, 0, 7); ctx.fill();
+      } else if (id === 'plum') { // 酸梅汤坛 + 木勺
+        ctx.fillStyle = '#9a3a2e'; ctx.beginPath(); ctx.moveTo(-9, -26); ctx.quadraticCurveTo(-17, -14, -11, 0); ctx.lineTo(11, 0); ctx.quadraticCurveTo(17, -14, 9, -26); ctx.closePath(); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = '#f2e3c4'; rr(-7, -18, 14, 9, 2); ctx.fill(); ctx.fillStyle = '#9a3a2e'; ctx.font = `9px ${FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('梅', 0, -13);
+        ctx.strokeStyle = '#a0703a'; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(3, -24); ctx.lineTo(9, -36); ctx.stroke();
+      } else if (id === 'water') { // 铜水壶
+        ctx.fillStyle = '#c98a4a'; ctx.beginPath(); ctx.ellipse(0, -11, 13, 11, 0, 0, 7); ctx.fill(); ctx.stroke();
+        ctx.lineWidth = 3; ctx.strokeStyle = '#8a5a2a'; ctx.beginPath(); ctx.moveTo(11, -12); ctx.lineTo(21, -22); ctx.stroke();
+        ctx.beginPath(); ctx.arc(0, -22, 9, Math.PI, 0); ctx.stroke(); ctx.lineWidth = 1.4; ctx.strokeStyle = '#2c2420aa';
+      } else { // 豆浆桶：白搪瓷，蓝边
+        ctx.fillStyle = '#f5f1e6'; rr(-12, -24, 24, 24, 4); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = '#4a7fb5'; rr(-13, -26, 26, 4, 2); ctx.fill(); rr(-12, -10, 24, 2, 1); ctx.fill();
+      }
+      if (on) for (let i = 0; i < 3; i++) { const ph = (t * 0.8 + i / 3) % 1; ctx.strokeStyle = `rgba(255,255,255,${0.8 * (1 - ph)})`; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(-5 + i * 5, -30 - ph * 18); ctx.quadraticCurveTo(-1 + i * 5, -36 - ph * 18, -5 + i * 5, -42 - ph * 18); ctx.stroke(); }
+      ctx.restore();
+      if (on) {
+        ctx.strokeStyle = '#fbf6ec'; ctx.lineWidth = 6; ctx.beginPath(); ctx.arc(d.x, d.y - 58, 10, 0, 7); ctx.stroke();
+        ctx.strokeStyle = '#4a7fb5'; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(d.x, d.y - 58, 10, -Math.PI / 2, -Math.PI / 2 + p * Math.PI * 2); ctx.stroke();
+        label(`${d.verb}${d.s}`, Math.max(50, d.x + 4), d.y - 80, 17, '#2c2420', '#fbf6ec');
+      }
+    }
+  }
+  // 出菜口上方的挂单绳：送到的单子一桌一张，上一道勾一道，上齐盖章取下
+  const RAIL = LI.rail && LI.rail.line ? { x0: LI.rail.line[0][0], x1: LI.rail.line[1][0], y: LI.rail.line[0][1] } : { x0: 232, x1: 438, y: 276 };
+  function drawRail(k) {
+    k.rail = k.rail.filter((c) => G.customers.includes(c) && c.state !== 'leaving' && !(c.railDone && G.t - c.railDone > 1.6));
+    ctx.save();
+    ctx.strokeStyle = '#6b4a30'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(RAIL.x0, RAIL.y); ctx.lineTo(RAIL.x1, RAIL.y); ctx.stroke();
+    ctx.fillStyle = '#8a5a3a'; for (const x of [RAIL.x0, RAIL.x1]) { ctx.beginPath(); ctx.arc(x, RAIL.y, 4, 0, 7); ctx.fill(); }
+    // 挂单处的小木牌
+    ctx.fillStyle = '#8a5636'; ctx.strokeStyle = '#4a3020'; ctx.lineWidth = 2; rr(RAIL.x1 - 6, RAIL.y - 34, 62, 28, 5); ctx.fill(); ctx.stroke();
+    label('挂单', RAIL.x1 + 25, RAIL.y - 20, 17, '#fbe9c6');
+    if (!k.rail.length && G.waiter.tickets.length) { const b = Math.abs(Math.sin(performance.now() / 300)) * 6; label('↓ 单子挂这里', (RAIL.x0 + RAIL.x1) / 2, RAIL.y + 22 + b, 16, '#b04a3c', '#fbf6ec'); }
+    const t = performance.now() / 1000, show = k.rail.slice(0, 3);
+    show.forEach((c, i) => {
+      const lines = []; c.members.forEach((m) => { const dk = m.drink && m.dst !== 'none'; if (m.dish && m.st !== 'none') lines.push({ dish: m.dish, drink: dk ? m.drink : null, done: m.st === 'served' && (!dk || m.dst === 'served') }); else if (dk) lines.push({ drink: m.drink, done: m.dst === 'served' }); });
+      if (!c.railDone && lines.length && lines.every((l) => l.done)) c.railDone = G.t;
+      const w = 58, h = 34 + lines.length * 26, x = RAIL.x0 + 34 + i * 64;
+      ctx.save(); ctx.translate(x, RAIL.y); ctx.rotate(Math.sin(t * 1.3 + i * 2) * 0.03 + (c.railDone ? 0.08 : 0));
+      ctx.fillStyle = '#00000014'; ctx.fillRect(-w / 2 + 3, 9, w, h);
+      ctx.fillStyle = '#fbf6e6'; ctx.strokeStyle = '#c9b48a'; ctx.lineWidth = 1; ctx.fillRect(-w / 2, 6, w, h); ctx.strokeRect(-w / 2, 6, w, h);
+      ctx.fillStyle = '#a0703a'; rr(-4, 0, 8, 12, 2); ctx.fill(); // 小夹子
+      faceTag(c, 12, 22, 13); if (c.table) tableTag(c.table.id, -14, 22, 16);
+      lines.forEach((l, j) => {
+        const ly = 44 + j * 26;
+        ctx.globalAlpha = l.done ? 0.45 : 1;
+        if (l.dish) { const im = DISH_IMG[l.dish]; if (im && im.complete) ctx.drawImage(im, -27, ly - 11, 36, 24); if (l.drink) drawCup(6, ly + 9, l.drink, 0.5); } else drawCup(-9, ly + 10, l.drink, 0.75);
+        ctx.globalAlpha = 1;
+        if (l.done) { ctx.strokeStyle = '#3f7a34'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(12, ly); ctx.lineTo(17, ly + 6); ctx.lineTo(25, ly - 6); ctx.stroke(); }
+        else { ctx.fillStyle = '#e3a43a'; ctx.beginPath(); ctx.arc(18, ly, 4.5, 0, 7); ctx.fill(); }
+      });
+      if (c.railDone) { ctx.rotate(-0.3); ctx.strokeStyle = '#c0392b'; ctx.lineWidth = 2; rr(-18, h / 2 - 6, 36, 20, 3); ctx.stroke(); label('上齐', 0, h / 2 + 4, 13, '#c0392b'); }
+      ctx.restore();
+    });
+    if (k.rail.length > 3) label(`+${k.rail.length - 3}`, RAIL.x1 - 6, RAIL.y + 20, 14, '#2c2420', '#fbf6ec');
+    ctx.restore();
+  }
+  function drawCup(x, y, drink, s = 1) { // 茶杯 / 玻璃杯 / 豆浆碗（先用程序画）
+    const d = DRINKS[drink]; ctx.save(); ctx.translate(x, y); ctx.scale(s, s);
+    ctx.fillStyle = '#00000018'; ctx.beginPath(); ctx.ellipse(0, 2, 13, 4, 0, 0, 7); ctx.fill();
+    if (d.cup === 'glass') { ctx.fillStyle = '#e8f1f4cc'; ctx.beginPath(); ctx.moveTo(-9, -24); ctx.lineTo(9, -24); ctx.lineTo(7, 0); ctx.lineTo(-7, 0); ctx.closePath(); ctx.fill(); ctx.fillStyle = d.col; ctx.beginPath(); ctx.moveTo(-8, -16); ctx.lineTo(8, -16); ctx.lineTo(7, -1); ctx.lineTo(-7, -1); ctx.fill(); }
+    else { ctx.fillStyle = '#f6f1e6'; ctx.beginPath(); ctx.moveTo(-12, -14); ctx.quadraticCurveTo(-11, 0, 0, 0); ctx.quadraticCurveTo(11, 0, 12, -14); ctx.closePath(); ctx.fill(); ctx.fillStyle = d.col; ctx.beginPath(); ctx.ellipse(0, -14, 11, 3.5, 0, 0, 7); ctx.fill(); ctx.strokeStyle = '#7fa9c9'; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(-10, -9); ctx.lineTo(10, -9); ctx.stroke(); }
+    ctx.strokeStyle = '#2c2420aa'; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.ellipse(0, d.cup === 'glass' ? -24 : -14, d.cup === 'glass' ? 9 : 12, 3.5, 0, 0, 7); ctx.stroke();
+    ctx.restore();
+  }
+  function drawHeld(h, hx, hy) {
+    if (h.kind === 'drink') { drawCup(hx, hy + 8, h.drink, 1.1); if (h.cust) faceTag(h.cust, hx + 20, hy - 24, 17); if (h.table) tableTag(h.table, hx - 16, hy - 24); return; }
+    if (h.kind === 'dish') drawPlate(hx, hy, h);
+    else if (DISH_IMG[h.kind] && DISH_IMG[h.kind].complete) ctx.drawImage(DISH_IMG[h.kind], hx - 30, hy - 26, 60, 40);
+    else drawPlate(hx, hy, null);
+  }
+  function drawTeaCart() {
+    if (!(has('tea') || has('snack'))) return;
+    if (!spr('tea_cart', TEA.cx, TEA.cy, 120)) { if (!TEA_IMG || !TEA_IMG.complete) return; ctx.drawImage(TEA_IMG, TEA.cx - 80, TEA.cy - 110, 160, 120); }
+    for (const [key, x, n] of [['tea', TEA.cx - 30, '茶'], ['snack', TEA.cx + 30, '点心']]) if (has(key)) label(n, x, TEA.cy + 12, 16, '#fbf3e2', '#5a3b28');
+  }
+  function drawStool(x, y, k = 1) { if (!spr('stool', x, y + 12 * k, 46 * k)) { ctx.fillStyle = '#b07a4e'; ctx.beginPath(); ctx.ellipse(x, y, 20 * k, 8 * k, 0, 0, 7); ctx.fill(); } }
+  function drawTable(t) {
+    const k = t.k, sel = G.selected && G.selected.state === 'queue' ? G.selected : null, empty = !t.cust && !t.reserved && !t.dirty;
+    if (sel && empty && t.size >= sel.size) { // T-02：选了排队的客人 → 坐得下的空桌亮起来
+      const pulse = 0.6 + 0.4 * Math.sin(performance.now() / 160);
+      ctx.save(); ctx.globalAlpha = pulse; ctx.strokeStyle = '#f2a33a'; ctx.lineWidth = 7; ctx.fillStyle = '#f2a33a22';
+      ctx.beginPath(); ctx.ellipse(t.cx, t.cy + 14 * k, TW[t.size] * 0.62 * k + 18, 62 * k, 0, 0, 7); ctx.fill(); ctx.stroke(); ctx.restore();
+    }
+    ctx.fillStyle = '#2c241824'; ctx.beginPath(); ctx.ellipse(t.cx, t.cy + (t.size === 4 ? 80 : 74) * k, TW[t.size] * 0.55 * k, 12 * k, 0, 0, 7); ctx.fill();
+    const art = spr(t.size === 4 ? 'table_m' : 'table_s', t.cx, t.cy + (t.size === 4 ? 82 : 76) * k, TW[t.size] * k);
+    if (!art) { const img = t.size === 4 ? TABLE4 : TABLE2; if (img.complete) ctx.drawImage(img, t.cx - 160, t.cy - 90, 320, 200); }
+    const tw = TW[t.size] * k, sc = tw / (t.size === 4 ? 351 : 247), ty = t.cy + (t.size === 4 ? 82 : 76) * k - tw * (t.size === 4 ? 225 / 351 : 218 / 247);
+    if (t.size === 4) { const rn = A(CUR_SE + '_runner'); if (ok(rn)) { const rw = tw * 0.6, rs = rw / rn.naturalWidth; ctx.drawImage(rn, 0, 0, rn.naturalWidth, 92 * rn.naturalHeight / 242, t.cx - rw / 2, ty + 8 * sc, rw, 95 * sc); ctx.drawImage(rn, 0, 92 * rn.naturalHeight / 242, rn.naturalWidth, 150 * rn.naturalHeight / 242, t.cx - rw / 2, ty + 103 * sc, rw, 34 * sc); } }
+    else spr(CUR_SE + '_vase', t.cx + tw * 0.3, ty + 62 * sc, 22 * k);
+    t.topY = [ty + 40 * sc, ty + 82 * sc]; // 桌面上后排、前排放菜的高度
+    { // 桌号牌：木底座 + 白卡片，大号数字
+      const nx = t.cx - tw * 0.34, ny = ty + 58 * sc;
+      ctx.fillStyle = '#7a4d30'; rr(nx - 13, ny - 3, 26, 7, 3); ctx.fill();
+      ctx.fillStyle = '#fbf6ec'; ctx.strokeStyle = '#4a3020'; ctx.lineWidth = 2; rr(nx - 12, ny - 30, 24, 28, 4); ctx.fill(); ctx.stroke();
+      label(`${t.id}`, nx, ny - 15, 20, '#b04a3c');
+      t.sizeAt = { x: nx, y: ny + 16 }; // T-02：几人桌的小牌，等人物画完再画在最上层
+    }
+    if (t.dirty) drawPlate(t.cx, t.cy, null, 0.7 * k);
+    const c = t.cust;
+    if (c && ['waitFood', 'eating', 'bill', 'ordering', 'ordering-open', 'linger'].includes(c.state)) c.members.forEach((m, i) => {
+      const sp = t.seats[i], py = t.topY[sp.front ? 1 : 0];
+      if (c.state === 'linger') { drawPlate(sp.x, py, null, 0.55 * k); return; }
+      if (m.st === 'served' && c.state !== 'bill') drawPlate(sp.x, py, { dish: m.dish }, 0.6 * k);
+      if (m.dst === 'served' && c.state !== 'bill') drawCup(sp.x + 26 * k, py + 2, m.drink, 0.7 * k);
+    });
+    if (sel && empty && t.size < sel.size) { // 坐不下的空桌变灰
+      ctx.save(); ctx.fillStyle = '#e9e2d6b3'; ctx.beginPath(); ctx.ellipse(t.cx, t.cy + 14 * k, TW[t.size] * 0.62 * k + 14, 70 * k, 0, 0, 7); ctx.fill();
+      label(`坐不下 ${sel.size} 位`, t.cx, t.cy + 14 * k, 17, '#fbf3e2', '#8a7a6a'); ctx.restore();
+    }
+  }
+  function memberPos(c, i) {
+    if (seated(c) && c.state !== 'toSeat') return c.table.seats[i];
+    if (c.state === 'toSeat' && c.table) { const sp = c.table.seats[i], f = Math.min(1, Math.hypot(c.x - sp.x, c.y - sp.y) / 200); return { x: sp.x + (c.x - sp.x) * f, y: sp.y + (c.y - sp.y) * f }; }
+    const n = c.size;
+    if (n <= 2) return { x: c.x + (i - (n - 1) / 2) * 30, y: c.y + (i % 2) * 6 - 3 };
+    const r = i < 2 ? 0 : 1, inRow = r ? n - 2 : 2; // D-006：3–4 位排成前后两排，一组只占两个身位宽
+    return { x: c.x + ((i % 2) - (inRow - 1) / 2) * 32 + (r ? 6 : -6), y: c.y + (r ? 10 : -12) };
+  }
+  function anchor(c) {
+    if (c.table && seated(c) && c.state !== 'toSeat') return { x: c.table.chip.x + 56, y: c.table.chip.y };
+    return { x: c.x, y: c.y - 124 };
+  }
+  function drawMember(c, i) {
+    const p = memberPos(c, i);
+    const moving = ['enter', 'toSeat', 'leaving', 'following'].includes(c.state);
+    const bob = Math.sin(c.bob + i) * (moving ? 4 : 1.2);
+    const sit = c.table && seated(c) && c.state !== 'toSeat', sp = sit ? c.table.seats[i] : null;
+    const sc = (c.size > 1 ? 0.95 : 1.02) * K(p.y), w = 96 * sc, h = 106 * sc;
+    if (!sit) { ctx.fillStyle = '#00000018'; ctx.beginPath(); ctx.ellipse(p.x, p.y, 24 * sc, 7, 0, 0, 7); ctx.fill(); }
+    const away = (sp && sp.front) || c.state === 'leaving' || (moving && c.path.length && c.path[c.path.length - 1].y < c.y - 20);
+    const lk = (c.looks && c.looks[i]) || c.type.id, im = away ? custImgBack(lk) : custImg(lk);
+    if (im.complete) ctx.drawImage(im, p.x - w / 2, p.y - h + 4 + bob, w, h);
+  }
+  // 人身上的动作提示：生气冒火、等久了冒汗、举手点单、吃饭冒热气、聊天的小点点、结账掏钱
+  function drawMood(c) {
+    if (!c.table || !seated(c) || c.state === 'toSeat') return;
+    const t = performance.now() / 1000;
+    c.members.forEach((m, i) => {
+      const p = memberPos(c, i), k = K(p.y), hy = p.y - 96 * k, hx = p.x + 22 * k;
+      if (c.upset || c.hearts < 1.5) { ctx.save(); ctx.translate(hx, hy - 4 + Math.sin(t * 8) * 2); ctx.strokeStyle = '#d0453a'; ctx.lineWidth = 3; for (const r of [0, 1.57, 3.14, 4.71]) { ctx.beginPath(); ctx.arc(Math.cos(r + 0.78) * 7, Math.sin(r + 0.78) * 7, 5, r - 0.9, r + 0.9); ctx.stroke(); } ctx.restore(); }
+      else if (['waitFood', 'thirsty', 'ordering'].includes(c.state) && c.hearts < 3) { ctx.fillStyle = '#7fb6e0'; ctx.beginPath(); const yy = hy + 4 + (t * 12 % 10); ctx.moveTo(hx, yy - 9); ctx.quadraticCurveTo(hx + 6, yy, hx, yy + 4); ctx.quadraticCurveTo(hx - 6, yy, hx, yy - 9); ctx.fill(); }
+      if (c.state === 'ordering' && i === 0) { const yy = hy - 18 - Math.abs(Math.sin(t * 5)) * 6; ctx.fillStyle = '#e3a43a'; ctx.beginPath(); ctx.arc(p.x, yy, 13, 0, 7); ctx.fill(); label('!', p.x, yy + 1, 20, '#fff'); }
+      if (c.state === 'eating' && m.st === 'served') for (let j = 0; j < 2; j++) { const ph = (t * 0.7 + j / 2 + i * 0.3) % 1; ctx.strokeStyle = `rgba(255,255,255,${0.9 * (1 - ph)})`; ctx.lineWidth = 2.5; const sx = p.x - 6 + j * 10, sy = c.table.topY[c.table.seats[i].front ? 1 : 0] - 20 - ph * 22; ctx.beginPath(); ctx.moveTo(sx, sy + 8); ctx.quadraticCurveTo(sx + 5, sy + 2, sx, sy - 4); ctx.stroke(); }
+      if (c.state === 'bill' && i === 0) { const im = icon('bill'); if (im.complete) ctx.drawImage(im, p.x - 14, hy - 34 - Math.abs(Math.sin(t * 4)) * 5, 28, 28); }
+    });
+    if (c.state === 'linger') { const p = memberPos(c, 0), k = K(p.y); for (let j = 0; j < 3; j++) { ctx.fillStyle = `rgba(192,96,122,${0.4 + 0.6 * ((Math.floor(t * 3) % 3) === j)})`; ctx.beginPath(); ctx.arc(p.x + (c.size > 1 ? 30 : 0) * k - 10 + j * 10, p.y - 112 * k, 4, 0, 7); ctx.fill(); } }
+  }
+  // 坐下的客人：状态牌挂在桌子右边（图标 + 字 + 一排小爱心），不挡别的桌
+  const CHIP = { thirsty: ['#dceefa', '#3f86c4'], reading: ['#eeeae4', '#9a8f82'], ordering: ['#fff0b8', '#e3a43a'], waitFood: ['#fbf6ec', '#6e5a4b'], eating: ['#e2f3d6', '#4f9a3a'], bill: ['#ffe6a8', '#c98a14'], linger: ['#fbe3ea', '#c0607a'], upset: ['#fbd3cc', '#d0453a'] };
+  function tableChip(c, ic, text, bg = '#fbf6ec', dish = null) {
+    const t = c.table, st = c.upset ? 'upset' : c.state === 'ordering-open' ? 'ordering' : c.state, sty = CHIP[st] || ['#fbf6ec', '#2c2420'];
+    const now = performance.now() / 1000, x = t.chip.x + (st === 'upset' ? Math.sin(now * 30) * 1.5 : 0), y = t.chip.y - (['ordering', 'bill'].includes(st) ? Math.abs(Math.sin(now * 4)) * 5 : 0);
+    bg = sty[0];
+    ctx.font = `bold 20px ${FONT}`;
+    const tw = text ? ctx.measureText(text).width : 0, w = Math.max(104, 48 + tw + 12), h = 66;
+    ctx.fillStyle = bg; ctx.strokeStyle = sty[1]; ctx.lineWidth = 3.5;
+    rr(x, y - h / 2, w, h, 12); ctx.fill(); ctx.stroke(); ctx.fillStyle = sty[1]; rr(x + 3, y - h / 2 + 4, 5, h - 8, 3); ctx.fill(); ctx.fillStyle = bg;
+    ctx.beginPath(); ctx.moveTo(x + 1, y - 7); ctx.lineTo(x - 9, y); ctx.lineTo(x + 1, y + 7); ctx.fill();
+    if (dish) { const im = DISH_IMG[dish]; if (im && im.complete) ctx.drawImage(im, x + 3, y - 30, 46, 31); }
+    else { const im = icon(ic); if (im && im.complete) ctx.drawImage(im, x + 6, y - 31, 36, 36); }
+    if (text) { ctx.fillStyle = '#2c2420'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillText(text, x + 50, y - 12); }
+    for (let i = 0; i < 5; i++) heart(x + 11 + i * 18, y + 14, 15, c.hearts >= i + 0.5 ? (c.hearts < 2 ? '#ff4d4d' : '#ef6f7a') : '#d9cfc6');
+  }
+  function queueChip(c) {
+    const r = qCard(c), w = r.w, h = r.h, x = r.x + w, y = r.y + h / 2; // D-006：牌子挂在这组左上，斜线排队时不压前后两组；点按用同一矩形
+    if (G.selected === c) { ctx.strokeStyle = '#f2a33a'; ctx.lineWidth = 5; ctx.beginPath(); ctx.ellipse(c.x, c.y + 2, 30 + c.size * 14, 14, 0, 0, 7); ctx.stroke(); }
+    ctx.fillStyle = c.state === 'called' ? '#fff3c4' : '#fbf6ec'; ctx.strokeStyle = '#2c2420'; ctx.lineWidth = 2;
+    rr(x - w, y - h / 2, w, h, 10); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x - 1, y - 6); ctx.lineTo(x + 8, y); ctx.lineTo(x - 1, y + 6); ctx.fill();
+    const im = icon('wait'); if (im.complete) ctx.drawImage(im, x - w + 3, y - 21, 24, 24);
+    label(`${c.size}位`, x - 18, y - 9, 18, '#2c2420');
+    for (let i = 0; i < 5; i++) heart(x - w + 8 + i * 11.5, y + 8, 10, c.hearts >= i + 0.5 ? (c.hearts < 2 ? '#ff4d4d' : '#ef6f7a') : '#d9cfc6');
+  }
+  function drawDrinkWants(c) { // 点了茶水还没送到：杯子画在那位客人头上
+    if (!c.table || !['ordering', 'ordering-open', 'waitFood', 'eating'].includes(c.state)) return;
+    const t = performance.now() / 1000;
+    c.members.forEach((m, i) => {
+      if (!m.drink || m.dst === 'served' || m.dst == null) return;
+      const p = memberPos(c, i), k = K(p.y), x = p.x + 30 * k, y = p.y - 128 * k + Math.sin(t * 3 + i) * 2;
+      ctx.fillStyle = m.dst === 'make' ? '#e4f0f6' : '#fbf6ecdd'; ctx.strokeStyle = '#3f86c4'; ctx.lineWidth = 2.5;
+      ctx.beginPath(); ctx.arc(x, y, 19, 0, 7); ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(x - 5, y + 17); ctx.lineTo(x, y + 25); ctx.lineTo(x + 5, y + 17); ctx.fill();
+      drawCup(x, y + 11, m.drink, 0.78);
+    });
+  }
+  function drawPartyUI(c) {
+    const a = anchor(c); drawMood(c); drawDrinkWants(c);
+    if (inLine(c)) { if (c.sayT > 0 && c.state === 'called') bubble(c.x, c.y - 112, c.say, { size: 19 }); queueChip(c); return; }
+    if (c.state === 'browse') { if (c.say) bubble(c.x, c.y - 112, c.say, { size: 19 }); else bubbleIcon(c.x, c.y - 100, 'wait', '看菜单', '#fbf6ec', 16); return; }
+    if (c.table && seated(c) && c.state !== 'toSeat') {
+      const oma = c.type.kind === 'omakase', w = G.waiter;
+      const waiting = c.members.filter((m) => m.st === 'cook'), want = oma && c.members.find((m) => m.st === 'none' && m.want);
+      const t = c.table;
+      if (oma && ['reading', 'ordering', 'ordering-open', 'waitFood', 'thirsty'].includes(c.state)) { // 随缘客：已解锁的喜好排在牌子上面
+        const dx = dexOf(c.type.id), ks = c.type.likes.filter((x) => dx.likes.includes(x)).map((x) => [x, 'heart']).concat(c.type.hates.filter((x) => dx.hates.includes(x)).map((x) => [x, 'cross']));
+        label('随缘', t.chip.x + 22, t.chip.y - 50, 17, '#8a5a8a', '#fbf6ec');
+        ks.slice(0, 3).forEach(([x2, b], i) => { const xx = t.chip.x + 60 + i * 32, yy = t.chip.y - 66; const im = icon(x2), bi = icon(b); ctx.fillStyle = '#fbf6ecdd'; ctx.beginPath(); ctx.arc(xx, yy + 14, 16, 0, 7); ctx.fill(); if (im.complete) ctx.drawImage(im, xx - 14, yy, 28, 28); if (bi.complete) ctx.drawImage(bi, xx + 4, yy - 4, 15, 15); });
+      }
+      if (c.sayT > 0) { tableChip(c, 'order', c.say.length > 6 ? c.say.slice(0, 6) + '…' : c.say, '#fbf6ec'); return; }
+      if (c.state === 'thirsty') return tableChip(c, 'water', '先要水', '#e4f0f6');
+      if (c.state === 'ordering') return c.upset ? tableChip(c, 'cross', '换一道', '#fbdcd8') : want ? tableChip(c, want.want, `想吃${want.want}`, '#fff3c4') : tableChip(c, 'order', '点单', '#fff3c4');
+      if (c.state === 'reading') return tableChip(c, 'wait', '看菜单');
+      if (c.state === 'waitFood' && w.tickets.some((tk) => tk.c === c)) return tableChip(c, 'order', '没送单', '#fde7c8');
+      if (c.state === 'waitFood' && waiting.length) return tableChip(c, null, waiting.length > 1 ? `等×${waiting.length}` : '等菜', '#fbf6ec', waiting[0].dish);
+      if (c.state === 'bill') return tableChip(c, 'bill', '结账', '#e4f4d8');
+      if (c.state === 'linger') return tableChip(c, 'heart', c.size > 1 ? '聊天中' : '坐一会', '#fbeef0');
+      if (c.state === 'eating') return tableChip(c, 'eat', c.members.some((m) => m.dst === 'make') ? (c.members.every((m) => m.dst !== 'make' || m.drink === 'water') ? '等水' : '等茶') : '好香');
+      return tableChip(c, 'wait', '…');
+    }
+    if (c.state === 'leaving') { if (c.sayT > 0) bubble(a.x, a.y - 8, c.say, { size: 19 }); return; }
+    if (G.selected === c) { ctx.strokeStyle = '#f2a33a'; ctx.lineWidth = 5; ctx.beginPath(); ctx.ellipse(c.x, c.y + 2, 30 + c.size * 14, 14, 0, 0, 7); ctx.stroke(); }
+    for (let i = 0; i < 5; i++) heart(a.x - 30 + i * 15, a.y + 8, 12, c.hearts >= i + 0.5 ? (c.hearts < 2 ? '#ff4d4d' : '#ef6f7a') : '#d9cfc6');
+    if (c.watered) { const im = icon('water'); if (im.complete) ctx.drawImage(im, a.x + 54, a.y - 4, 22, 22); }
+    const oma = c.type.kind === 'omakase';
+    if (oma && c.state !== 'queue' && c.state !== 'enter') label('随缘', a.x - 66, a.y + 9, 15, '#8a5a8a');
+    // 随缘客头顶的图鉴引导：已解锁的喜欢 / 不吃
+    if (oma && ['reading', 'ordering', 'ordering-open', 'waitFood', 'thirsty'].includes(c.state)) {
+      const dx = dexOf(c.type.id), ks = c.type.likes.filter((t) => dx.likes.includes(t)).map((t) => [t, 'heart']).concat(c.type.hates.filter((t) => dx.hates.includes(t)).map((t) => [t, 'cross']));
+      ks.slice(0, 6).forEach(([t, b], i) => { const x = a.x - (Math.min(6, ks.length) - 1) * 15 + i * 30, y = a.y + 22; const im = icon(t), bi = icon(b); ctx.fillStyle = '#fbf6eccc'; ctx.beginPath(); ctx.arc(x, y + 12, 15, 0, 7); ctx.fill(); if (im.complete) ctx.drawImage(im, x - 13, y - 1, 26, 26); if (bi.complete) ctx.drawImage(bi, x + 4, y - 4, 14, 14); });
+    }
+    const waiting = c.members.filter((m) => m.st === 'cook');
+    const want = oma && c.members.find((m) => m.st === 'none' && m.want);
+    if (c.sayT > 0) bubble(a.x, a.y - 8, c.say, { size: 19 });
+    else if (c.state === 'thirsty') bubbleIcon(a.x, a.y - 8, 'water', '先要水', '#e4f0f6');
+    else if (c.state === 'ordering') { if (c.upset) bubbleIcon(a.x, a.y - 8, 'cross', '换一道', '#fbdcd8'); else if (want) bubbleIcon(a.x, a.y - 8, want.want, `想吃${want.want}`, '#fff3c4'); else bubbleIcon(a.x, a.y - 8, 'order', '点单', '#fff3c4'); }
+    else if (c.state === 'reading') bubbleIcon(a.x, a.y - 8, 'wait', '看菜单', '#fbf6ec', 16);
+    else if (c.state === 'waitFood' && waiting.length) bubbleDish(a.x, a.y - 8, waiting[0].dish, waiting.length > 1 ? `还差${waiting.length}` : '');
+    else if (c.state === 'called') bubbleIcon(a.x, a.y - 8, 'wait', '等领位', '#fbf6ec', 16);
+    else if (c.state === 'bill') bubbleIcon(a.x, a.y - 8, 'bill', '结账', '#e4f4d8');
+    else if (c.state === 'eating') bubbleIcon(a.x, a.y - 8, 'eat', '好香', '#fbf6ec', 16);
+    else if (c.state === 'queue' || c.state === 'enter') bubbleIcon(a.x, a.y + 4, 'wait', `${c.size}位`, '#fbf6ec', 14);
+  }
+  function drawCat(img, x, y, face, walking, s = 1) {
+    const t = performance.now() / 1000;
+    const bob = walking ? Math.abs(Math.sin(t * 12)) * -6 : 0, rot = walking ? Math.sin(t * 12) * 0.06 : 0;
+    ctx.fillStyle = '#00000020'; ctx.beginPath(); ctx.ellipse(x, y, 34 * s, 9 * s, 0, 0, 7); ctx.fill();
+    ctx.save(); ctx.translate(x, y + bob); ctx.rotate(rot); ctx.scale((face < 0 ? -1 : 1) * s, s);
+    if (img && img.complete) ctx.drawImage(img, -52, -110, 104, 114);
+    ctx.restore();
+    return bob;
+  }
+  function drawWaiter() {
+    const w = G.waiter, walking = !!w.busyAct && w.path.length;
+    const k = K(w.y), bob = drawCat(w.back && walking ? SPR.pB : (w.blinkT < 0 ? SPR.pBlink : SPR.pF), w.x, w.y, w.face, walking, 1.05 * k);
+    w.hands.forEach((h, i) => drawHeld(h, w.x + (i ? 42 : -42) * k, w.y - 56 * k + bob));
+    if (w.tickets.length) { const im = icon('order'); if (im.complete) ctx.drawImage(im, w.x + 18 * k, w.y - 132 * k, 30, 30); label(`单×${w.tickets.length}`, w.x + 33 * k, w.y - 92 * k, 17, '#8a5a10', '#fbf6ec'); }
+  }
+  function drawStaff(sf) {
+    const moving = sf.task && sf.path.length, zz = !sf.task && resting(sf.id);
+    drawCat(sf.back && moving ? custImgBack(sf.id) : custImg(sf.id), sf.x, sf.y, sf.face, moving, (sf.id === 'mimi' ? 0.8 : 0.92) * K(sf.y));
+    sf.hands.forEach((h) => drawHeld(h, sf.x + 32, sf.y - 50));
+    const tag = `${STAFF_DEF[sf.id].name}·${zz ? 'Zzz' : jobsOf(sf.id).map((j) => JOBS.find((x) => x.id === j).n).join('+')}`;
+    label(tag, sf.x, sf.y + 20, 17, '#4a6384', '#fbf6ec');
+  }
+  const DANCE_SPOT = { x: 760, y: 690 };
+  function drawDancer(x0, y0, k = 1) {
+    const t = performance.now() / 1000, x = x0 + Math.sin(t * 4) * 14;
+    ctx.globalAlpha = k;
+    ctx.fillStyle = '#00000018'; ctx.beginPath(); ctx.ellipse(x, y0, 34, 9, 0, 0, 7); ctx.fill();
+    ctx.save(); ctx.translate(x, y0 - Math.abs(Math.sin(t * 8)) * 14); ctx.rotate(Math.sin(t * 6) * 0.22); ctx.scale(Math.sin(t * 2) > 0 ? 1 : -1, 1);
+    if (SPR.dancer.complete) ctx.drawImage(SPR.dancer, -52, -110, 104, 114);
+    ctx.restore();
+    ctx.fillStyle = '#b04a3c'; ctx.font = `30px ${FONT}`; ctx.textAlign = 'center';
+    ctx.fillText('♪', x - 64, y0 - 120 + Math.sin(t * 8) * 8); ctx.fillText('♫', x + 64, y0 - 110 - Math.sin(t * 8) * 8);
+    ctx.globalAlpha = 1;
+  }
+  function drawQueueBadges() {
+    const w = G.waiter;
+    w.queue.forEach((a, i) => {
+      const s = targetSpot(a);
+      let x = s.x + 50, y = s.y - 50;
+      if (a.kind === 'table') { x = a.table.cx + a.table.rx - 10; y = a.table.cy - a.table.ry - 20; }
+      if (a.kind === 'seat' || a.kind === 'give') { const tb = a.kind === 'seat' && a.phase === 2; x = tb ? a.table.cx + a.table.rx - 10 : a.cust.x + 40; y = tb ? a.table.cy - a.table.ry - 20 : a.cust.y - 100; }
+      if (a.kind === 'tea' || a.kind === 'snack') { x = TEA.cx + 60; y = TEA.cy - 90; }
+      if (a.kind === 'pass') { x = 340; y = 470 - (i % 2) * 10; }
+      if (a.kind === 'water') { x = WATER.x + 34; y = WATER.y - 40; }
+      ctx.save(); ctx.globalAlpha = 0.85; ctx.fillStyle = '#f2a33a'; // 排着要去的地方：小爪印（不标数字）
+      ctx.beginPath(); ctx.ellipse(x, y + 4, 8, 7, 0, 0, 7); ctx.fill();
+      for (const [dx, dy] of [[-8, -6], [-3, -10], [3, -10], [8, -6]]) { ctx.beginPath(); ctx.arc(x + dx, y + dy, 3, 0, 7); ctx.fill(); }
+      ctx.restore();
+    });
+  }
+  function drawFloats(ox = 0, oy = 0) {
+    for (const f of G.floats) {
+      const life = f.life || 1.6, y = f.y - oy - Math.min(f.t, 1) * 34, x = f.x - ox;
+      ctx.globalAlpha = Math.max(0, Math.min(1, (life - f.t) / 0.5));
+      ctx.font = `24px ${FONT}`; const tw = ctx.measureText(f.text).width;
+      if (f.ico) {
+        const im = typeof f.ico === 'object' ? fishImg(f.ico.fish) : icon(f.ico), iw = typeof f.ico === 'object' ? 56 : 34;
+        if (im.complete) ctx.drawImage(im, x - tw / 2 - iw - 4, y - (typeof f.ico === 'object' ? 18 : 17), iw, typeof f.ico === 'object' ? 35 : 34);
+      }
+      label(f.text, x, y, 24, f.col, '#fff', 5);
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  // 大地图先画到一张离屏画布上，之后每帧只裁一块
+  let WORLD_CV = null; const WS = 1.5;
+  function worldCanvas() {
+    if (WORLD_CV || !WORLD_IMG.complete) return WORLD_CV;
+    const c = document.createElement('canvas'); c.width = WORLD_W * WS; c.height = WORLD_H * WS;
+    const x = c.getContext('2d'); x.drawImage(WORLD_IMG, 0, 0, c.width, c.height);
+    x.setTransform(WS, 0, 0, WS, 0, 0);
+    const old = ctx; // 用同一个 label 函数把地名写上去
+    for (const l of WORLD_LABELS.filter((l) => !MAP_SPR || !/[→←]|盆盆餐厅/.test(l.t))) { x.font = `${l.size}px ${FONT}`; x.textAlign = 'center'; x.textBaseline = 'middle'; x.lineJoin = 'round'; if (l.stroke) { x.lineWidth = l.lw; x.strokeStyle = l.stroke; x.strokeText(l.t, l.x, l.y); } x.fillStyle = l.fill; x.fillText(l.t, l.x, l.y); }
+    WORLD_CV = c; return c;
+  }
+  function renderDay() {
+    const D = G.D, cam = D.cam, wc = worldCanvas(), EX = SX / scale, EY = SY / scale; // 全屏：两侧多画一截地图
+    ctx.fillStyle = '#d5dfb8'; ctx.fillRect(-EX, -EY, W + 2 * EX, H + 2 * EY);
+    if (wc) { const x0 = Math.max(0, cam.x - EX), x1 = Math.min(WORLD_W, cam.x + W + EX); ctx.drawImage(wc, x0 * WS, cam.y * WS, (x1 - x0) * WS, H * WS, x0 - cam.x, 0, x1 - x0, H); }
+    ctx.save(); ctx.translate(-cam.x, -cam.y);
+    const items = [];
+    const sign = (x, y, d) => { ctx.fillStyle = '#8a5a3a'; ctx.fillRect(x - 3, y - 40, 6, 42); ctx.fillStyle = '#d9b98a'; ctx.strokeStyle = '#5a3b28'; ctx.lineWidth = 2; rr(x - 46, y - 62, 92, 30, 6); ctx.fill(); ctx.stroke(); label(`第 ${d} 天开`, x, y - 47, 16, '#5a3b28'); };
+    WMAP.farm.plots.forEach(([x, y], i) => {
+      const f = save.farm[i], open = plotOpen(i), ripe = plotReady(i);
+      items.push({ y: y - 40, d: () => { // 土垄
+        ctx.globalAlpha = open ? 1 : 0.45;
+        for (let j = 0; j < 9; j++) { const cx = x - 56 + (j % 3) * 56, cy = y - 36 + Math.floor(j / 3) * 32; ctx.fillStyle = '#9a7048'; rr(cx - 25, cy - 12, 50, 26, 10); ctx.fill(); ctx.fillStyle = '#b48a5c'; rr(cx - 23, cy - 12, 46, 9, 6); ctx.fill(); }
+        ctx.globalAlpha = 1;
+      } });
+      if (!open) { items.push({ y: y + 40, d: () => { ctx.strokeStyle = '#7a5a3a'; ctx.lineWidth = 4; for (const yy of [y - 30, y + 26]) { ctx.beginPath(); ctx.moveTo(x - 92, yy); ctx.lineTo(x + 92, yy); ctx.stroke(); } for (let j = 0; j < 5; j++) { ctx.fillStyle = '#8a6440'; rr(x - 92 + j * 46 - 4, y - 40, 8, 76, 3); ctx.fill(); } sign(x, y + 10, openDay('plots', i + 1)); } }); return; }
+      if (open) f.cells.forEach((c, j) => { if (!c) return; const img = CROP_IMG[c.k + (cellRipe(c) ? 1 : 0)], cx = x - 56 + (j % 3) * 56, cy = y - 36 + Math.floor(j / 3) * 32; items.push({ y: cy + 12, d: () => { if (img && img.complete) ctx.drawImage(img, cx - 19, cy - 30, 38, 38); } }); });
+      const rn = open ? f.cells.filter(cellRipe).length : 0, gn = open ? f.cells.filter((c) => c && !cellRipe(c)).length : 0, en = open ? f.cells.filter((c) => !c).length : 0;
+      if (rn) items.push({ y: 9999, d: () => label(`${rn} 格熟了`, x, y - 76, 18, '#fbf3e2', '#5a6b3c') });
+      else if (gn) items.push({ y: 9999, d: () => label(en ? `明天熟 · 空 ${en} 格` : '明天熟', x, y - 74, 15, '#fbf3e2', '#6b7a4c') });
+      else if (open && en === 9) items.push({ y: 9999, d: () => label('空地', x, y - 74, 15, '#fbf3e2', '#8a6a50') });
+    });
+    if (spotOpen('mirror')) items.push({ y: 660, d: drawMirror });
+    items.push({ y: 1000, d: drawTeaGarden });
+    for (const [id, x, y] of [['market', 370, 560], ['pond', 1520, 960], ['coop', 2160, 540], ['mail', 1317, 700], ['tea', 1170, 1010]]) if (!spotOpen(id)) items.push({ y: 9998, d: () => sign(x, y, openDay('map', id)) });
+    if (spotOpen('coop') && save.coopDay !== save.day) items.push({ y: 9999, d: () => { const im = ING_IMG.egg; if (im.complete) ctx.drawImage(im, 2190, 470, 40, 40); label('有蛋', 2210, 466, 16, '#fbf3e2', '#7a5a2c'); } });
+    if (spotOpen('market')) items.push({ y: WMAP.market.y + 150, d: () => { drawCat(SPR.vendor, WMAP.market.x + 150, WMAP.market.y + 150, 1, false, 0.8); label(`今日特价：${ING[special()].n}`, WMAP.market.x + 150, WMAP.market.y + 186, 17, '#fbf3e2', '#8a3a2c'); } });
+    items.push({ y: WMAP.plaza.cy, d: () => drawDancer(WMAP.plaza.cx, WMAP.plaza.cy, 1) });
+    if (MAP_SPR) { // GPT 画的房子、摊子、鸡舍、邮筒、路牌、稻草人
+      items.push({ y: 640, d: () => { if (spr('m_shop', 1000 + 0.08 * 480, 646, 480)) label('盆盆餐厅', 1000, 486, 20, '#f3e3c0', '#2a201a'); } });
+      items.push({ y: 520, d: () => spr('m_market', 370, 526, 330) });
+      items.push({ y: 500, d: () => spr('m_coop', 2160, 504, 250) });
+      items.push({ y: 660, d: () => spr('m_mailbox', 1317, 664, 0, { h: 104 }) });
+      items.push({ y: 796, d: () => { if (spr('m_sign', 1300, 800, 120)) { label('菜地 →', 1300, 734, 15, '#4a3326'); label('← 早市', 1300, 754, 15, '#4a3326'); } } });
+      items.push({ y: 480, d: () => spr('m_scarecrow', 1600, 484, 0, { h: 112 }) });
+    }
+    if (save.mail && spotOpen('mail')) items.push({ y: 9999, d: () => { const b = Math.sin(performance.now() / 200) * 4; ctx.fillStyle = '#fbf6ec'; ctx.strokeStyle = '#2c2420'; ctx.lineWidth = 2; rr(1296, 546 + b, 44, 30, 4); ctx.fill(); ctx.stroke(); ctx.beginPath(); ctx.moveTo(1296, 546 + b); ctx.lineTo(1318, 562 + b); ctx.lineTo(1340, 546 + b); ctx.stroke(); label('有信！', 1318, 530 + b, 18, '#fbf3e2', '#b04a3c'); } });
+    if (staffIds().includes('laoer')) items.push({ y: 720, d: () => drawCat(custImg('laoer'), 1120, 720, -1, false, 0.8) });
+    if (staffIds().includes('mimi')) items.push({ y: 1040, d: () => { drawCat(custImg('mimi'), 1290, 1040 + Math.sin(performance.now() / 300) * 4, -1, false, 0.7); label('咪咪', 1290, 1056, 15, '#fbf3e2', '#4f7d3a'); } }); // 咪咪在茶园边上
+    items.push({ y: D.y, d: () => {
+      const walking = D.path.length > 0;
+      drawCat(D.back && walking ? SPR.pB : SPR.pF, D.x, D.y, D.face, walking);
+      if (D.fish > 0) { const t = performance.now() / 300; ctx.strokeStyle = '#2c2420'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(D.x + 30, D.y - 70); ctx.quadraticCurveTo(D.x + 90, D.y - 110, D.x + 130, D.y - 10 + Math.sin(t) * 3); ctx.stroke(); ctx.fillStyle = '#d9453a'; ctx.beginPath(); ctx.arc(D.x + 130, D.y - 8 + Math.sin(t) * 3, 6, 0, 7); ctx.fill(); label('钓鱼中…', D.x, D.y - 130, 18, '#fbf3e2', '#3f6680'); }
+    } });
+    items.sort((a, b) => a.y - b.y).forEach((i) => i.d());
+    // 今日菜单需要、但库存不够的食材：在能弄到的地方亮起来
+    const nd = needIngs(), pulse = 0.55 + 0.45 * Math.sin(performance.now() / 260);
+    const hl = (x, y, rx, ry, ings) => {
+      ctx.strokeStyle = `rgba(242,163,58,${pulse})`; ctx.lineWidth = 6; ctx.setLineDash([14, 10]); ctx.beginPath(); ctx.ellipse(x, y, rx, ry, 0, 0, 7); ctx.stroke(); ctx.setLineDash([]);
+      const txt = '菜单要用', w = 40 + ings.length * 34 + 70; ctx.fillStyle = '#fff3c4ee'; rr(x - w / 2, y - ry - 44, w, 38, 12); ctx.fill(); ctx.strokeStyle = '#e3a43a'; ctx.lineWidth = 2; ctx.stroke();
+      label(txt, x - w / 2 + 50, y - ry - 25, 17, '#8a5a10');
+      ings.forEach((k, i) => { const im = ING_IMG[k]; if (im.complete) ctx.drawImage(im, x - w / 2 + 92 + i * 34, y - ry - 42, 32, 32); });
+    };
+    WMAP.farm.plots.forEach(([x, y], i) => { if (!plotOpen(i)) return; const ks = [...new Set(save.farm[i].cells.filter(cellRipe).map((c) => c.k))].filter((k) => nd[k]); if (ks.length) hl(x, y, 100, 72, ks); });
+    const pondNeed = ['shrimp', 'fish'].filter((k) => nd[k]); if (pondNeed.length && spotOpen('pond')) hl(1470, 990, 110, 60, pondNeed);
+    if (nd.egg && spotOpen('coop') && save.coopDay !== save.day) hl(2160, 430, 140, 110, ['egg']);
+    const mk = Object.keys(nd).filter((k) => prog().ings.includes(k)); if (mk.length && spotOpen('market')) hl(370, 420, 190, 110, mk.slice(0, 4));
+    if (D.task) { const s = D.task.spot(); ctx.strokeStyle = '#f2a33a'; ctx.lineWidth = 4; ctx.beginPath(); ctx.ellipse(s.x, s.y, 26, 9, 0, 0, 7); ctx.stroke(); }
+    const PC = { spring: '#f2c6d0', autumn: '#d98c3a', winter: '#ffffff' }[CUR_SE];
+    if (PC) for (const q of G.parts) { ctx.fillStyle = PC; ctx.globalAlpha = 0.85; ctx.beginPath(); ctx.ellipse(q.x, q.y, CUR_SE === 'winter' ? 3.5 : 6, CUR_SE === 'winter' ? 3.5 : 3.5, q.t * 2 + q.r, 0, 7); ctx.fill(); ctx.globalAlpha = 1; }
+    ctx.restore();
+    drawFloats(cam.x, cam.y);
+  }
+  function render() {
+    ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.fillStyle = '#e9dcc4'; ctx.fillRect(0, 0, cv.width, cv.height);
+    ctx.setTransform(scale * dpr, 0, 0, scale * dpr, SX * dpr, SY * dpr);
+    if (!G) { ctx.fillStyle = '#f3ead9'; ctx.fillRect(0, 0, W, H); return; }
+    if (G.mode === 'day') { renderDay(); return; }
+    drawShopScene();
+  }
+  function sideFill() { // 美术还没有两侧延伸图之前：把场景最边上一截镜像过去，再压一点暗角，让画面铺满不留空条
+    const sx = Math.round(SX * dpr), sy = Math.round(SY * dpr), w = cv.width, h = Math.round(H * scale * dpr);
+    if (sx < 2) return;
+    ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.save(); ctx.translate(sx, 0); ctx.scale(-1, 1); ctx.drawImage(cv, sx, sy, sx, h, 0, sy, sx, h); ctx.restore();
+    ctx.save(); ctx.translate(w - sx, 0); ctx.scale(-1, 1); ctx.drawImage(cv, w - 2 * sx, sy, sx, h, -sx, sy, sx, h); ctx.restore();
+    for (const [x0, x1] of [[sx, 0], [w - sx, w]]) { const g = ctx.createLinearGradient(x0, 0, x1, 0); g.addColorStop(0, '#2c242000'); g.addColorStop(1, '#2c242040'); ctx.fillStyle = g; ctx.fillRect(Math.min(x0, x1), 0, sx, cv.height); }
+    ctx.restore();
+  }
+  function drawShopScene() {
+    if (GREY) drawGreyBase(); else { drawRoom(); sideFill(); } // 只镜像背景，人和摆件不镜像；灰盒两侧留纸色
+    drawKitchen();
+    const items = [];
+    G.tables.forEach((t) => { items.push({ y: t.cy + 20, d: () => (GREY ? drawGreyTable(t) : drawTable(t)) }); if (!GREY) t.seats.forEach((sp) => items.push({ y: sp.y - 1, d: () => drawStool(sp.x, sp.y, t.k) })); });
+    if (ART_ROOM() && !GREY) {
+      items.push({ y: SINK.y, d: drawSink });
+      items.push({ y: 706, d: () => { spr('d_ricesack', 402, 712, 60); spr('d_vegbasket', 460, 708, 62); } });
+      items.push({ y: 704, d: () => { spr('d_catbed', 1168, 712, 90); spr('d_cattree', 1236, 706, 60); } });
+    }
+    G.customers.forEach((c) => { for (let i = 0; i < c.size; i++) { const p = memberPos(c, i); items.push({ y: p.y + 0.5, d: () => drawMember(c, i) }); } });
+    items.push({ y: G.waiter.y, d: drawWaiter });
+    G.staff.forEach((sf) => items.push({ y: sf.y, d: () => drawStaff(sf) }));
+    items.push({ y: TEA.cy, d: drawTeaCart });
+    items.push({ y: RACK.y, d: drawMenuRack });
+    if (G.dancer) items.push({ y: DANCE_SPOT.y, d: () => { drawDancer(DANCE_SPOT.x, DANCE_SPOT.y, Math.min(1, (4 - G.dancer.t) * 3, G.dancer.t * 3)); label('帅老头', DANCE_SPOT.x, DANCE_SPOT.y + 16, 18, '#fbf3e2', '#b04a3c'); } });
+    items.sort((a, b) => a.y - b.y).forEach((i) => i.d());
+    if (GREY) { /* 灰盒不画前景 */ } else if (ART_ROOM()) { const f = A('room_fg'); if (ok(f)) ctx.drawImage(f, 0, 0, W, H); } else if (ROOM_FG.complete) ctx.drawImage(ROOM_FG, 0, 0, W, H);
+    G.tables.forEach((t) => { if (t.sizeAt) label(`${t.size}人`, t.sizeAt.x, t.sizeAt.y, 15, '#fbf3e2', '#7a4d30'); });
+    G.customers.forEach(drawPartyUI);
+    drawQueueBadges();
+    drawFloats();
+    if (GREY) drawGreyOverlay();
+  }
+  // ---------- 界面 ----------
+  // 游戏内的确认框（网页环境里不能用浏览器自带的 confirm）
+  function ask(msg, yes = '确定') {
+    return new Promise((resolve) => {
+      const box = $('#ask');
+      box.querySelector('p').innerHTML = msg;
+      box.querySelector('.yes').textContent = yes;
+      box.classList.add('show');
+      const done = (v) => { box.classList.remove('show'); box.querySelector('.yes').onclick = null; box.querySelector('.no').onclick = null; resolve(v); };
+      box.querySelector('.yes').onclick = () => { done(true); if (save) did('ask'); };
+      box.querySelector('.no').onclick = () => done(false);
+    });
+  }
+  let toastT = null;
+  function toast(msg) { const el = $('#toast'); el.textContent = msg; el.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => el.classList.remove('show'), 1600); }
+  function hud() {
+    $('#h-day').textContent = `${save.name} · ${SEASONS[seasonOf(save.day)].n} · 第 ${save.day} 天`;
+    for (const b of ['#b-dex', '#b-dex2']) $(b).classList.toggle('newdot', !!save.noteNew);
+    $('#b-staff').style.display = staffIds().length ? '' : 'none'; $('#b-invent').style.display = G.mode === 'day' && ideaNow() ? '' : 'none'; $('#b-invent').classList.toggle('newdot', !!ideaNow()); $('#b-menu').classList.toggle('newdot', !!save.menuNew && G.mode === 'day'); $('#b-dance').style.display = prog().dance ? '' : 'none';
+    if (G.mode === 'day') {
+      $('#h-energy').textContent = `体力 ${G.D.energy}/${ENERGY}`;
+      $('#h-save').textContent = `存款 ¥ ${save.coins}`;
+      return;
+    }
+    $('#h-coin').textContent = `¥ ${G.coins}`;
+    $('#h-rep').textContent = `口碑 ${G.rep >= 0 ? '+' : ''}${G.rep}`;
+    $('#h-time').style.width = `${G.script ? (G.script.length + G.customers.length) / (DAY1.length + 1) * 100 : Math.max(0, 1 - G.t / DAY_LEN) * 100}%`;
+    $('#h-q').textContent = `动作 ${G.waiter.queue.length}/${MAXQ}`;
+    const db = $('#b-dance');
+    db.disabled = G.danceCD > 0;
+    db.textContent = G.danceCD > 0 ? `跳舞 ${Math.ceil(G.danceCD)}s` : '跳广场舞';
+  }
+  function show(id) { document.querySelectorAll('.screen').forEach((s) => s.classList.toggle('show', s.id === id)); }
+
+  function renderSaves() {
+    const list = loadSaves();
+    const box = $('#save-list');
+    box.innerHTML = list.length ? '' : '<p class="empty">还没有存档，先新建一个吧。</p>';
+    list.sort((a, b) => b.updated - a.updated).forEach((s) => {
+      const stars = (s.history || []).reduce((a, h) => a + h.stars, 0);
+      const row = document.createElement('div');
+      row.className = 'save';
+      row.innerHTML = `<div class="sname">${escapeHTML(s.name)}</div><div class="sinfo">第 ${s.day} 天 · ¥${s.coins} · ★${stars}</div>
+        <button class="play">继续</button><button class="look">捏脸 / 换衣服</button><button class="del" aria-label="删除存档">删除</button>`;
+      row.querySelector('.play').addEventListener('click', () => startSave(s.id));
+      row.querySelector('.look').addEventListener('click', () => openCreator(s, false));
+      const av = document.createElement('img'); av.className = 'avatar'; av.alt = '';
+      av.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(catSVG({ ...CATS.penpen.look, ...(s.look || {}) }, 'front', { w: 120, h: 132 }));
+      row.prepend(av);
+      row.querySelector('.del').addEventListener('click', () => {
+        ask(`确定删除「${escapeHTML(s.name)}」的存档吗？删除后找不回来。`, '删除').then((ok) => { if (ok) { storeSaves(loadSaves().filter((x) => x.id !== s.id)); renderSaves(); } });
+      });
+      box.appendChild(row);
+    });
+  }
+  function escapeHTML(s) { return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+  $('#new-save').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const name = $('#new-name').value.trim() || '盆盆';
+    const s = { id: Date.now().toString(36), name: name.slice(0, 12), day: 1, coins: 50, rep: 0, history: [],
+      look: { ...CATS.penpen.look }, created: Date.now(), updated: Date.now() };
+    storeSaves(loadSaves().concat(s)); $('#new-name').value = ''; renderSaves();
+    startSave(s.id); // 直接开始；样子之后照镜子再换
+  });
+  function startSave(id) {
+    save = loadSaves().find((s) => s.id === id); if (!save) return;
+    fixSave(save);
+    buildPlayerSprites(save.look || CATS.penpen.look);
+    newDay(); show('hud-screen');
+    if (!showAway()) showTip('day');
+    sfx.tap();
+  }
+
+  // ---------- 挂机经营：不玩的时候店员自己卖基础款，累了就去休息 ----------
+  const IDLE_CAP_MIN = 8 * 60; // 最多算 8 小时
+  const RESTS = [
+    (n) => `${n}去后山泡了一会儿温泉，回来毛都蓬松了。`,
+    (n) => `${n}在田野里散步，叼回来一朵小野花。`,
+    (n) => `${n}趁没人偷吃了一块叉烧……嘴边还有酱汁。`,
+    (n) => `${n}在窗台上打了个长长的盹。`,
+    (n) => `${n}抓到一只小虫子，得意地拿给大家看。`,
+    (n) => `${n}去河边钓鱼，钓到两条小鱼。`,
+    (n) => `${n}躺在门口晒太阳，晒成了一张猫饼。`,
+    (n) => `${n}把桌子擦得亮亮的，然后在上面睡着了。`,
+  ];
+  function showAway() {
+    const now = Date.now(), last = save.lastSeen || now;
+    const mins = Math.min(IDLE_CAP_MIN, Math.floor((now - last) / 60000));
+    save.lastSeen = now;
+    if (mins < 3) { persist(); return false; }
+    const rate = 1 + Math.min(1, totalStars(save) / 30); // 星星越多，挂机卖得越好
+    const earned = Math.floor(mins * rate);
+    const sold = Math.max(1, Math.round(earned / 6));
+    save.coins += earned; persist();
+    const staff = ['老大', '老二', '咪咪', '盆盆'];
+    const events = shuffle(RESTS).slice(0, Math.min(4, 1 + Math.floor(mins / 45))).map((fn, i) => fn(staff[i % staff.length]));
+    const hrs = mins >= 60 ? `${Math.floor(mins / 60)} 小时${mins % 60 ? (mins % 60) + ' 分钟' : ''}` : `${mins} 分钟`;
+    $('#away-body').innerHTML = `
+      <p class="away-sum">你离开了 ${hrs}。店员们照常营业，卖出了 <b>${sold}</b> 份家常小菜和清茶，收入 <b>¥ ${earned}</b>。</p>
+      <ul class="away-list">${events.map((e) => `<li>${escapeHTML(e)}</li>`).join('')}</ul>
+      ${mins >= IDLE_CAP_MIN ? '<p class="goal">店员们最多帮忙 8 小时，之后就收摊休息了。</p>' : ''}`;
+    show('away'); G.paused = true;
+    return true;
+  }
+  $('#away-ok').addEventListener('click', () => { G.paused = false; show('hud-screen'); showTip('day'); });
+  const TIPS = {
+    day: `<h3>白天：准备食材</h3><ol>
+      <li>点地图上的地方，盆盆会自己走过去：<b>菜地</b>摘辣椒和花生、<b>池塘</b>钓虾、<b>鸡舍</b>捡蛋，每次花 1 点体力。</li>
+      <li><b>早市</b>可以花存款买食材，每天有一样是「妈妈特价」半价。</li>
+      <li>按住拖动可以看地图别的地方。右上「储藏室」看库存，「图鉴」看客人的口味。</li>
+      <li>准备好了点「开店营业」，或者走到店门口。</li></ol>`,
+    shop: `<h3>开张啦！怎么玩：</h3><ol>
+      <li>点门口排队的客人，再点一张坐得下的空桌（2 人桌 / 4 人桌）：盆盆会去把客人领过来。</li>
+      <li>有的客人坐下先要水：点长台上的<b>茶水台</b>（水壶）拿水。多余的水再点一次茶水台就倒掉。</li>
+      <li>点完单，盆盆手里会拿着<b>单子</b>，送到<b>出菜台</b>后单子挂在墙上，老大开始做菜。</li>
+      <li>客人点的<b>饮品</b>写在单子上：茉莉花茶用玻璃壶泡、普洱用紫砂壶冲、酸梅汤从坛里舀、豆浆从桶里盛，时间各不一样。做好的杯子摆在茶水台前（写着几号桌），点茶水台拿，再点桌子送去。</li>
+      <li>客人「点单！」时点桌子。<b>点菜客</b>自己报菜名，只要按要求点一下配料；<b>随缘客</b>只说想吃什么口味，要你挑菜，挑对了口味会记进图鉴。</li>
+      <li>每人各点各的。同一种锅一次只做一道，换着锅点上菜更快。做好的菜放在出菜口。</li>
+      <li>盆盆一口气最多记 6 件事、一次端 2 样。点右上「安排店员」，可以让老二帮忙上菜、上水或收盘子。</li></ol>`,
+  };
+  // 每天开头一张小卡：今天新开放了什么（图 + 两三个字）；第 7 天起是猫猫日报
+  // 店门口的落地镜：照一照换毛色、换衣服
+  const MIRROR_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 120" width="160" height="240"><rect x="36" y="96" width="8" height="16" fill="#8a5a3a"/><path d="M18 116 H62" stroke="#6b4a30" stroke-width="6" stroke-linecap="round"/><ellipse cx="40" cy="52" rx="28" ry="44" fill="#a7744a" stroke="#4a3020" stroke-width="3"/><ellipse cx="40" cy="52" rx="21" ry="36" fill="#dcecf2"/><path d="M28 30 Q34 22 42 22 M27 42 L45 24" stroke="#fff" stroke-width="4" stroke-linecap="round" fill="none" opacity="0.9"/><circle cx="40" cy="10" r="4" fill="#c9503a"/></svg>`;
+  const MIRROR_IMG = svgImg(MIRROR_SVG);
+  function drawMirror() { if (MIRROR_IMG.complete) ctx.drawImage(MIRROR_IMG, 734, 540, 72, 108); label('镜子', 770, 662, 17, '#fbf3e2', '#5a3b28'); }
+  // 茶园：三丛茶树，今天摘过就少点嫩芽
+  function drawTeaGarden() {
+    const open = spotOpen('tea'), picked = save.teaDay === save.day;
+    ctx.save(); ctx.globalAlpha = open ? 1 : 0.5;
+    for (const [x, y] of [[1100, 980], [1170, 950], [1240, 985], [1135, 1020], [1210, 1020]]) {
+      ctx.fillStyle = '#00000018'; ctx.beginPath(); ctx.ellipse(x, y + 14, 40, 9, 0, 0, 7); ctx.fill();
+      ctx.fillStyle = '#4f7d3a'; ctx.beginPath(); ctx.ellipse(x, y, 40, 24, 0, 0, 7); ctx.fill();
+      ctx.fillStyle = '#6a9a4a'; ctx.beginPath(); ctx.ellipse(x - 6, y - 8, 30, 15, 0, 0, 7); ctx.fill();
+      if (!picked) { ctx.fillStyle = '#a9d36a'; for (let i = 0; i < 6; i++) { ctx.beginPath(); ctx.ellipse(x - 24 + i * 9, y - 14 + (i % 2) * 6, 4, 2.4, -0.5, 0, 7); ctx.fill(); } }
+    }
+    ctx.restore();
+    if (open) label(picked ? '茶园 · 明天再摘' : '茶园', 1170, 900, 18, '#fbf3e2', '#4f7d3a');
+  }
+  function dayCard() {
+    if (save.day === 1 && G && G.mode === 'day') { openShop(); G.paused = true; hud(); }
+    const add = PROG_ADD[Math.min(save.day, 8)] || {}, it = [];
+    const tile = (img, t) => `<div class="nt"><i>新</i><img alt="" src="${img}"><b>${t}</b></div>`;
+    for (const k of add.dishes || []) it.push(tile(dishURL(k), DISH[k].n));
+    for (const k of add.drinks || []) it.push(tile(cupURL(k), DRINKS[k].n));
+    for (const k of add.seeds || []) it.push(tile(ingURL(k), ING[k].n + '种子'));
+    for (const k of add.staff || []) it.push(tile(dataURL(catSVG(k, 'front', { w: 120, h: 132 })), STAFF_DEF[k].name));
+    if ((add.map || []).includes('mirror')) it.push(tile(dataURL(MIRROR_SVG), '镜子'));
+    const MAPN = { tea: ['茶园', 'tealeaf'], market: ['早市', 'tofu'], plot: ['菜地', 'chili'], pond: ['池塘', 'fish'], coop: ['鸡舍', 'egg'], mail: ['邮筒', null] };
+    for (const k of add.map || []) if (MAPN[k]) it.push(tile(MAPN[k][1] ? ingURL(MAPN[k][1]) : iconURL('order'), MAPN[k][0]));
+    if (add.plots && !(add.map || []).includes('plot')) it.push(tile(ingURL('chili'), `第 ${add.plots} 块地`));
+    if (add.water) it.push(tile(cupURL('water'), '倒水'));
+    for (const f of save.farmLog || []) it.push(`<div class="nt farm"><img alt="" src="${dataURL(catSVG(f.id, 'front', { w: 120, h: 132 }))}"><b>${STAFF_DEF[f.id].name}干农活</b><small>${f.got.join(' ')}</small></div>`);
+    if (save.invite && !save.inviteShown) { save.inviteShown = true; it.push(tile(dataURL(postcardSVG('hotspring')), '樱花之国的邀请')); }
+    for (const id of add.tables || []) if (save.day > 1) it.push(tile(`assets/${TABLES.find((t) => t.id === id).size === 4 ? 'table_m' : 'table_s'}.webp`, TABLES.find((t) => t.id === id).size === 4 ? '四人桌' : '两人桌'));
+    const tr = save.trend && save.trend.day === save.day ? save.trend : null;
+    const paper = tr ? `<div class="paper"><div class="mast">猫猫日报 <small>第 ${save.day} 天</small></div><div class="hl"><img alt="" src="${iconURL(tr.hot)}"><b>今天流行「${tr.hot}」</b></div><div class="cold"><img alt="" src="${iconURL(tr.cold)}">「${tr.cold}」没人点</div></div>` : '';
+    $('#tip-close').innerHTML = save.day === 1 ? '<button class="primary tip-open">开始营业</button>' : '点这里关闭'; // T-02：第一天一个大按钮
+    $('#tip-body').innerHTML = `<h3>第 ${save.day} 天${add.title ? ` · ${add.title}` : ''}</h3>${paper}${it.length ? `<div class="newrow">${it.join('')}</div>` : ''}`;
+    $('#start-tip').classList.add('show');
+  }
+  function showTip(k) {
+    if (k === 'day') { dayCard(); return; }
+    if (k === 'day' && save.day > 1) { if (save.menuDay !== save.day) setTimeout(openMenuPick, 200); return; }
+    $('#tip-body').innerHTML = TIPS[k]; $('#tip-close').textContent = '点这里关闭'; $('#start-tip').classList.add('show');
+  }
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden' && save) { save.lastSeen = Date.now(); persist(); if (G && !G.over) G.paused = true; }
+    if (document.visibilityState === 'visible' && G && !G.over && $('#hud-screen').classList.contains('show') && !$('#ask').classList.contains('show')) G.paused = false;
+  });
+
+  // ---------- 捏猫 / 换衣服 ----------
+  const totalStars = (s) => (s.history || []).reduce((a, h) => a + h.stars, 0);
+  const isUnlocked = (o, s) => !o.unlock || (o.unlock.day && s.day >= o.unlock.day) || (o.unlock.stars && totalStars(s) >= o.unlock.stars);
+  const lockText = (o) => (o.unlock.day ? `第 ${o.unlock.day} 天解锁` : `${o.unlock.stars} 颗星解锁`);
+  let creatorFor = null, creatorThen = null;
+  function openCreator(s, thenStart) {
+    creatorFor = s; creatorThen = thenStart;
+    const look = { eye2: 'same', tuft: 'none', pupil: 'normal', ...CATS.penpen.look, ...(s.look || {}) };
+    const box = $('#creator');
+    const swatch = (list, key) => list.map((x) => `<button class="sw ${look[key] === x.id ? 'on' : ''}" data-k="${key}" data-v="${x.id}" style="background:${x.c}" aria-label="${x.n}"><span>${x.n}</span></button>`).join('');
+    const pills = (list, key) => list.map((x) => `<button class="pill ${look[key] === x.id ? 'on' : ''}" data-k="${key}" data-v="${x.id}">${x.n}</button>`).join('');
+    const yesno = (key, a, b) => `<button class="pill ${look[key] ? 'on' : ''}" data-k="${key}" data-v="1">${a}</button><button class="pill ${!look[key] ? 'on' : ''}" data-k="${key}" data-v="0">${b}</button>`;
+    const outfits = OUTFITS.map((o) => {
+      const ok = isUnlocked(o, s);
+      return `<button class="pill ${look.outfit === o.id ? 'on' : ''} ${ok ? '' : 'locked'}" data-k="outfit" data-v="${o.id}" ${ok ? '' : 'disabled'}>${o.n}${ok ? '' : `<small>${lockText(o)}</small>`}</button>`;
+    }).join('');
+    box.innerHTML = `
+      <div class="cr-left"><img id="cr-img" alt="盆盆的样子"><div class="cr-name">${escapeHTML(s.name)}</div></div>
+      <div class="cr-right">
+        <h2>捏一只自己的盆盆</h2>
+        <div class="row"><label>毛色</label><div>${swatch(FURS, 'fur')}</div></div>
+        <div class="row"><label>花纹</label><div>${pills(PATTERNS, 'pattern')}</div></div>
+        <div class="row"><label>眼睛</label><div>${swatch(EYES, 'eye')}</div></div>
+        <div class="row"><label>异瞳</label><div>${swatch(EYES2, 'eye2')}</div></div>
+        <div class="row"><label>头顶毛</label><div>${pills(TUFTS, 'tuft')}</div></div>
+        <div class="row"><label>体型</label><div>${pills(BUILDS, 'build')}</div></div>
+        <div class="row"><label>瞳孔</label><div>${pills([{ id: 'normal', n: '普通' }, { id: 'big', n: '大大的' }], 'pupil')}</div></div>
+        <div class="row"><label>豆豆眉</label><div>${yesno('brows', '有', '没有')}</div></div>
+        <div class="row"><label>项圈</label><div>${pills(COLLARS, 'collar')}</div></div>
+        <div class="row"><label>衣服</label><div class="wrap">${outfits}</div></div>
+        <button class="go" id="cr-done">${thenStart ? '开张营业！' : '换好了'}</button>
+      </div>`;
+    const refresh = () => {
+      $('#cr-img').src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(catSVG(look, 'front', { w: 400, h: 440 }));
+      box.querySelectorAll('[data-k]').forEach((b) => {
+        const k = b.dataset.k, v = b.dataset.v;
+        b.classList.toggle('on', k === 'brows' ? String(look.brows ? 1 : 0) === v : look[k] === v);
+      });
+    };
+    box.querySelectorAll('[data-k]').forEach((b) => b.addEventListener('click', () => {
+      const k = b.dataset.k, v = b.dataset.v;
+      look[k] = k === 'brows' ? v === '1' : v; sfx.tap(); refresh();
+    }));
+    $('#cr-done').addEventListener('click', () => {
+      if (save) did('look');
+      const list = loadSaves(); const t = list.find((x) => x.id === creatorFor.id);
+      if (t) { t.look = look; t.updated = Date.now(); storeSaves(list); }
+      if (save && save.id === creatorFor.id) { save.look = look; buildPlayerSprites(look); }
+      if (creatorThen) startSave(creatorFor.id);
+      else if (G && save && save.id === creatorFor.id) { G.paused = false; show('hud-screen'); }
+      else { renderSaves(); show('title'); }
+    });
+    refresh(); show('creator');
+  }
+  function persist() { save.lastSeen = Date.now(); const list = loadSaves().map((s) => (s.id === save.id ? save : s)); storeSaves(list); }
+  const CATSTICK = () => URLS.stick || (URLS.stick = dataURL('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><g transform="rotate(-35 32 32)"><rect x="25" y="3" width="14" height="58" rx="4" fill="#f2a33a" stroke="#2c2420" stroke-width="2.4"/><rect x="25" y="3" width="14" height="9" rx="3" fill="#d9603a" stroke="#2c2420" stroke-width="2"/><rect x="25" y="52" width="14" height="9" rx="3" fill="#d9603a" stroke="#2c2420" stroke-width="2"/><path d="M28 32 q4 -6 8 0 q-4 6 -8 0z" fill="#fbf6ec"/><path d="M35 32 l3 -3 v6z" fill="#fbf6ec"/></g></svg>'));
+  function endDay() {
+    G.over = true;
+    const goals = save.day === 1 ? [60, 100, 140] : save.day <= 3 ? [120, 200, 280] : [200, 360, 520];
+    const stars = goals.filter((g) => G.coins >= g).length;
+    // 工资：每位伙计每天的猫条，直接从今天的钱里扣（1 元 = 1 根猫条，只是换个样子）
+    const wages = staffIds().map((id) => ({ id, n: STAFF_DEF[id].wage || 30 })), wageAll = wages.reduce((a, x) => a + x.n, 0);
+    const paidW = Math.min(wageAll, Math.max(0, save.coins + G.coins)); save.coins -= paidW;
+    save.sulk = paidW < wageAll ? wages.map((x) => x.id) : [];
+    const stick = (n) => `<span class="stk"><img alt="" src="${CATSTICK()}">×${n}</span>`;
+    const before = OUTFITS.filter((o) => isUnlocked(o, save)).map((o) => o.id);
+    save.coins += G.coins; save.rep += G.rep; save.history.push({ day: save.day, stars, coins: G.coins }); save.day++; save.updated = Date.now();
+    persist();
+    $('#res-body').innerHTML = `
+      <div class="stars">${'★'.repeat(stars)}<span class="dim">${'★'.repeat(3 - stars)}</span></div>
+      <table><tr><td>今天收入</td><td>¥ ${G.coins}</td></tr><tr><td>其中小费</td><td>¥ ${G.tips}</td></tr>
+      <tr><td>服务顾客</td><td>${G.served} 位</td></tr><tr><td>生气离开</td><td>${G.angry} 位</td></tr>
+      <tr><td>口碑变化</td><td>${G.rep >= 0 ? '+' : ''}${G.rep}</td></tr>
+      ${wages.map((x) => `<tr class="wage"><td>${STAFF_DEF[x.id].name}的工资</td><td>${stick(x.n)} 根猫条</td></tr>`).join('')}
+      ${wageAll ? `<tr><td>扣完工资</td><td>¥ ${G.coins - paidW}</td></tr>` : ''}</table>
+      ${save.sulk.length ? '<p class="unlock" style="color:#a8322a">钱不够发猫条，伙计们饿着肚子，明天会慢吞吞的……</p>' : ''}
+      <p class="goal">星星目标：¥${goals.join(' / ¥')}</p>
+      <button id="res-dex" style="font-size:20px;min-height:48px">看笔记</button>
+      ${OUTFITS.filter((o) => isUnlocked(o, save) && !before.includes(o.id)).map((o) => `<p class="unlock">解锁新衣服：${o.n}！可以在「捏脸 / 换衣服」里换上。</p>`).join('')}`;
+    renderShop();
+    show('result'); sfx.coin();
+    $('#res-dex').addEventListener('click', () => openDex('cust'));
+  }
+  function renderShop() {
+    const up = save.upgrades || {};
+    const box = $('#res-shop');
+    box.innerHTML = `<h3>店铺升级 <small>存款 ¥ ${save.coins}</small></h3>` + UPGRADES.map((u) => {
+      const own = up[u.id], open = save.day >= u.day, afford = save.coins >= u.cost;
+      const btn = own ? '<span class="owned">已拥有</span>' : !open ? `<span class="lock">第 ${u.day} 天解锁</span>` : `<button class="buy" data-id="${u.id}" ${afford ? '' : 'disabled'}>¥${u.cost} 购买</button>`;
+      return `<div class="up ${own ? 'own' : ''}"><div><b>${u.n}</b><p>${u.desc}</p></div>${btn}</div>`;
+    }).join('');
+    box.querySelectorAll('.buy').forEach((b) => b.addEventListener('click', () => {
+      const u = UPGRADES.find((x) => x.id === b.dataset.id);
+      if (!u || save.coins < u.cost) return;
+      save.coins -= u.cost; save.upgrades = { ...(save.upgrades || {}), [u.id]: true }; persist(); sfx.coin();
+      toast(`${u.n}已就位，明天开始可以用`); renderShop();
+    }));
+  }
+  $('#b-next').addEventListener('click', () => { newDay(); show('hud-screen'); showTip('day'); });
+  $('#b-menu').addEventListener('click', openMenuPick);
+  $('#b-open').addEventListener('click', () => { if (G && G.mode === 'day') ask(`开门营业吗？${G.D.energy ? `（体力还剩 ${G.D.energy}）` : ''}`, '开店').then((ok) => ok && openShop()); });
+  $('#b-pantry').addEventListener('click', openPantry);
+  $('#b-dex').addEventListener('click', () => openDex('cust'));
+  $('#p-dex').addEventListener('click', () => openDex('cust'));
+  $('#b-dex2').addEventListener('click', () => openDex('cust'));
+  for (const id of ['market-ok', 'pantry-ok']) $('#' + id).addEventListener('click', () => { G.paused = false; show('hud-screen'); });
+  $('#dex-ok').addEventListener('click', () => { if (save) did('dexok'); if (G && !G.over) { G.paused = false; show('hud-screen'); } else show('result'); });
+  document.querySelectorAll('#dex .tabs button').forEach((b) => b.addEventListener('click', () => openDex(b.dataset.tab)));
+  // ---------- 图鉴 ----------
+  function openDex(tab) {
+    if (G) G.paused = true;
+    document.querySelectorAll('#dex .tabs button').forEach((b) => b.classList.toggle('on', b.dataset.tab === tab));
+    const box = $('#dex-list');
+    if (tab === 'cust') {
+      box.innerHTML = CT.map((t) => {
+        const d = (save.dex || {})[t.id];
+        if (!d || !d.met) return `<div class="dx locked"><div class="ph">？</div><b>？？？</b><small>还没来过</small></div>`;
+        const known = (all, k, cls) => all.map((x) => (k.includes(x) ? tagChip(x, cls) : '<span class="chip unk">？</span>')).join('');
+        const body = t.kind === 'omakase'
+          ? `<div>喜欢：${known(t.likes, d.likes, 'want')}</div><div>不太喜欢：${known(t.dislikes, d.dislikes || [], 'meh')}</div><div>不吃：${known(t.hates, d.hates, 'hate')}</div>`
+          : `<div>常说：${d.reqs.length ? d.reqs.map((x) => `<span class="chip">${x}</span>`).join('') : '<span class="none">还没提过要求</span>'}</div>`;
+        return `<div class="dx ${save.noteNew === t.id ? 'fresh' : ''}" data-id="${t.id}"><img alt="" src="${custURL(t.id)}"><b>${t.n}</b>${save.noteNew === t.id ? '<i class="newb">新</i>' : ''}<span class="kind ${t.kind}">${t.kind === 'omakase' ? '随缘客' : '点菜客'}</span><small>${t.blurb}　来过 ${d.met} 次</small>${body}<div class="tiph">小费：${TIP_TXT[t.tip] || ''}</div></div>`;
+      }).join('');
+    } else if (tab === 'fish') {
+      box.innerHTML = FISH.map((f) => { const r = (save.fishDex || {})[f.id];
+        return r ? `<div class="dx"><img class="fish" alt="" src="${URLS['f' + f.id] || (URLS['f' + f.id] = dataURL(fishSVG(f.id)))}"><b>${f.n}</b><small>${f.se.map((x) => SEASONS[x].n).join(' ')} · 钓到 ${r.n} 条 · 最大 ${r.max}cm</small><small>${f.blurb}</small></div>`
+          : `<div class="dx locked"><div class="ph">🎣</div><b>？？？</b><small>${f.se.length === 4 ? '四季都有' : f.se.map((x) => SEASONS[x].n).join('、') + '天才有'}</small></div>`; }).join('');
+    } else if (tab === 'card') {
+      box.innerHTML = POSTCARDS.map((p) => (save.cards || []).includes(p.id)
+        ? `<div class="dx"><img class="card" alt="" src="${URLS['p' + p.id] || (URLS['p' + p.id] = dataURL(postcardSVG(p.id)))}"><b>${p.n}</b><small>${p.from} · ${SEASONS[p.se].n}</small></div>`
+        : `<div class="dx locked"><div class="ph">✉</div><b>？？？</b><small>呆猫还没寄来</small></div>`).join('');
+    } else {
+      const how = (k) => (INVENT[k] ? '老大还在琢磨' : POSTCARDS.some((p) => (p.recipes || []).includes(k)) ? '等呆猫寄来' : `第 ${openDay('dishes', k)} 天学会`);
+      box.innerHTML = Object.keys(DISH).map((k) => {
+        if (!knownDish(k)) return `<div class="dx locked"><div class="ph">？</div><b>？？？</b><small>${how(k)}</small></div>`;
+        const d = DISH[k], n = (save.dishDex || {})[k] || 0;
+        return `<div class="dx ${n ? '' : 'dim'}"><img class="dish" alt="" src="${dishURL(k)}"><b>${d.n}</b><small>${WARES[d.ware].n} · ${ING[d.ing].n} · ¥${d.price}${onMenu(k) ? '' : '（未解锁）'}　上过 ${n} 份</small><div>${d.tags.map((x) => tagChip(x)).join('')}</div></div>`;
+      }).join('');
+    }
+    show('dex');
+    const fr = box.querySelector('.dx.fresh'); if (fr) { fr.scrollIntoView({ block: 'center' }); save.noteNew = null; did('note'); }
+  }
+  $('#b-home').addEventListener('click', () => { G = null; renderSaves(); show('title'); });
+  $('#b-pause').addEventListener('click', () => { if (!G) return; G.paused = true; $('#p-resume').textContent = G.mode === 'day' ? '继续' : '继续营业'; show('pause'); });
+  $('#p-resume').addEventListener('click', () => { G.paused = false; show('hud-screen'); });
+  $('#p-look').style.display = 'none'; // 换样子改成在地图上照镜子
+  $('#p-quit').addEventListener('click', () => { ask('回到存档列表？今天的进度不会保存。', '回去').then((ok) => { if (ok) { G = null; renderSaves(); show('title'); } }); });
+  $('#b-dance').addEventListener('click', () => {
+    if (!G || G.mode !== 'shop' || G.danceCD > 0 || G.paused) return;
+    G.dancer = { t: 4 }; G.danceCD = 45; sfx.dance();
+    G.customers.forEach((c) => { if (c.state !== 'leaving') { addHeart(c); const a = anchor(c); float(a.x, a.y - 20, '+♥', '#ef6f7a'); } });
+  });
+  $('#start-tip').addEventListener('click', () => { $('#start-tip').classList.remove('show'); if (G && G.mode === 'shop') G.paused = false; if (G && G.mode === 'day') { if (save.day === 1) openShop(); else if (save.menuDay !== save.day) openMenuPick(); } });
+
+  // ---------- 老大试菜 ----------
+  const INV = { ing: null, ware: null };
+  function openInvent() {
+    const k = ideaNow(); if (!G || !k) return;
+    G.paused = true; INV.ing = null; INV.ware = null; $('#inv-ok').textContent = '先不试了';
+    const iv = INVENT[k];
+    $('#inv-idea').innerHTML = `<img alt="" src="${dataURL(catSVG('laoda', 'front', { w: 120, h: 132 }))}"><div><b>老大的灵感</b><p>「${iv.idea}」</p></div>`;
+    $('#inv-res').innerHTML = '';
+    const ings = Object.keys(ING).filter((x) => stockOf(x) > 0);
+    $('#inv-ings').innerHTML = ings.length ? ings.map((x) => `<button data-k="${x}"><img alt="" src="${ingURL(x)}"><b>${ING[x].n}</b><small>×${stockOf(x)}</small></button>`).join('') : '<p class="none">家里没有食材，先去早市买一点</p>';
+    $('#inv-wares').innerHTML = Object.keys(WARES).filter(hasWare).map((x) => `<button data-k="${x}"><b>${WARES[x].n}</b></button>`).join('');
+    const sync = () => { document.querySelectorAll('#inv-ings button').forEach((b) => b.classList.toggle('on', b.dataset.k === INV.ing)); document.querySelectorAll('#inv-wares button').forEach((b) => b.classList.toggle('on', b.dataset.k === INV.ware)); $('#inv-go').disabled = !(INV.ing && INV.ware); };
+    document.querySelectorAll('#inv-ings button').forEach((b) => b.addEventListener('click', () => { INV.ing = b.dataset.k; sfx.tap(); sync(); }));
+    document.querySelectorAll('#inv-wares button').forEach((b) => b.addEventListener('click', () => { INV.ware = b.dataset.k; sfx.tap(); sync(); }));
+    sync(); show('invent');
+  }
+  $('#inv-go').addEventListener('click', () => {
+    const k = ideaNow(); if (!k || !INV.ing || !INV.ware) return;
+    save.stock[INV.ing] = Math.max(0, stockOf(INV.ing) - 1); did('inventdo');
+    const iv = INVENT[k];
+    if (INV.ing === iv.ing && INV.ware === iv.ware) {
+      learnRecipe(k); sfx.coin(); did('invent');
+      $('#inv-res').innerHTML = `<div class="ok"><img alt="" src="${dishURL(k)}"><b>试出来了：${DISH[k].n}！</b><small>记进笔记，可以加到今天的菜单</small></div>`;
+      $('#inv-go').disabled = true; $('#inv-ok').textContent = '好了'; persist();
+    } else { sfx.bad(); $('#inv-res').innerHTML = '<div class="no">老大尝了一口：「嗯……还差点意思。」</div>'; }
+  });
+  $('#inv-ok').addEventListener('click', () => { if (G) G.paused = false; show('hud-screen'); });
+  $('#b-invent').addEventListener('click', openInvent);
+
+  // ---------- 安排店员 ----------
+  function openStaff() {
+    if (!G) return;
+    G.paused = true;
+    const box = $('#staff-list');
+    box.innerHTML = staffIds().map((id) => { const js = jobsOf(id);
+      return `<div class="srow"><img alt="" src="${dataURL(catSVG(id, 'front', { w: 120, h: 132 }))}"><b>${STAFF_DEF[id].name}<small class="wg"><img alt="" src="${CATSTICK()}">每天 ${STAFF_DEF[id].wage} 根</small></b><div class="jobs">${JOBS.map((j) => { const n = js.indexOf(j.id); return `<button class="pill ${n >= 0 ? 'on' : ''}" data-s="${id}" data-j="${j.id}">${n >= 0 && j.id !== 'rest' ? `<i>${n + 1}</i>` : ''}${j.n}</button>`; }).join('')}</div></div>`; }).join('')
+      + '<p class="goal">每只猫最多安排两件事，数字是先后顺序；点「休息」就只休息。</p>'
+      + (has('mimi') ? '' : '<p class="goal">第 4 天以后可以在「店铺升级」里雇佣咪咪，多一个帮手。</p>');
+    box.querySelectorAll('[data-j]').forEach((b) => b.addEventListener('click', () => {
+      const id = b.dataset.s, j = b.dataset.j; let js = jobsOf(id).filter((x) => x !== 'rest');
+      if (j === 'rest') js = ['rest'];
+      else if (js.includes(j)) js = js.filter((x) => x !== j);
+      else js = js.length >= 2 ? [js[0], j] : js.concat(j);
+      if (!js.length) js = ['rest'];
+      save.jobs = { ...(save.jobs || {}), [id]: js }; persist(); sfx.tap();
+      const sf = G.staff.find((x) => x.id === id);
+      if (sf && sf.task && sf.task.kind === 'home') sf.task = null;
+      openStaff();
+    }));
+    show('staff');
+  }
+  $('#b-staff').addEventListener('click', openStaff);
+  $('#staff-ok').addEventListener('click', () => { G.paused = false; show('hud-screen'); });
+  $('#rack-ok').addEventListener('click', () => { G.paused = false; show('hud-screen'); });
+
+  // ---------- 引导：一次只指一处（脉动圆圈 + 猫爪 + 几个字），做过两次就不再指；发呆 8 秒会再提示 ----------
+  const LIM = 2;
+  const DBG = { all: false, speed: 1 }; // 测试用：总是提示、加速
+  const need = (k, lim = LIM) => DBG.all || (save.did[k] || 0) < lim || (G && G.idle > 8);
+  const shown = (sel) => { const e = document.querySelector(sel); return e && e.offsetParent !== null ? e : null; };
+  function shopHint() {
+    const w = G.waiter, k = G.kitchen;
+    const queued = (f) => w.queue.some(f) || (w.busyAct && f(w.busyAct));
+    const qT = (t) => queued((a) => (a.kind === 'table' || a.kind === 'seat') && a.table === t);
+    const T = (t, text, type) => ({ type, x: t.cx, y: t.cy - 16 * t.k, r: 62 * t.k, text });
+    const P = (x, y, r, text, type) => ({ type, x, y, r, text });
+    if (G.teaOpen) { const b = shown('#teamenu .topt.want') || shown('#teamenu .topt:not([disabled])'); return b && need('drink') ? { type: 'drink', sel: b, text: '选这个' } : null; }
+    const cand = [];
+    for (const c of G.customers) if (c.state === 'bill' && !qT(c.table)) cand.push(T(c.table, '收钱', 'pay'));
+    for (const h of w.hands) if ((h.kind === 'dish' || h.kind === 'drink') && h.cust.table && !qT(h.cust.table)) cand.push(T(h.cust.table, '端过去', 'serve'));
+    if (w.hands.some((h) => h.kind === 'water')) { const c = G.customers.find((c) => c.state === 'thirsty' && !qT(c.table)); if (c) cand.push(T(c.table, '送水', 'water')); }
+    if (w.hands.some((h) => h.kind === 'plate') && !queued((a) => a.kind === 'sink')) cand.push(P(SINK.x, SINK.y - 30, 50, '放碗', 'sink'));
+    if (G.plates.clean <= 2 && G.plates.dirty > 0 && !w.hands.length && !w.wash && !queued((a) => a.kind === 'sink')) cand.unshift(P(SINK.x, SINK.y - 30, 50, '洗碗', 'wash'));
+    if (w.tickets.length && !queued((a) => a.kind === 'pass')) cand.push(P(300, 480, 60, '送单子', 'pass'));
+    if (k.pass.some((o) => !o.claim) && w.hands.length < 2 && !queued((a) => a.kind === 'pass')) cand.push(P(300, 480, 60, '取菜', 'pick'));
+    if (G.customers.some((c) => c.state === 'thirsty') && !w.hands.some((h) => h.kind === 'water') && !queued((a) => a.kind === 'water')) cand.push(P(WATER.x, WATER.y - 24, 46, '倒水', 'water'));
+    const brewer = G.staff.some((sf) => jobsOf(sf.id).includes('drink') && !resting(sf.id));
+    if (drinkWants().length && !brewer && !w.brew && w.hands.length < 2 && !queued((a) => a.kind === 'pour')) cand.push(P(WATER.x, WATER.y - 24, 46, drinkWants().every((o) => o.drink === 'water') ? '倒水' : '泡饮品', 'drink'));
+    for (const c of G.customers) if (c.state === 'ordering' && !qT(c.table)) cand.push(T(c.table, c.members.some((m) => m.dessert && m.st === 'none') ? '加单' : '点单', 'order'));
+    const q = (G.selected && G.selected.state === 'queue' ? G.selected : null) || G.customers.filter((c) => c.state === 'queue').sort((a, b) => a.id - b.id)[0];
+    if (q) {
+      const free = G.tables.filter((t) => !t.cust && !t.dirty && !t.reserved && t.size >= q.size).sort((a, b) => a.size - b.size)[0];
+      if (free) { if (G.selected === q) cand.unshift(T(free, '坐这桌', 'seat')); else cand.push(P(q.x, q.y - 50, 50, '点客人', 'seat')); }
+    }
+    for (const t of G.tables) if (t.dirty && !t.cust && !qT(t) && !t.busClaim) { cand.push(T(t, '收盘子', 'bus')); break; }
+    if (save.noteNew && shown('#b-dex2')) cand.push({ type: 'note', sel: shown('#b-dex2'), text: '看笔记' });
+    return cand.find((h) => need(h.type)) || null;
+  }
+  function panelHint() {
+    const c = G.orderOpen; if (!c) return null;
+    for (const [m, i] of c.members.map((m, i) => [m, i]).filter(([m]) => m.st === 'none')) {
+      if (m.kind === 'menu' && m.req && (m.req.t === 'no') === !!m.tops[m.req.top] && need('req', 3)) return { type: 'req', sel: shown(`#order .tp.must[data-i="${i}"]`), text: m.req.t === 'no' ? `去掉${m.req.top}` : `加${m.req.top}` };
+      if (m.kind === 'omakase' && !m.dish && need('oma')) {
+        const best = mains(menuNow()).find((k) => canCook(k) && DISH[k].tags.includes(m.want) && !DISH[k].tags.some((x) => c.type.hates.includes(x)));
+        return best ? { type: 'oma', sel: shown(`#order .dcard[data-i="${i}"][data-k="${best}"]`), text: `想吃${m.want}` } : null;
+      }
+    }
+    return need('go') ? { type: 'go', sel: shown('#order .go:not([disabled])'), text: '下单' } : null;
+  }
+  function dayHint() {
+    const D = G.D; if (D.path.length || D.fish > 0) return null;
+    const W_ = (x, y, r, text, type) => ({ type, x: x - D.cam.x, y: y - D.cam.y, r, text, wx: x, wy: y });
+    const cand = [], plots = WMAP.farm.plots;
+    if (save.noteNew && need('note')) return { type: 'note', sel: shown('#b-dex'), text: '看笔记' };
+    if (save.menuNew && save.menuDay === save.day && need('remenu', 2)) return { type: 'remenu', sel: shown('#b-menu'), text: '加新菜' };
+    if (ideaNow() && need('invent', 2)) return { type: 'invent', sel: shown('#b-invent'), text: '老大想试菜' };
+    if (spotOpen('tea') && save.teaDay !== save.day && prog().drinks.some((k) => DRINKS[k].leaf) && stockOf('tealeaf') < 4 && D.energy > 0) cand.push(W_(1170, 960, 90, '摘茶', 'tea'));
+    for (let i = 0; i < prog().plots; i++) {
+      const [x, y] = plots[i];
+      if (plotReady(i) && D.energy > 0) cand.push(W_(x, y, 90, '收菜', 'harvest'));
+      else if (plotEmpty(i) && prog().seeds.some((k) => save.seeds[k] > 0)) cand.push(W_(x, y, 90, '种下', 'plant'));
+      else if (plotEmpty(i) && spotOpen('market') && seedBuyable()) cand.push(W_(370, 430, 110, '买种子', 'seed'));
+    }
+    const low = menuNow().map((k) => DISH[k].ing).find((ing) => prog().ings.includes(ing) && stockOf(ing) < 6 && save.coins >= priceOf(ing) * 5 && mktLeft(ing) >= 5);
+    if (low && spotOpen('market')) cand.unshift(W_(370, 430, 110, `买${ING[low].n}`, 'buy'));
+    if (spotOpen('pond') && D.energy > 0) cand.push(W_(1520, 990, 90, '钓鱼', 'fish'));
+    if (spotOpen('coop') && save.coopDay !== save.day && D.energy > 0) cand.push(W_(2160, 430, 100, '捡蛋', 'egg'));
+    if (spotOpen('mail') && save.mail) cand.push(W_(1317, 620, 60, '有信', 'mail'));
+    if (spotOpen('mirror') && !(save.did.mirror > 0)) cand.push(W_(770, 600, 56, '照镜子', 'mirror'));
+    const h = cand.find((h) => need(h.type, ['fish', 'egg', 'mirror'].includes(h.type) ? 1 : h.type === 'buy' ? 4 : h.type === 'plant' ? 12 : LIM));
+    if (h) return h;
+    const door = WMAP.shop.door; return need('open') || G.idle > 8 ? W_(door.x, door.y - 60, 80, '开店', 'open') : null;
+  }
+  function currentHint() {
+    if (!G || !save) return null;
+    if (shown('#ask.show')) return need('ask') ? { type: 'ask', sel: shown('#ask .yes'), text: '好' } : null;
+    if (shown('#plot.show')) {
+      const f = save.farm[PLOT.i];
+      if (f.cells.some(cellRipe) && G.D.energy > 0 && need('harvest')) return { type: 'harvest', sel: shown('#plot-harvest'), text: '收菜' };
+      if (PLOT.seed && f.cells.some((c) => !c) && need('plant', 12)) return { type: 'plant', sel: shown('#plot-grid .pc.empty'), text: '点空地种下' };
+      if (!PLOT.seed && prog().seeds.some((k) => save.seeds[k] > 0) && need('plant', 12)) return { type: 'plant', sel: shown('#plot-seeds .sd:not([disabled])'), text: '选种子' };
+      return need('plotok', 3) ? { type: 'plotok', sel: shown('#plot-ok'), text: '好了' } : null;
+    }
+    if (shown('#choose.show')) return need('plant') ? { type: 'choose', sel: shown('#choose .opts button'), text: '选一个' } : null;
+    if (shown('#start-tip.show')) return null;
+    if (shown('#result.show')) return need('next') ? { type: 'next', sel: shown('#b-next'), text: '下一天' } : null;
+    if (shown('#menu.show')) return need('menu') ? { type: 'menu', sel: shown('#menu-ok'), text: '就这些' } : null;
+    if (shown('#market.show')) {
+      const low = menuNow().map((k) => DISH[k].ing).find((ing) => prog().ings.includes(ing) && stockOf(ing) < 6 && save.coins >= priceOf(ing) * 5 && mktLeft(ing) >= 5);
+      if (low && need('buy', 4)) return { type: 'buy', sel: shown(`#market .buy1:not([data-seed])[data-k="${low}"][data-n="5"]`), text: `买${ING[low].n}` };
+      const sk = !prog().seeds.some((k) => save.seeds[k] > 0) && seedBuyable(), sn = sk && mktLeft(sk + '_seed') >= 9 && save.coins >= SEED_PRICE[sk] * 9 ? 9 : 3;
+      if (sk && save.farm.some((f, i) => plotEmpty(i)) && need('seed')) return { type: 'seed', sel: shown(`#market .buy1[data-seed][data-k="${sk}"][data-n="${sn}"]`), text: '买种子' };
+      return need('mok') ? { type: 'mok', sel: shown('#market-ok'), text: '买好了' } : null;
+    }
+    if (shown('#dex.show')) return need('dexok') ? { type: 'dexok', sel: shown('#dex-ok'), text: '看完了' } : null;
+    if (shown('#creator.show')) return need('look', 1) ? { type: 'look', sel: shown('#cr-done'), text: '换好了' } : null;
+    if (shown('#invent.show')) {
+      const k = ideaNow(); if (!k) return { type: 'inventok', sel: shown('#inv-ok'), text: '好了' }; if (!need('inventdo', 2)) return null; const iv = INVENT[k];
+      if (INV.ing !== iv.ing) return { type: 'inventdo', sel: shown(`#inv-ings button[data-k="${iv.ing}"]`), text: '用这个' };
+      if (INV.ware !== iv.ware) return { type: 'inventdo', sel: shown(`#inv-wares button[data-k="${iv.ware}"]`), text: '用这个' };
+      return { type: 'inventdo', sel: shown('#inv-go'), text: '试一试' };
+    }
+    if (shown('#mail.show')) return { type: 'mailok', sel: shown('#mail-ok'), text: '收下' };
+    if (!shown('#hud-screen.show') || G.paused || G.over) return null;
+    if (G.mode === 'shop') return G.orderOpen ? panelHint() : shopHint();
+    return dayHint();
+  }
+  let HINT = null;
+  let lastDayHint = '';
+  function updateCoach() {
+    const el = $('#coach'), h = currentHint(); HINT = h;
+    if (h && h.wx != null && G.mode === 'day') { // 地图上的新提示：不在画面里就把镜头挪过去
+      const key = h.type + h.wx + ',' + h.wy;
+      if (key !== lastDayHint) { lastDayHint = key; if (h.x < 80 || h.x > W - 80 || h.y < 110 || h.y > H - 60) { const D = G.D; D.manual = true; D.camGoal = { x: Math.max(0, Math.min(WORLD_W - W, h.wx - W / 2)), y: Math.max(0, Math.min(WORLD_H - H, h.wy - H / 2)) }; } }
+    }
+    if (!h || (h.sel === null)) { el.classList.remove('show'); return; }
+    let x, y, w, hh, box = false;
+    if (h.sel) { const r = h.sel.getBoundingClientRect(), u = ui.getBoundingClientRect(); x = (r.left - u.left + r.width / 2) / uiScale; y = (r.top - u.top + r.height / 2) / uiScale; w = r.width / uiScale + 18; hh = r.height / uiScale + 18; box = true; }
+    else { const k = scale / uiScale, q = toUI(Math.max(70, Math.min(W - 70, h.x)), Math.max(110, Math.min(H - 60, h.y))); x = q.x; y = q.y; w = hh = h.r * 2 * k; }
+    const [ring, paw, cap] = el.children;
+    Object.assign(ring.style, { left: `${x - w / 2}px`, top: `${y - hh / 2}px`, width: `${w}px`, height: `${hh}px` });
+    Object.assign(paw.style, { left: `${x + Math.min(w, 120) * 0.22}px`, top: `${y + Math.min(hh, 120) * 0.12}px` });
+    cap.textContent = h.text;
+    const above = y - hh / 2 - 48 > 64 && !(h.sel && h.sel.closest && h.sel.closest('#order'));
+    const below = y + hh / 2 + 10, capTop = above || below > UH - 50 ? Math.max(8, y - hh / 2 - 48) : below; // 屏幕下面放不下就放上面
+    Object.assign(cap.style, { left: `${Math.max(60, Math.min(UW - 60, x))}px`, top: `${capTop}px`, transform: 'translateX(-50%)' });
+    el.classList.toggle('box', box); el.classList.add('show');
+  }
+  $('#b-next').addEventListener('click', () => did('next'));
+  $('#market-ok').addEventListener('click', () => did('mok'));
+  $('#menu-ok').addEventListener('click', () => { if (save) { did('menu'); save.menuNew = false; } });
+
+  // ---------- 主循环 ----------
+  let last = performance.now();
+  function loop(now) {
+    const dt = Math.min(0.05, (now - last) / 1000); last = now;
+    requestAnimationFrame(loop);
+    try { for (let i = 0; i < DBG.speed; i++) update(dt); render(); updateCoach(); } catch (e) { console.error(e); }
+  }
+  $('#logo-cat').src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(catSVG('penpen', 'front', { w: 400, h: 440 }));
+  resize(); renderSaves(); show('title');
+  requestAnimationFrame(loop);
+  // ---------- 灰盒（T-07）：色块画场景，叠上占地 / 站位 / 点按区 / 碰撞格 / 安全区 / 走位 / 不可达 ----------
+  function polyPath(P) { ctx.beginPath(); P.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y))); ctx.closePath(); }
+  function gbLabel(t, x, y, col = '#2c2420', size = 14) { ctx.save(); ctx.font = `${size}px ${FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineWidth = 3; ctx.strokeStyle = '#ffffffcc'; ctx.strokeText(t, x, y); ctx.fillStyle = col; ctx.fillText(t, x, y); ctx.restore(); }
+  const GB_COL = { stove: '#e8a25a', pass: '#d9c08a', sink: '#8fc1dd', rail: '#c0504a', menurack: '#9a6a44', tea: '#8fc48a', door: '#a58ac8', queue: '#c8b4e6', idle: '#f0d070', staff: '#f3c0a0', chef: '#e8a25a' };
+  const GB_NAME = { 'stove.wok': '灶·炒锅', 'stove.pot': '灶·面锅', 'stove.steamer': '灶·蒸笼', 'stove.clay': '灶·砂锅', pass: '出菜台', sink: '洗碗池', rail: '挂单绳', menurack: '菜单架', tea: '茶水台', teacart: '茶车', door: '门', 'idle.penpen': '盆盆待命', 'staff.laoer': '老二', 'staff.mimi': '咪咪', chef: '老大' };
+  function drawGreyBase() {
+    ctx.fillStyle = '#ece7dd'; ctx.fillRect(0, 0, W, H);
+    ctx.strokeStyle = '#00000010'; ctx.lineWidth = 1; for (let x = 0; x <= W; x += TS) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); } for (let y = 0; y <= H; y += TS) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
+    if (LAYOUT) for (const it of LAYOUT.items) if (it.kind === 'wall') { ctx.fillStyle = '#b8b0a2cc'; polyPath(it.footprint); ctx.fill(); }
+    ctx.fillStyle = '#cfe3ee'; ctx.fillRect(WIN.x, WIN.y, WIN.w, WIN.h); gbLabel('窗', WIN.x + WIN.w / 2, WIN.y + WIN.h / 2, '#4a7fb5', 20);
+    if (!LAYOUT) return;
+    for (const it of LAYOUT.items) {
+      if (it.kind === 'table' || it.kind === 'wall' || it.kind === 'queue' || it.kind === 'staff' || it.kind === 'idle' || it.kind === 'chef') continue;
+      const col = GB_COL[it.kind] || '#ccc';
+      if (it.needs && !it.needs.some((k) => has(k))) continue; // 茶车：和碰撞用同一个判定
+      if (it.footprint) { ctx.fillStyle = col + 'cc'; polyPath(it.footprint); ctx.fill(); }
+      if (it.line) { ctx.strokeStyle = col; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(...it.line[0]); ctx.lineTo(...it.line[1]); ctx.stroke(); }
+      if (it.hit && !it.footprint && !it.line) { ctx.fillStyle = col + '99'; ctx.fillRect(it.hit.x, it.hit.y, it.hit.w, it.hit.h); }
+      if (it.slots) it.slots.forEach(([x, y], i) => { ctx.fillStyle = '#fff'; ctx.strokeStyle = '#8a6a40'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.ellipse(x, y, 14, 7, 0, 0, 7); ctx.fill(); ctx.stroke(); gbLabel('盘' + (i + 1), x - 26, y, '#8a6a40', 11); });
+      const a = it.anchor; if (a) gbLabel(GB_NAME[it.id] || it.id, a[0], a[1] - (it.kind === 'stove' ? 58 : 0), '#2c2420', 15);
+    }
+    QSPOTS.forEach((q, i) => { ctx.fillStyle = GB_COL.queue + 'aa'; ctx.beginPath(); ctx.ellipse(q.x, q.y, 34, 14, 0, 0, 7); ctx.fill(); gbLabel('候位' + (i + 1), q.x, q.y + 22, '#6a4a9a', 13); });
+  }
+  function drawGreyTable(t) {
+    ctx.fillStyle = t.cust ? '#d8b88acc' : '#c9a77caa'; ctx.strokeStyle = '#7a5434'; ctx.lineWidth = 2;
+    if (t.foot) polyPath(t.foot); else { ctx.beginPath(); ctx.ellipse(t.cx, t.cy + 12, t.rx, t.ry, 0, 0, 7); }
+    ctx.fill(); ctx.stroke();
+    t.seats.forEach((sp, i) => { ctx.fillStyle = sp.front ? '#fff8' : '#fffc'; ctx.strokeStyle = '#7a5434'; ctx.beginPath(); ctx.arc(sp.x, sp.y + 10, 9, 0, 7); ctx.fill(); ctx.stroke(); });
+    gbLabel(`桌${t.id} · ${t.size}人`, t.cx, t.cy + 6, '#4a3020', 18);
+    t.topY = [t.cy - 6, t.cy + 16];
+  }
+  function gbPlates() { // 盘子总数：干净 + 脏 + 桌上待收 + 出菜台 + 手上 + 客人面前
+    const pl = G.plates, k = G.kitchen, hand = (h) => (h.kind === 'dish' ? 1 : h.kind === 'plate' ? h.n || 1 : 0);
+    return pl.clean + pl.dirty + G.tables.reduce((a, t) => a + (+t.dirty || 0), 0) + k.pass.length + G.waiter.hands.reduce((a, h) => a + hand(h), 0) + G.staff.reduce((a, sf) => a + sf.hands.reduce((b, h) => b + hand(h), 0), 0)
+      + G.customers.reduce((a, c) => a + (c.table ? c.members.filter((m) => m.st === 'served').length + (c.extraPlates || 0) : 0), 0);
+  }
+  const GB = { plateLog: [], plates: null, trail: [], show: { foot: true, stand: true, hit: false, grid: false, safe: true, trail: false, unreach: true, ids: false } };
+  function drawGreyOverlay() {
+    const S = GB.show;
+    if (S.grid && SHOP_GRID) { ctx.fillStyle = '#d0453a22'; ctx.strokeStyle = '#d0453a55'; for (let r = 0; r < SHOP_GRID.rows; r++) for (let c = 0; c < SHOP_GRID.cols; c++) if (SHOP_GRID.b[r][c]) { ctx.fillRect(c * TS, r * TS, TS, TS); ctx.beginPath(); ctx.moveTo(c * TS, r * TS); ctx.lineTo(c * TS + TS, r * TS + TS); ctx.stroke(); } }
+    if (LAYOUT) for (const it of LAYOUT.items) {
+      if (it.kind === 'table' && !G.tables.some((t) => 'table.' + t.id === it.id)) continue;
+      if (it.needs && !it.needs.some((k) => has(k))) continue;
+      if (S.foot && it.footprint) { ctx.strokeStyle = '#d0453a'; ctx.lineWidth = 1.5; ctx.setLineDash([]); polyPath(it.footprint); ctx.stroke(); }
+      if (S.hit && it.hit) { ctx.strokeStyle = '#3f86c4'; ctx.lineWidth = 1.5; ctx.setLineDash([6, 4]); ctx.strokeRect(it.hit.x, it.hit.y, it.hit.w, it.hit.h); ctx.setLineDash([]); }
+      if (S.hit && it.card) { ctx.strokeStyle = '#8a5ab5'; ctx.lineWidth = 1.5; ctx.setLineDash([3, 3]); ctx.strokeRect(it.card.x, it.card.y, it.card.w, it.card.h); ctx.setLineDash([]); } // 候位人数牌
+      if (S.stand && it.stand) it.stand.forEach(([x, y]) => { ctx.fillStyle = '#2e8b57'; ctx.beginPath(); ctx.arc(x, y, 6, 0, 7); ctx.fill(); ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke(); });
+      if (S.ids) { const a = it.anchor || (it.stand && it.stand[0]); if (a) gbLabel(it.id, a[0], a[1] + 16, '#3f5a8a', 11); }
+    }
+    if (S.trail && GB.trail.length) { const cols = { '盆盆': '#c0504a', laoer: '#3f86c4', mimi: '#2e8b57' }; for (const [who, x, y] of GB.trail) { ctx.fillStyle = (cols[who] || '#666') + '55'; ctx.fillRect(x - 2, y - 2, 4, 4); } }
+    if (S.unreach && G.unreach) for (const u of G.unreach) { ctx.strokeStyle = '#d0453a'; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(u.x - 10, u.y - 10); ctx.lineTo(u.x + 10, u.y + 10); ctx.moveTo(u.x + 10, u.y - 10); ctx.lineTo(u.x - 10, u.y + 10); ctx.stroke(); }
+    if (S.safe) { // 顶部 44 CSS px 的界面安全区（按当前屏幕缩放换算）
+      const top = 44 / scale; // 顶部 44 CSS px 换成游戏 px ctx.fillStyle = '#3f86c41f'; ctx.fillRect(0, 0, W, top); ctx.strokeStyle = '#3f86c4'; ctx.setLineDash([8, 6]); ctx.beginPath(); ctx.moveTo(0, top); ctx.lineTo(W, top); ctx.stroke(); ctx.setLineDash([]);
+      gbLabel(`顶部界面安全区 44 CSS px = ${top.toFixed(0)} 游戏 px`, W / 2, Math.min(top - 10, 60), '#3f5a8a', 14);
+    }
+  }
+  function gbPreset(name) { // 两桌 / 五桌：换桌子、重算碰撞格。只在 gbStart 开新班时调用（G-005：运行中换桌会丢桌上脏盘、盘数预算对不上）
+    if (!G || !LAYOUT) return;
+    const ids = LAYOUT.presets[name] || LAYOUT.presets.two;
+    if (G.customers.some((c) => c.table)) { toast('有客人坐着，等这一班结束再换'); return; }
+    G.tables = TABLES.filter((t) => ids.includes('table.' + t.id)).map((t) => ({ ...t, cust: null, dirty: false, reserved: null, busClaim: null }));
+    buildShopGrid(G.tables); GB.preset = name; gbInfo();
+  }
+  function gbStart(name) { // 开一班：灰盒专用存档，跳过地图直接营业
+    const day = name === 'five' ? 7 : 1;
+    const s = { id: 'gb' + Date.now().toString(36), name: name === 'five' ? '灰盒五桌' : '灰盒两桌', day, coins: 500, rep: 0, history: [], look: { ...CATS.penpen.look }, created: Date.now(), updated: Date.now(), did: {} };
+    if (day > 1) { s.recipes = ['shuizhu', 'dandan']; s.menu = ['mapo', 'mian', 'gongbao', 'shuizhu', 'dandan']; s.menuDay = day; s.stock = Object.fromEntries(Object.keys(ING).map((k) => [k, 30])); }
+    storeSaves([s]); startSave(s.id); GB.trail = []; GB.plateLog = []; GB.plates = null;
+    $('#start-tip').classList.remove('show'); show('hud-screen');
+    if (G.mode === 'day') openShop();
+    G.paused = false; gbPreset(name);
+  }
+  function gbInfo() {
+    const el = document.getElementById('gb-info'); if (!el) return;
+    const vw = window.innerWidth, vh = window.innerHeight;
+    el.textContent = `屏幕 ${vw}×${vh} CSS · 画面缩放 ${scale.toFixed(2)} · 16 CSS px 字 = ${(16 / scale).toFixed(0)} 游戏 px · 44 CSS px 按钮 = ${(44 / scale).toFixed(0)} 游戏 px · 桌子：${GB.preset === 'five' ? '五桌' : '两桌'} · 走不到 ${(G && G.unreach || []).length} 次`;
+  }
+  if (GREY) {
+    const p = document.createElement('div'); p.id = 'gb-panel';
+    p.style.cssText = 'position:fixed;left:6px;bottom:6px;z-index:99;background:#fffffff0;border:2px solid #3f86c4;border-radius:10px;padding:6px 8px;font:13px sans-serif;max-width:min(96vw,760px);display:flex;flex-wrap:wrap;gap:6px;align-items:center';
+    const btn = (t, f) => { const b = document.createElement('button'); b.textContent = t; b.style.cssText = 'font-size:13px;padding:4px 8px;min-height:32px'; b.onclick = f; p.appendChild(b); return b; };
+    const tog = (k, t) => { const l = document.createElement('label'); l.style.cssText = 'display:flex;gap:2px;align-items:center'; const c = document.createElement('input'); c.type = 'checkbox'; c.checked = GB.show[k]; c.onchange = () => { GB.show[k] = c.checked; }; l.append(c, t); p.appendChild(l); };
+    const tt = document.createElement('b'); tt.textContent = '灰盒'; p.appendChild(tt);
+    btn('两桌开一班', () => gbStart('two')); btn('五桌开一班', () => gbStart('five'));
+    tog('foot', '占地'); tog('stand', '站位'); tog('hit', '点按区'); tog('grid', '碰撞格'); tog('safe', '安全区'); tog('trail', '走位'); tog('unreach', '走不到'); tog('ids', 'ID');
+    const info = document.createElement('div'); info.id = 'gb-info'; info.style.cssText = 'flex-basis:100%;color:#3f5a8a'; p.appendChild(info);
+    const fold = document.createElement('button'); fold.textContent = '灰盒 ▸'; fold.style.cssText = 'position:fixed;left:6px;bottom:6px;z-index:99;font:13px sans-serif;padding:4px 10px;min-height:32px;border:2px solid #3f86c4;border-radius:10px;background:#fff';
+    const setOpen = (o) => { p.style.display = o ? 'flex' : 'none'; fold.style.display = o ? 'none' : 'block'; };
+    fold.onclick = () => setOpen(true); btn('收起 ◂', () => setOpen(false));
+    document.body.append(p, fold); setOpen(window.innerHeight >= 500); setInterval(gbInfo, 1000);
+  }
+  window.__penpen = { openMenuPick, catchFish, openMail, openMarket, openOrder, endDay, spawnCustomer, get ui() { return { scale, uiScale, UW, UH }; }, newDay: () => { newDay(); show('hud-screen'); showTip('day'); }, openDex, get G() { return G; }, get save() { return save; }, TABLES, PASS, SINK, WATER, DISH, findPath, get LAYOUT() { return LAYOUT; }, GB, gbStart, gbPreset: gbStart, get SHOP_GRID() { return SHOP_GRID; }, enqueue, gbPlates, WMAP, openShop, dayTap, openRack, openOrder, startOrdering, CT, DBG, get hint() { const h = HINT; return h && { type: h.type, text: h.text, sel: h.sel ? true : false, el: h.sel || null, x: h.x, y: h.y, wx: h.wx, wy: h.wy }; } };
+})();

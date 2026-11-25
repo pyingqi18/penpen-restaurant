@@ -1,0 +1,5 @@
+game/dist/
+*.pre-*
+bot-*.png
+shot-*.png
+node_modules/
