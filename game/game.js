@@ -435,13 +435,14 @@
       waiter: { x: IDLE.x, y: IDLE.y, path: [], hands: [], queue: [], tickets: [], face: 1, back: false, blinkT: 2 },
       staff: staffIds().filter((id) => !jobsOf(id).includes('farm')).map((id) => ({ id, x: STAFF_DEF[id].home.x, y: STAFF_DEF[id].home.y, path: [], hands: [], task: null, face: 1, back: false })),
       danceCD: 0, selected: null, orderOpen: null, dancer: null,
-      D: { x: WMAP.shop.door.x, y: WMAP.shop.door.y + 30, path: [], face: 1, back: false, task: null, energy: ENERGY, fish: 0, cam: { x: 360, y: 300 }, manual: false },
+      D: { x: WMAP.shop.door.x, y: WMAP.shop.door.y + 30, path: [], face: 1, back: false, task: null, energy: save.energyDay === save.day && save.energy != null ? save.energy : ENERGY, fish: 0, cam: { x: 360, y: 300 }, manual: false },
     };
     TEA_IMG = (has('tea') || has('snack')) ? svgImg(teaCartSVG(has('tea'), has('snack'))) : null;
     setSeason(seasonOf(save.day)); G.parts = []; rollTrend();
     // 安排了农活的店员：一早去摘茶、收熟了的菜
-    save.farmLog = [];
-    for (const id of staffIds()) if (jobsOf(id).includes('farm')) {
+    const firstMorning = save.morningDay !== save.day; save.morningDay = save.day; // T-03：早上的农活、茶叶、来信一天只发一次
+    if (firstMorning) save.farmLog = [];
+    if (firstMorning) for (const id of staffIds()) if (jobsOf(id).includes('farm')) {
       const got = [];
       if (spotOpen('tea')) { save.stock.tealeaf = stockOf('tealeaf') + 3; got.push('茶叶×3'); }
       save.farm.forEach((f, i) => { if (plotReady(i)) { const g = harvestPlot(i); for (const k in g) got.push(`${ING[k].n}×${g[k]}`); } });
@@ -451,7 +452,7 @@
       if (got.length) save.farmLog.push({ id, got });
     }
     // 呆猫的信：每隔两三天到一封
-    if (!save.mail && spotOpen('mail') && save.day >= (save.mailDay || 3)) {
+    if (firstMorning && !save.mail && spotOpen('mail') && save.day >= (save.mailDay || 3)) {
       const next = POSTCARDS.find((p) => !(save.cards || []).includes(p.id)); // 按呆猫的旅行路线一站一站寄
       if (next) save.mail = next.id;
     }
@@ -466,6 +467,7 @@
     if (!G || G.mode !== 'day') return;
     if (save.day === 1) { save.menu = ['mapo', 'mian']; save.menuDay = 1; }
     if (save.menuDay !== save.day && !G.menuAsked) { G.menuAsked = true; openMenuPick(); return; }
+    if (!(save.ck && save.ck.day === save.day)) save.ck = JSON.parse(JSON.stringify({ day: save.day, stock: save.stock, seeds: save.seeds, coins: save.coins, menu: save.menu, menuDay: save.menuDay, farm: save.farm, energy: G.D.energy })); // T-03：开店那一刻的存档点
     buildShopGrid(G.tables); setMode('shop'); G.t = 0; G.spawnT = 3; G.script = save.day === 1 ? DAY1.map((x) => ({ ...x })) : null; G.omaAt = save.day <= 3 ? rand(50, 90) : null; persist(); did('open');
   }
 
@@ -505,7 +507,7 @@
     if (h) { const sp = h.spot(); D.task = h; D.path = findPath(D, sp, WORLD_GRID) || (noWay('盆盆', sp), (D.task = null), []); D.manual = false; D.camGoal = null; sfx.tap(); return; }
     D.task = null; D.path = findPath(D, p, WORLD_GRID) || (noWay('盆盆', p), []); D.manual = false; D.camGoal = null;
   }
-  const spend = () => { if (G.D.energy <= 0) { toast('今天累了，没体力了；去开店吧'); return false; } G.D.energy--; return true; };
+  const spend = () => { if (G.D.energy <= 0) { toast('今天累了，没体力了；去开店吧'); return false; } G.D.energy--; save.energy = G.D.energy; save.energyDay = save.day; return true; }; // T-03：体力记进存档，重开不回满
   function gain(ing, n, x, y) { save.stock[ing] = stockOf(ing) + n; float(x, y, `${ING[ing].n} +${n}`, '#3f7a34'); sfx.ding(); }
   function dayArrive(h) {
     const D = G.D;
@@ -1620,9 +1622,41 @@
   }
   // 出菜口上方的挂单绳：送到的单子一桌一张，上一道勾一道，上齐盖章取下
   const RAIL = LI.rail && LI.rail.line ? { x0: LI.rail.line[0][0], x1: LI.rail.line[1][0], y: LI.rail.line[0][1] } : { x0: 232, x1: 438, y: 276 };
+  const SPIKE = LI.rail && LI.rail.spike ? { x: LI.rail.spike[0], y: LI.rail.spike[1] } : null; // 主人 11/25：挂单改成出菜口边上一根小柱子，单子戳在上面
+  function drawSpike(k) {
+    const S = SPIKE, t = performance.now() / 1000, show = k.rail.slice(0, 3), n = show.length, top = S.y - 58; // 主人：更短，立在台面上
+    ctx.fillStyle = '#2c241824'; ctx.beginPath(); ctx.ellipse(S.x, S.y + 2, 14, 4, 0, 0, 7); ctx.fill(); // 影子
+    ctx.fillStyle = '#8a5636'; ctx.strokeStyle = '#4a3020'; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(S.x, S.y - 3, 12, 5, 0, 0, 7); ctx.fill(); ctx.stroke(); // 木底座
+    show.slice().reverse().forEach((c, ri) => { // 最早的单子在最前面
+      const i = n - 1 - ri, lines = [];
+      c.members.forEach((m) => { const dk = m.drink && m.dst !== 'none'; if (m.dish && m.st !== 'none') lines.push({ dish: m.dish, drink: dk ? m.drink : null, done: m.st === 'served' && (!dk || m.dst === 'served') }); else if (dk) lines.push({ drink: m.drink, done: m.dst === 'served' }); });
+      if (!c.railDone && lines.length && lines.every((l) => l.done)) c.railDone = G.t;
+      const w = 58, h = 34 + lines.length * 26, sc = 0.7, off = (i - (n - 1) / 2);
+      ctx.save(); ctx.translate(S.x + off * 26, top + 6 + Math.abs(off) * 6); ctx.rotate(off * 0.2 + Math.sin(t * 1.1 + i) * 0.015 + (c.railDone ? 0.1 : 0)); ctx.scale(sc, sc);
+      ctx.fillStyle = '#00000014'; ctx.fillRect(-w / 2 + 3, 3, w, h);
+      ctx.fillStyle = '#fbf6e6'; ctx.strokeStyle = '#c9b48a'; ctx.lineWidth = 1; ctx.fillRect(-w / 2, 0, w, h); ctx.strokeRect(-w / 2, 0, w, h);
+      ctx.fillStyle = '#6b4a30'; ctx.beginPath(); ctx.arc(0, 8, 3, 0, 7); ctx.fill(); // 戳穿的小孔
+      faceTag(c, 12, 22, 13); if (c.table) tableTag(c.table.id, -14, 22, 16);
+      lines.forEach((l, j) => {
+        const ly = 44 + j * 26; ctx.globalAlpha = l.done ? 0.45 : 1;
+        if (l.dish) { const im = DISH_IMG[l.dish]; if (im && im.complete) ctx.drawImage(im, -27, ly - 11, 36, 24); if (l.drink) drawCup(6, ly + 9, l.drink, 0.5); } else drawCup(-9, ly + 10, l.drink, 0.6);
+        ctx.globalAlpha = 1;
+        if (l.done) { ctx.strokeStyle = '#3f7a34'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(12, ly); ctx.lineTo(17, ly + 6); ctx.lineTo(25, ly - 6); ctx.stroke(); }
+        else { ctx.fillStyle = '#e3a43a'; ctx.beginPath(); ctx.arc(18, ly, 4.5, 0, 7); ctx.fill(); }
+      });
+      if (c.railDone) { ctx.rotate(-0.3); ctx.strokeStyle = '#c0392b'; ctx.lineWidth = 2; rr(-18, h / 2 - 6, 36, 20, 3); ctx.stroke(); label('上齐', 0, h / 2 + 4, 13, '#c0392b'); }
+      ctx.restore();
+    });
+    ctx.strokeStyle = '#4a4440'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(S.x, S.y - 6); ctx.lineTo(S.x, top); ctx.stroke(); // 铁签
+    ctx.fillStyle = '#4a4440'; ctx.beginPath(); ctx.moveTo(S.x - 3, top + 2); ctx.lineTo(S.x, top - 8); ctx.lineTo(S.x + 3, top + 2); ctx.fill();
+    if (!n) label('单子', S.x, S.y + 16, 14, '#fbe9c6', '#8a5636');
+    if (k.rail.length > 3) label(`+${k.rail.length - 3}`, S.x + 34, S.y - 12, 14, '#2c2420', '#fbf6ec');
+    if (!n && G.waiter.tickets.length) { const b = Math.abs(Math.sin(t * 3.3)) * 6; label('↓ 单子插这里', S.x, top - 22 - b, 16, '#b04a3c', '#fbf6ec'); }
+  }
   function drawRail(k) {
     k.rail = k.rail.filter((c) => G.customers.includes(c) && c.state !== 'leaving' && !(c.railDone && G.t - c.railDone > 1.6));
     ctx.save();
+    if (SPIKE) { drawSpike(k); ctx.restore(); return; }
     ctx.strokeStyle = '#6b4a30'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(RAIL.x0, RAIL.y); ctx.lineTo(RAIL.x1, RAIL.y); ctx.stroke();
     ctx.fillStyle = '#8a5a3a'; for (const x of [RAIL.x0, RAIL.x1]) { ctx.beginPath(); ctx.arc(x, RAIL.y, 4, 0, 7); ctx.fill(); }
     // 挂单处的小木牌
@@ -2008,10 +2042,10 @@
   }
   // ---------- 界面 ----------
   // 游戏内的确认框（网页环境里不能用浏览器自带的 confirm）
-  function ask(msg, yes = '确定') {
+  function ask(msg, yes = '确定', only = false) { // only：只有一个按钮的提示
     return new Promise((resolve) => {
       const box = $('#ask');
-      box.querySelector('p').innerHTML = msg;
+      box.querySelector('p').innerHTML = msg; box.querySelector('.no').style.display = only ? 'none' : '';
       box.querySelector('.yes').textContent = yes;
       box.classList.add('show');
       const done = (v) => { box.classList.remove('show'); box.querySelector('.yes').onclick = null; box.querySelector('.no').onclick = null; resolve(v); };
@@ -2074,7 +2108,10 @@
     save = loadSaves().find((s) => s.id === id); if (!save) return;
     fixSave(save);
     buildPlayerSprites(save.look || CATS.penpen.look);
+    const ck = save.ck && save.ck.day === save.day ? save.ck : null;
+    if (ck) Object.assign(save, { stock: ck.stock, seeds: ck.seeds, coins: ck.coins, menu: ck.menu, menuDay: ck.menuDay, farm: ck.farm, energy: ck.energy, energyDay: save.day }); // 营业中退出：回到开店那一刻
     newDay(); show('hud-screen');
+    if (ck) { openShop(); G.paused = true; save.lastSeen = Date.now(); persist(); ask('上次营业到一半就离开了，这一班从开店那一刻重新开始。', '好的', true).then(() => { G.paused = false; }); sfx.tap(); return; }
     if (!showAway()) showTip('day');
     sfx.tap();
   }
@@ -2172,8 +2209,8 @@
     $('#tip-body').innerHTML = TIPS[k]; $('#tip-close').textContent = '点这里关闭'; $('#start-tip').classList.add('show');
   }
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'hidden' && save) { save.lastSeen = Date.now(); persist(); if (G && !G.over) G.paused = true; }
-    if (document.visibilityState === 'visible' && G && !G.over && $('#hud-screen').classList.contains('show') && !$('#ask').classList.contains('show')) G.paused = false;
+    if (document.visibilityState === 'hidden' && save) { save.lastSeen = Date.now(); persist(); if (G && !G.over && !G.paused) { G.paused = true; G.sysPaused = true; } } // T-03：只记系统挂起
+    if (document.visibilityState === 'visible' && G && G.sysPaused) { G.sysPaused = false; G.paused = false; } // 回来只解除系统挂起，玩家自己按的暂停不动
   });
 
   // ---------- 捏猫 / 换衣服 ----------
@@ -2242,6 +2279,7 @@
     save.sulk = paidW < wageAll ? wages.map((x) => x.id) : [];
     const stick = (n) => `<span class="stk"><img alt="" src="${CATSTICK()}">×${n}</span>`;
     const before = OUTFITS.filter((o) => isUnlocked(o, save)).map((o) => o.id);
+    delete save.ck; // 这一班结算了，存档点作废（只结算一次）
     save.coins += G.coins; save.rep += G.rep; save.history.push({ day: save.day, stars, coins: G.coins }); save.day++; save.updated = Date.now();
     persist();
     $('#res-body').innerHTML = `
@@ -2503,7 +2541,7 @@
     Object.assign(ring.style, { left: `${x - w / 2}px`, top: `${y - hh / 2}px`, width: `${w}px`, height: `${hh}px` });
     Object.assign(paw.style, { left: `${x + Math.min(w, 120) * 0.22}px`, top: `${y + Math.min(hh, 120) * 0.12}px` });
     cap.textContent = h.text;
-    const above = y - hh / 2 - 48 > 64 && !(h.sel && h.sel.closest && h.sel.closest('#order'));
+    const above = y - hh / 2 - 48 > 64 && !(h.sel && h.sel.closest && h.sel.closest('#order, #ask')); // 提示框里的按钮：字放在按钮下面，不压提示文字
     const below = y + hh / 2 + 10, capTop = above || below > UH - 50 ? Math.max(8, y - hh / 2 - 48) : below; // 屏幕下面放不下就放上面
     Object.assign(cap.style, { left: `${Math.max(60, Math.min(UW - 60, x))}px`, top: `${capTop}px`, transform: 'translateX(-50%)' });
     el.classList.toggle('box', box); el.classList.add('show');

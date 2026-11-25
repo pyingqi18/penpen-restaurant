@@ -29,7 +29,7 @@ for (const [w, [x, y]] of Object.entries(WARES)) items.push({ id: `stove.${w}`, 
 items.push({ id: 'chef', kind: 'chef', anchor: [150, 376], stand: [[150, 376]], range: [[70, 376], [395, 376]], wash: [395, 376], note: '老大在灶台后左右移动；主人 11/25：老大要能直接够到洗碗池 → 灶台后的走道一直通到洗碗池后面，洗碗时站 395' });
 items.push({ id: 'pass', kind: 'pass', anchor: [260, 510], slots: [[292, 466], [276, 488], [260, 510], [244, 532], [228, 554]], stand: [[408, 520]], hit: { x: 200, y: 440, w: 140, h: 140 } });
 items.push({ id: 'sink', kind: 'sink', anchor: [410, 370], stand: [[414, 428]], hit: { x: 374, y: 320, w: 72, h: 62 } /* G-006：对准台体，不压桌 1 */, footprint: rect(374, 330, 72, 52) });
-items.push({ id: 'rail', kind: 'rail', anchor: [335, 276], line: [[232, 276], [438, 276]], hit: { x: 222, y: 250, w: 226, h: 70 } });
+items.push({ id: 'rail', kind: 'rail', anchor: [338, 450], spike: [338, 450], hit: { x: 304, y: 370, w: 70, h: 86 }, note: '主人 11/25：挂单改成出菜口边上一根小柱子（单子戳在铁签上），不再是墙上的绳子；再改：更短，立在出菜台面上' });
 items.push({ id: 'menurack', kind: 'menurack', anchor: [1056, 166], hit: { x: 1010, y: 100, w: 92, h: 120 } });
 items.push({ id: 'tea', kind: 'tea', anchor: [206, 596], stand: [[372, 600]], hit: { x: 140, y: 540, w: 140, h: 90 }, vessels: [[22, 586], [54, 586], [86, 586], [118, 588], [150, 588]] });
 items.push({ id: 'teacart', kind: 'tea', anchor: [375, 712], stand: [[375, 660]], hit: { x: 305, y: 610, w: 140, h: 110 }, footprint: rect(311, 662, 128, 60), needs: ['tea', 'snack'], note: '茶车：买了茶台或点心柜才出现、才挡路（G-003）；D-006 从右下角挪到茶水台旁，把右下角让给候位' });

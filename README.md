@@ -2,7 +2,7 @@
 
 给爸妈玩的横屏小游戏（iPhone 网页版）。猫猫开的小餐馆：白天备菜种地，晚上开店招呼客人。
 
-- **在线试玩**：GitHub Pages 打开 `docs/index.html`。iPhone 上用 Safari 打开 → 分享 → 「添加到主屏幕」，从桌面图标打开就是全屏。
+- **在线玩**：https://pyingqi18.github.io/penpen-restaurant/ （正式版）；灰盒验收版在 `greybox.html`。iPhone 上用 Safari 打开 → 分享 → 「添加到主屏幕」，从桌面图标打开就是全屏。
 - **构建**：`cd game && node build.js` → 生成 `game/dist/index.html`（正式版）和 `game/dist/greybox.html`（灰盒验收版）。
 - **测试**：`node bot.js 3`（机器人玩 1–3 天）、`GREYBOX=five node bot.js 7`（灰盒五桌一班：盘子守恒、走不到、穿墙自检）。需要 Playwright + Chrome。
 - **布局**：`tools/gen_layout.js` 生成 `game/layout.json`（桌位、站位、点按区、碰撞，全部用稳定 ID）。
