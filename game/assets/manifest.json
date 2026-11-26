@@ -1,256 +1,630 @@
 {
-"room_courtyard": {
-"w": 1536,
-"h": 864
-},
-"kitchen_fg": {
-"w": 462,
-"h": 449,
-"x": 0,
-"y": 415
-},
-"room_fg": {
-"w": 1536,
-"h": 864
-},
-"view_spring": {
-"w": 1536,
-"h": 417
-},
-"view_summer": {
-"w": 1536,
-"h": 417
-},
-"view_autumn": {
-"w": 1536,
-"h": 417
-},
-"view_winter": {
-"w": 1536,
-"h": 417
-},
-"table_s": {
-"w": 247,
-"h": 218
-},
-"table_m": {
-"w": 351,
-"h": 225
-},
-"table_l": {
-"w": 420,
-"h": 202
-},
-"table_s2": {
-"w": 233,
-"h": 185
-},
-"stool": {
-"w": 124,
-"h": 135
-},
-"stool_woven": {
-"w": 123,
-"h": 135
-},
-"ware_wok": {
-"w": 265,
-"h": 216
-},
-"ware_pot": {
-"w": 261,
-"h": 206
-},
-"ware_steamer": {
-"w": 204,
-"h": 231
-},
-"ware_clay": {
-"w": 275,
-"h": 207
-},
-"tray": {
-"w": 279,
-"h": 175
-},
-"water_set": {
-"w": 225,
-"h": 238
-},
-"tea_cart": {
-"w": 278,
-"h": 241
-},
-"dirty_dishes": {
-"w": 234,
-"h": 223
-},
-"d_pilea": {
-"w": 210,
-"h": 234
-},
-"d_monstera": {
-"w": 255,
-"h": 273
-},
-"d_spider": {
-"w": 240,
-"h": 273
-},
-"d_frame": {
-"w": 275,
-"h": 212
-},
-"d_cattree": {
-"w": 276,
-"h": 265
-},
-"d_fishbowl": {
-"w": 276,
-"h": 183
-},
-"d_phono": {
-"w": 242,
-"h": 272
-},
-"d_books": {
-"w": 274,
-"h": 242
-},
-"d_lamp": {
-"w": 195,
-"h": 272
-},
-"d_chime": {
-"w": 90,
-"h": 273
-},
-"d_chili": {
-"w": 133,
-"h": 272
-},
-"d_garlic": {
-"w": 124,
-"h": 272
-},
-"d_yarn": {
-"w": 215,
-"h": 221
-},
-"d_umbrella": {
-"w": 153,
-"h": 273
-},
-"d_vegbasket": {
-"w": 275,
-"h": 259
-},
-"d_ricesack": {
-"w": 258,
-"h": 257
-},
-"d_watervat": {
-"w": 270,
-"h": 270
-},
-"d_jars": {
-"w": 267,
-"h": 261
-},
-"d_hatrack": {
-"w": 158,
-"h": 272
-},
-"d_catbed": {
-"w": 276,
-"h": 173
-},
-"d_floorlamp": {
-"w": 167,
-"h": 271
-},
-"d_board": {
-"w": 276,
-"h": 225
-},
-"d_steamers": {
-"w": 230,
-"h": 258
-},
-"d_fruitcrate": {
-"w": 276,
-"h": 213
-},
-"spring_runner": {
-"w": 211,
-"h": 242
-},
-"summer_runner": {
-"w": 211,
-"h": 242
-},
-"autumn_runner": {
-"w": 215,
-"h": 239
-},
-"winter_runner": {
-"w": 216,
-"h": 240
-},
-"spring_vase": {
-"w": 193,
-"h": 226
-},
-"summer_vase": {
-"w": 241,
-"h": 205
-},
-"autumn_vase": {
-"w": 198,
-"h": 224
-},
-"winter_vase": {
-"w": 168,
-"h": 221
-},
-"spring_hanging": {
-"w": 161,
-"h": 267
-},
-"summer_hanging": {
-"w": 135,
-"h": 267
-},
-"autumn_hanging": {
-"w": 134,
-"h": 267
-},
-"winter_hanging": {
-"w": 121,
-"h": 267
-},
-"m_shop": {
-"w": 397,
-"h": 414
-},
-"m_market": {
-"w": 413,
-"h": 405
-},
-"m_coop": {
-"w": 422,
-"h": 390
-},
-"m_mailbox": {
-"w": 193,
-"h": 410
-},
-"m_sign": {
-"w": 369,
-"h": 360
-},
-"m_scarecrow": {
-"w": 368,
-"h": 414
-}
+ "room_courtyard": {
+  "w": 1536,
+  "h": 864
+ },
+ "kitchen_fg": {
+  "w": 462,
+  "h": 449,
+  "x": 0,
+  "y": 415
+ },
+ "room_fg": {
+  "w": 1536,
+  "h": 864
+ },
+ "view_spring": {
+  "w": 1536,
+  "h": 417
+ },
+ "view_summer": {
+  "w": 1536,
+  "h": 417
+ },
+ "view_autumn": {
+  "w": 1536,
+  "h": 417
+ },
+ "view_winter": {
+  "w": 1536,
+  "h": 417
+ },
+ "table_s": {
+  "w": 247,
+  "h": 218
+ },
+ "table_m": {
+  "w": 351,
+  "h": 225
+ },
+ "table_l": {
+  "w": 420,
+  "h": 202
+ },
+ "table_s2": {
+  "w": 233,
+  "h": 185
+ },
+ "stool": {
+  "w": 124,
+  "h": 135
+ },
+ "stool_woven": {
+  "w": 123,
+  "h": 135
+ },
+ "ware_wok": {
+  "w": 265,
+  "h": 216
+ },
+ "ware_pot": {
+  "w": 261,
+  "h": 206
+ },
+ "ware_steamer": {
+  "w": 204,
+  "h": 231
+ },
+ "ware_clay": {
+  "w": 275,
+  "h": 207
+ },
+ "tray": {
+  "w": 279,
+  "h": 175
+ },
+ "water_set": {
+  "w": 225,
+  "h": 238
+ },
+ "tea_cart": {
+  "w": 278,
+  "h": 241
+ },
+ "dirty_dishes": {
+  "w": 234,
+  "h": 223
+ },
+ "d_pilea": {
+  "w": 210,
+  "h": 234
+ },
+ "d_monstera": {
+  "w": 255,
+  "h": 273
+ },
+ "d_spider": {
+  "w": 240,
+  "h": 273
+ },
+ "d_frame": {
+  "w": 275,
+  "h": 212
+ },
+ "d_cattree": {
+  "w": 276,
+  "h": 265
+ },
+ "d_fishbowl": {
+  "w": 276,
+  "h": 183
+ },
+ "d_phono": {
+  "w": 242,
+  "h": 272
+ },
+ "d_books": {
+  "w": 274,
+  "h": 242
+ },
+ "d_lamp": {
+  "w": 195,
+  "h": 272
+ },
+ "d_chime": {
+  "w": 90,
+  "h": 273
+ },
+ "d_chili": {
+  "w": 133,
+  "h": 272
+ },
+ "d_garlic": {
+  "w": 124,
+  "h": 272
+ },
+ "d_yarn": {
+  "w": 215,
+  "h": 221
+ },
+ "d_umbrella": {
+  "w": 153,
+  "h": 273
+ },
+ "d_vegbasket": {
+  "w": 275,
+  "h": 259
+ },
+ "d_ricesack": {
+  "w": 258,
+  "h": 257
+ },
+ "d_watervat": {
+  "w": 270,
+  "h": 270
+ },
+ "d_jars": {
+  "w": 267,
+  "h": 261
+ },
+ "d_hatrack": {
+  "w": 158,
+  "h": 272
+ },
+ "d_catbed": {
+  "w": 276,
+  "h": 173
+ },
+ "d_floorlamp": {
+  "w": 167,
+  "h": 271
+ },
+ "d_board": {
+  "w": 276,
+  "h": 225
+ },
+ "d_steamers": {
+  "w": 230,
+  "h": 258
+ },
+ "d_fruitcrate": {
+  "w": 276,
+  "h": 213
+ },
+ "spring_runner": {
+  "w": 211,
+  "h": 242
+ },
+ "summer_runner": {
+  "w": 211,
+  "h": 242
+ },
+ "autumn_runner": {
+  "w": 215,
+  "h": 239
+ },
+ "winter_runner": {
+  "w": 216,
+  "h": 240
+ },
+ "spring_vase": {
+  "w": 193,
+  "h": 226
+ },
+ "summer_vase": {
+  "w": 241,
+  "h": 205
+ },
+ "autumn_vase": {
+  "w": 198,
+  "h": 224
+ },
+ "winter_vase": {
+  "w": 168,
+  "h": 221
+ },
+ "spring_hanging": {
+  "w": 161,
+  "h": 267
+ },
+ "summer_hanging": {
+  "w": 135,
+  "h": 267
+ },
+ "autumn_hanging": {
+  "w": 134,
+  "h": 267
+ },
+ "winter_hanging": {
+  "w": 121,
+  "h": 267
+ },
+ "m_shop": {
+  "w": 397,
+  "h": 414
+ },
+ "m_market": {
+  "w": 413,
+  "h": 405
+ },
+ "m_coop": {
+  "w": 422,
+  "h": 390
+ },
+ "m_mailbox": {
+  "w": 193,
+  "h": 410
+ },
+ "m_sign": {
+  "w": 369,
+  "h": 360
+ },
+ "m_scarecrow": {
+  "w": 368,
+  "h": 414
+ },
+ "room_b": {
+  "w": 1780,
+  "h": 853,
+  "x": -250.0,
+  "y": -50.0
+ },
+ "room_b_fgc": {
+  "w": 604,
+  "h": 314,
+  "x": -250.0,
+  "y": 440.0
+ },
+ "room_b_fgd": {
+  "w": 141,
+  "h": 481,
+  "x": 1143.33,
+  "y": -8.33
+ },
+ "g_bunny_agouti_sit": {
+  "w": 256,
+  "h": 256
+ },
+ "g_bunny_agouti_stand": {
+  "w": 256,
+  "h": 256
+ },
+ "g_bunny_lop_sit": {
+  "w": 256,
+  "h": 256
+ },
+ "g_bunny_lop_stand": {
+  "w": 256,
+  "h": 256
+ },
+ "g_bunny_pied_sit": {
+  "w": 256,
+  "h": 256
+ },
+ "g_bunny_pied_stand": {
+  "w": 256,
+  "h": 256
+ },
+ "g_bunny_point_sit": {
+  "w": 256,
+  "h": 256
+ },
+ "g_bunny_point_stand": {
+  "w": 256,
+  "h": 256
+ },
+ "g_fox_arctic_sit": {
+  "w": 256,
+  "h": 256
+ },
+ "g_fox_arctic_stand": {
+  "w": 256,
+  "h": 256
+ },
+ "g_fox_fennec_sit": {
+  "w": 256,
+  "h": 256
+ },
+ "g_fox_fennec_stand": {
+  "w": 256,
+  "h": 256
+ },
+ "g_fox_red_sit": {
+  "w": 256,
+  "h": 256
+ },
+ "g_fox_red_stand": {
+  "w": 256,
+  "h": 256
+ },
+ "g_fox_silver_sit": {
+  "w": 256,
+  "h": 256
+ },
+ "g_fox_silver_stand": {
+  "w": 256,
+  "h": 256
+ },
+ "g_neko_black_sit": {
+  "w": 256,
+  "h": 256
+ },
+ "g_neko_black_stand": {
+  "w": 256,
+  "h": 256
+ },
+ "g_neko_calico_sit": {
+  "w": 256,
+  "h": 256
+ },
+ "g_neko_calico_stand": {
+  "w": 256,
+  "h": 256
+ },
+ "g_neko_cow_sit": {
+  "w": 256,
+  "h": 256
+ },
+ "g_neko_cow_stand": {
+  "w": 256,
+  "h": 256
+ },
+ "g_neko_orange_sit": {
+  "w": 256,
+  "h": 256
+ },
+ "g_neko_orange_stand": {
+  "w": 256,
+  "h": 256
+ },
+ "g_neko_persian_sit": {
+  "w": 256,
+  "h": 256
+ },
+ "g_neko_persian_stand": {
+  "w": 256,
+  "h": 256
+ },
+ "g_panda_broad_sit": {
+  "w": 256,
+  "h": 256
+ },
+ "g_panda_broad_stand": {
+  "w": 256,
+  "h": 256
+ },
+ "g_panda_compact_sit": {
+  "w": 256,
+  "h": 256
+ },
+ "g_panda_compact_stand": {
+  "w": 256,
+  "h": 256
+ },
+ "g_panda_elder_sit": {
+  "w": 256,
+  "h": 256
+ },
+ "g_panda_elder_stand": {
+  "w": 256,
+  "h": 256
+ },
+ "g_panda_tall_sit": {
+  "w": 256,
+  "h": 256
+ },
+ "g_panda_tall_stand": {
+  "w": 256,
+  "h": 256
+ },
+ "g_raccoon_cinnamon_sit": {
+  "w": 256,
+  "h": 256
+ },
+ "g_raccoon_cinnamon_stand": {
+  "w": 256,
+  "h": 256
+ },
+ "g_raccoon_dark_sit": {
+  "w": 256,
+  "h": 256
+ },
+ "g_raccoon_dark_stand": {
+  "w": 256,
+  "h": 256
+ },
+ "g_raccoon_gray_sit": {
+  "w": 256,
+  "h": 256
+ },
+ "g_raccoon_gray_stand": {
+  "w": 256,
+  "h": 256
+ },
+ "g_raccoon_silver_sit": {
+  "w": 256,
+  "h": 256
+ },
+ "g_raccoon_silver_stand": {
+  "w": 256,
+  "h": 256
+ },
+ "g_shiba_black_tan_sit": {
+  "w": 256,
+  "h": 256
+ },
+ "g_shiba_black_tan_stand": {
+  "w": 256,
+  "h": 256
+ },
+ "g_shiba_cream_sit": {
+  "w": 256,
+  "h": 256
+ },
+ "g_shiba_cream_stand": {
+  "w": 256,
+  "h": 256
+ },
+ "g_shiba_red_sit": {
+  "w": 256,
+  "h": 256
+ },
+ "g_shiba_red_stand": {
+  "w": 256,
+  "h": 256
+ },
+ "g_shiba_sesame_sit": {
+  "w": 256,
+  "h": 256
+ },
+ "g_shiba_sesame_stand": {
+  "w": 256,
+  "h": 256
+ },
+ "s_penpen": {
+  "w": 256,
+  "h": 256
+ },
+ "s_laoda": {
+  "w": 256,
+  "h": 256
+ },
+ "s_laoer": {
+  "w": 256,
+  "h": 256
+ },
+ "s_mimi": {
+  "w": 256,
+  "h": 256
+ },
+ "s_shuai": {
+  "w": 256,
+  "h": 256
+ },
+ "s_shuai_dance": {
+  "w": 256,
+  "h": 256
+ },
+ "aju_walk": {
+  "w": 256,
+  "h": 256
+ },
+ "aju_wave": {
+  "w": 256,
+  "h": 256
+ },
+ "aju_sit": {
+  "w": 256,
+  "h": 256
+ },
+ "aju_snowpeak": {
+  "w": 256,
+  "h": 256
+ },
+ "aju_bamboo": {
+  "w": 256,
+  "h": 256
+ },
+ "aju_sakura": {
+  "w": 256,
+  "h": 256
+ },
+ "aju_arcade": {
+  "w": 256,
+  "h": 256
+ },
+ "aju_autumn": {
+  "w": 256,
+  "h": 256
+ },
+ "aju_hotspring": {
+  "w": 256,
+  "h": 256
+ },
+ "pc_snowpeak": {
+  "w": 768,
+  "h": 512
+ },
+ "pc_karst": {
+  "w": 768,
+  "h": 512
+ },
+ "pc_river": {
+  "w": 768,
+  "h": 512
+ },
+ "pc_huizhou": {
+  "w": 768,
+  "h": 512
+ },
+ "pc_autumn": {
+  "w": 768,
+  "h": 512
+ },
+ "pc_sakura": {
+  "w": 768,
+  "h": 512
+ },
+ "pc_hotspring": {
+  "w": 768,
+  "h": 512
+ },
+ "pc_aurora": {
+  "w": 768,
+  "h": 512
+ },
+ "snap_snowpeak_1": {
+  "w": 768,
+  "h": 512
+ },
+ "snap_snowpeak_2": {
+  "w": 768,
+  "h": 512
+ },
+ "snap_karst_1": {
+  "w": 768,
+  "h": 512
+ },
+ "snap_karst_2": {
+  "w": 768,
+  "h": 512
+ },
+ "snap_river_1": {
+  "w": 768,
+  "h": 512
+ },
+ "snap_river_2": {
+  "w": 768,
+  "h": 512
+ },
+ "snap_huizhou_1": {
+  "w": 768,
+  "h": 512
+ },
+ "snap_huizhou_2": {
+  "w": 768,
+  "h": 512
+ },
+ "snap_autumn_1": {
+  "w": 768,
+  "h": 512
+ },
+ "snap_autumn_2": {
+  "w": 768,
+  "h": 512
+ },
+ "snap_sakura_1": {
+  "w": 768,
+  "h": 512
+ },
+ "snap_sakura_2": {
+  "w": 768,
+  "h": 512
+ },
+ "snap_hotspring_1": {
+  "w": 768,
+  "h": 512
+ },
+ "snap_hotspring_2": {
+  "w": 768,
+  "h": 512
+ },
+ "snap_aurora_1": {
+  "w": 768,
+  "h": 512
+ },
+ "snap_aurora_2": {
+  "w": 768,
+  "h": 512
+ }
 }

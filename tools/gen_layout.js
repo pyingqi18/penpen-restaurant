@@ -26,19 +26,19 @@ for (const t of TABLES) {
 items.push({ id: 'door', kind: 'door', anchor: [1162, 396], stand: [[1162, 413]], hit: { x: 1120, y: 250, w: 100, h: 160 } });
 const WARES = { wok: [62, 404], pot: [150, 400], steamer: [254, 388], clay: [332, 388] };
 for (const [w, [x, y]] of Object.entries(WARES)) items.push({ id: `stove.${w}`, kind: 'stove', anchor: [x, y], hit: { x: x - 34, y: y - 50, w: 68, h: 60 } });
-items.push({ id: 'chef', kind: 'chef', anchor: [150, 376], stand: [[150, 376]], range: [[70, 376], [395, 376]], wash: [395, 376], note: '老大在灶台后左右移动；主人 11/25：老大要能直接够到洗碗池 → 灶台后的走道一直通到洗碗池后面，洗碗时站 395' });
-items.push({ id: 'pass', kind: 'pass', anchor: [260, 510], slots: [[292, 466], [276, 488], [260, 510], [244, 532], [228, 554]], stand: [[408, 520]], hit: { x: 200, y: 440, w: 140, h: 140 } });
-items.push({ id: 'sink', kind: 'sink', anchor: [410, 370], stand: [[414, 428]], hit: { x: 374, y: 320, w: 72, h: 62 } /* G-006：对准台体，不压桌 1 */, footprint: rect(374, 330, 72, 52) });
+items.push({ id: 'chef', kind: 'chef', anchor: [96, 548], stand: [[96, 548]], range: [[-60, 548], [110, 548]], wash: [96, 548], note: '主人 11/26：老大在两条木台围出来的厨房圈里面干活（站在灶台前、洗碗池左边），不站到灶台后面' });
+items.push({ id: 'pass', kind: 'pass', anchor: [260, 510], slots: [[232, 480], [282, 502], [220, 512], [268, 530], [258, 552]], label: [376, 456], stand: [[408, 520]], hit: { x: 200, y: 440, w: 140, h: 140 } });
+items.push({ id: 'sink', kind: 'sink', anchor: [185, 582], stand: [[384, 612]], hit: { x: 146, y: 548, w: 82, h: 66 }, note: 'D-011/D-018：B 绘本水彩背景里洗碗池嵌在两条木台的直角处；老大从厨房里侧洗，跑堂在出菜台外侧放脏盘' });
 items.push({ id: 'rail', kind: 'rail', anchor: [338, 450], spike: [338, 450], hit: { x: 304, y: 370, w: 70, h: 86 }, note: '主人 11/25：挂单改成出菜口边上一根小柱子（单子戳在铁签上），不再是墙上的绳子；再改：更短，立在出菜台面上' });
 items.push({ id: 'menurack', kind: 'menurack', anchor: [1056, 166], hit: { x: 1010, y: 100, w: 92, h: 120 } });
-items.push({ id: 'tea', kind: 'tea', anchor: [206, 596], stand: [[372, 600]], hit: { x: 140, y: 540, w: 140, h: 90 }, vessels: [[22, 586], [54, 586], [86, 586], [118, 588], [150, 588]] });
-items.push({ id: 'teacart', kind: 'tea', anchor: [375, 712], stand: [[375, 660]], hit: { x: 305, y: 610, w: 140, h: 110 }, footprint: rect(311, 662, 128, 60), needs: ['tea', 'snack'], note: '茶车：买了茶台或点心柜才出现、才挡路（G-003）；D-006 从右下角挪到茶水台旁，把右下角让给候位' });
+items.push({ id: 'tea', kind: 'tea', anchor: [306, 476], stand: [[396, 488]], hit: { x: 280, y: 420, w: 56, h: 60 }, note: '主人 11/26：茶水台平放在竖着那条吧台的台面上（上端，铁签旁）；跑堂站在吧台外侧' });
+items.push({ id: 'teacart', kind: 'tea', anchor: [421, 712], stand: [[421, 650]], hit: { x: 360, y: 640, w: 94, h: 80 }, footprint: rect(366, 664, 110, 56), needs: ['tea', 'snack'], note: '茶车：买了茶台或点心柜才出现、才挡路（G-003）；D-006 从右下角挪到茶水台旁，把右下角让给候位' });
 items.push({ id: 'idle.penpen', kind: 'idle', anchor: [712, 526], stand: [[712, 526]] });
 items.push({ id: 'staff.laoer', kind: 'staff', stand: [[450, 560]], rest: [470, 690] });
 items.push({ id: 'staff.mimi', kind: 'staff', stand: [[960, 712]], rest: [1180, 700] });
 // 不能走的地方
 items.push({ id: 'wall.back', kind: 'wall', footprint: rect(0, 0, 1280, 340), note: '后墙和窗下' });
-items.push({ id: 'wall.kitchen', kind: 'wall', footprint: [[0, 348], [208, 348], [382, 355], [377, 450], [358, 450], [358, 608], [248, 796], [0, 796]], note: '灶台、出菜台、茶水台' });
+items.push({ id: 'wall.kitchen', kind: 'wall', footprint: [[-250, 330], [384, 330], [384, 470], [362, 470], [352, 730], [-250, 730]], note: 'B 背景：后墙长台、出菜长台、左下长台和里面的厨房地面' });
 items.push({ id: 'wall.kitchen-top', kind: 'wall', footprint: rect(0, 0, 380, 460), note: '厨房上半' });
 items.push({ id: 'wall.door-side', kind: 'wall', footprint: rect(1188, 350, 92, 142), note: '门右侧墙' });
 const L = { version: 1, space: { w: 1280, h: 720 },

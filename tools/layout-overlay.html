@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>盆盆餐厅 · 布局叠图检查</title>
+<style>
+  body { margin: 1rem; background: #171d20; color: #edf3f5; font: 16px system-ui,sans-serif; }
+  h1 { font-size: 1.25rem; }
+  fieldset { margin: .75rem 0; border: 1px solid #64747a; display: flex; flex-wrap: wrap; align-items: center; gap: .75rem 1rem; }
+  input[type=number] { width: 5em; }
+  #preview { overflow: auto; }
+  svg { display: block; max-width: 100%; height: auto; background: #293237; }
+  p { margin: .65rem 0; }
+</style>
+<h1>布局叠图检查</h1>
+<fieldset>
+  <legend>文件与桌位</legend>
+  <label>布局 <input id="layoutFile" type="file" accept=".json,application/json"></label>
+  <label>底图 <input id="imageFile" type="file" accept="image/png,.png"></label>
+  <button id="example" type="button">载入示例</button>
+  <label>桌位 <select id="preset"></select></label>
+</fieldset>
+<fieldset>
+  <legend>图层与安全区</legend>
+  <span id="layers"></span>
+  <label>视口宽 <input id="width" type="number" min="1" value="844"></label>
+  <label>视口高 <input id="height" type="number" min="1" value="345"></label>
+  <label>顶部预留（CSS px） <input id="safe" type="number" min="0" value="44"></label>
+</fieldset>
+<p id="status" role="status"></p>
+<p id="scale"></p>
+<div id="preview"><svg id="plot" role="img" aria-label="源图与布局标记"></svg></div>
+<script>
+  const byId = id => document.getElementById(id);
+  const plot = byId('plot');
+  const preset = byId('preset');
+  const status = byId('status');
+  const sourcePath = 'assets/01-restaurant/room_courtyard.png';
+  const example = {
+    version: 1,
+    space: {w: 1280, h: 720},
+    source: {image: sourcePath, w: 1536, h: 1024, crop: {x: 0, y: 60, w: 1536, h: 864}},
+    presets: {two: ['table.1', 'table.3'], five: ['table.1', 'table.2', 'table.3']},
+    items: [
+      {id: 'table.1', kind: 'table', seats: 2, anchor: [505,440], footprint: [[465,420],[545,420],[545,460],[465,460]]},
+      {id: 'table.2', kind: 'table', seats: 2, anchor: [545,628]},
+      {id: 'table.3', kind: 'table', seats: 4, anchor: [745,438],
+        hit: {x: 650, y: 380, w: 190, h: 120}, stand: [[878,468]],
+        footprint: [[660,410],[830,410],[830,470],[660,470]]},
+      {id: 'door', kind: 'door', anchor: [1190,409], stand: [[1140,450]]},
+      {id: 'wall.counter', kind: 'wall', footprint: [[0,669],[238,669],[340,489],[210,489],[102,639],[0,639]]}
+    ]
+  };
+  const layerNames = {
+    footprint: '占地', stand: '站位', hit: '触区', anchor: '锚点',
+    crop: '裁切框', safe: 'UI 安全区', ids: 'ID'
+  };
+  const layerInputs = {};
+  for (const [key, name] of Object.entries(layerNames)) {
+    const label = document.createElement('label');
+    const input = document.createElement('input');
+    input.type = 'checkbox';
+    input.checked = true;
+    input.addEventListener('change', draw);
+    layerInputs[key] = input;
+    label.append(input, name, ' ');
+    byId('layers').append(label);
+  }
+  let layout;
+  let layoutLabel;
+  let imageUrl;
+  let imageLabel;
+  let pendingImage = 0;
+  let pendingLayout = 0;
+
+  function svg(parent, tag, attrs, label) {
+    const node = document.createElementNS('http://www.w3.org/2000/svg', tag);
+    for (const [key, value] of Object.entries(attrs)) node.setAttribute(key, value);
+    if (label !== undefined) node.textContent = label;
+    parent.append(node);
+    return node;
+  }
+
+  function positive(value) {
+    return Number.isFinite(value) && value > 0;
+  }
+
+  function setLayout(value, label) {
+    const space = value?.space;
+    const source = value?.source;
+    const crop = source?.crop;
+    if (value?.version !== 1 || !Array.isArray(value.items) ||
+        ![space?.w, space?.h, source?.w, source?.h, crop?.w, crop?.h].every(positive) ||
+        ![crop?.x, crop?.y].every(n => Number.isFinite(n) && n >= 0) ||
+        crop.x + crop.w > source.w || crop.y + crop.h > source.h ||
+        !value.items.every(item => typeof item?.id === 'string')) {
+      throw new Error('需要 version 1、有效的 space/source.crop 和带 ID 的 items。');
+    }
+    layout = value;
+    layoutLabel = label;
+    preset.replaceChildren(new Option('全部桌位', ''));
+    for (const [key, ids] of Object.entries(value.presets ?? {})) {
+      if (Array.isArray(ids)) preset.add(new Option(key, key));
+    }
+    updateStatus();
+    draw();
+  }
+
+  function updateStatus(note = '') {
+    status.textContent = [layoutLabel, imageLabel ?? '底图未载入，可手选 PNG', note].filter(Boolean).join(' · ');
+  }
+
+  async function setImage(url, label, local = false) {
+    const request = ++pendingImage;
+    const probe = new Image();
+    probe.src = url;
+    try {
+      await probe.decode();
+      if (request !== pendingImage) {
+        if (local) URL.revokeObjectURL(url);
+        return false;
+      }
+      if (imageUrl?.startsWith('blob:')) URL.revokeObjectURL(imageUrl);
+      imageUrl = url;
+      imageLabel = label + ' ' + probe.naturalWidth + '×' + probe.naturalHeight;
+      updateStatus();
+      draw();
+      return true;
+    } catch {
+      if (local) URL.revokeObjectURL(url);
+      return false;
+    }
+  }
+
+  function draw() {
+    if (!layout) return;
+    const {space, source, items} = layout;
+    const {crop} = source;
+    const xScale = crop.w / space.w;
+    const yScale = crop.h / space.h;
+    const width = byId('width').valueAsNumber;
+    const height = byId('height').valueAsNumber;
+    const cssScale = positive(width) && positive(height) ? Math.min(width / space.w, height / space.h) : 0;
+    const safeCss = Math.max(0, byId('safe').valueAsNumber || 0);
+    const safeHeight = cssScale ? Math.min(space.h, safeCss / cssScale) : 0;
+    byId('scale').textContent = cssScale
+      ? '场景缩放 ' + cssScale.toFixed(4) + '，顶部预留 ' + safeHeight.toFixed(1) + ' 游戏 px'
+      : '请输入有效的视口宽高';
+    plot.replaceChildren();
+    plot.setAttribute('viewBox', '0 0 ' + source.w + ' ' + source.h);
+    plot.setAttribute('width', source.w);
+    plot.setAttribute('height', source.h);
+    if (imageUrl) svg(plot, 'image', {href: imageUrl, width: source.w, height: source.h, preserveAspectRatio: 'none'});
+    if (layerInputs.crop.checked) {
+      svg(plot, 'path', {
+        d: 'M0 0H' + source.w + 'V' + source.h + 'H0Z M' + crop.x + ' ' + crop.y +
+          'h' + crop.w + 'v' + crop.h + 'h-' + crop.w + 'Z',
+        fill: '#0008', 'fill-rule': 'evenodd'
+      });
+      svg(plot, 'rect', {...crop, fill: 'none', stroke: '#fff', 'stroke-width': 2});
+    }
+    const world = svg(plot, 'g', {transform: 'translate(' + crop.x + ' ' + crop.y + ') scale(' + xScale + ' ' + yScale + ')'});
+    if (layerInputs.safe.checked && safeHeight) {
+      svg(world, 'rect', {x: 0, y: 0, width: space.w, height: safeHeight, fill: '#b88aff55', stroke: '#b88aff'});
+    }
+    const tableIds = preset.value ? new Set(layout.presets[preset.value]) : null;
+    const labels = [];
+    for (const item of items) {
+      if (item.kind === 'table' && tableIds && !tableIds.has(item.id)) continue;
+      markItem(world, item);
+      const point = item.anchor ?? item.footprint?.[0] ?? item.stand?.[0] ??
+        (item.hit && [item.hit.x, item.hit.y]);
+      if (point) labels.push([point, item.id]);
+    }
+    if (layerInputs.ids.checked) {
+      for (const [[x,y], id] of labels) {
+        const atRight = x > space.w * .85;
+        svg(world, 'text', {x: x + (atRight ? -8 : 8), y: Math.max(16, y - 8),
+          'text-anchor': atRight ? 'end' : 'start', fill: 'white', stroke: '#172024',
+          'stroke-width': 3, 'paint-order': 'stroke', 'font-size': 16}, id);
+      }
+    }
+  }
+
+  function markItem(world, {footprint, stand, hit, anchor}) {
+    if (layerInputs.footprint.checked && footprint?.length) {
+      svg(world, 'polygon', {points: footprint.map(p => p.join(',')).join(' '),
+        fill: '#44e89655', stroke: '#117447', 'stroke-width': 2});
+    }
+    if (layerInputs.hit.checked && hit) {
+      svg(world, 'rect', {x: hit.x, y: hit.y, width: hit.w, height: hit.h,
+        fill: 'none', stroke: '#9b4600', 'stroke-width': 2, 'stroke-dasharray': '7 4'});
+    }
+    if (layerInputs.stand.checked) {
+      for (const [x,y] of stand ?? []) {
+        svg(world, 'circle', {cx: x, cy: y, r: 5, fill: '#2463ea', stroke: 'white'});
+      }
+    }
+    if (layerInputs.anchor.checked && anchor) {
+      const [x,y] = anchor;
+      svg(world, 'path', {d: 'M' + (x-6) + ' ' + y + 'h12 M' + x + ' ' + (y-6) + 'v12',
+        stroke: '#cf2250', 'stroke-width': 2.5});
+    }
+  }
+
+  byId('layoutFile').addEventListener('change', async event => {
+    const file = event.target.files[0];
+    if (!file) return;
+    const request = ++pendingLayout;
+    try {
+      const value = JSON.parse((await file.text()).replace(/^\uFEFF/, ''));
+      if (request === pendingLayout) setLayout(value, file.name);
+    } catch (error) {
+      if (request === pendingLayout) updateStatus('布局读取失败：' + error.message);
+    }
+  });
+  byId('imageFile').addEventListener('change', async event => {
+    const file = event.target.files[0];
+    if (file && !await setImage(URL.createObjectURL(file), file.name, true)) {
+      updateStatus('底图读取失败');
+    }
+  });
+  byId('example').addEventListener('click', () => {
+    ++pendingLayout;
+    setLayout(example, '内置示例');
+  });
+  preset.addEventListener('change', draw);
+  for (const id of ['width', 'height', 'safe']) byId(id).addEventListener('input', draw);
+
+  async function start() {
+    setLayout(example, '内置示例');
+    const request = ++pendingLayout;
+    if (location.protocol !== 'file:') {
+      for (const path of ['layout.json', '../game/layout.json']) {
+        try {
+          const response = await fetch(path);
+          if (!response.ok) continue;
+          const value = await response.json();
+          if (request !== pendingLayout) break;
+          setLayout(value, path);
+          break;
+        } catch { /* 下一条路径仍可用。 */ }
+      }
+    }
+    if (pendingImage || await setImage('room_courtyard.png', '同目录底图') || pendingImage > 1) return;
+    await setImage('../../' + (layout.source.image || sourcePath), '项目底图');
+  }
+  start();
+</script>
+</html>

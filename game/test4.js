@@ -1,9 +1,12 @@
-const { chromium } = require('/opt/npm-tools/node_modules/playwright');
+const path = require('node:path');
+const { pathToFileURL } = require('node:url');
+const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
 (async () => {
-  const b = await chromium.launch({ executablePath: '/usr/bin/google-chrome' });
+  const launchOptions = process.env.CHROME_PATH ? { executablePath: process.env.CHROME_PATH } : {};
+  const b = await chromium.launch(launchOptions);
   const p = await (await b.newContext({ viewport: { width: 844, height: 390 }, deviceScaleFactor: 2 })).newPage();
   const errs = []; p.on('pageerror', (e) => errs.push(e.message)); p.on('console', (m) => { if (m.type() === 'error') errs.push(m.text()); });
-  await p.goto('file://' + __dirname + '/dist/index.html'); await p.waitForTimeout(300);
+  await p.goto(pathToFileURL(path.join(__dirname, 'dist', 'index.html')).href); await p.waitForTimeout(300);
   await p.fill('#new-name', '妈妈'); await p.click('#new-save .big'); await p.click('#start-tip');
   for (const [day, name] of [[23, 'winter'], [16, 'autumn']]) {
     await p.evaluate((d) => { const P = window.__penpen; P.save.day = d; P.save.mailDay = 1; P.newDay(); document.getElementById('start-tip').classList.remove('show'); }, day);

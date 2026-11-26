@@ -1,12 +1,15 @@
 // 跟着引导自己玩：每次读当前提示，点它指的地方。用来检查引导能不能把一整天带完。
-const { chromium } = require('/opt/npm-tools/node_modules/playwright');
+const path = require('node:path');
+const { pathToFileURL } = require('node:url');
+const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
 const DAYS = +(process.argv[2] || 2), START = +(process.argv[3] || 1);
 (async () => {
-  const b = await chromium.launch({ executablePath: '/usr/bin/google-chrome' });
+  const launchOptions = process.env.CHROME_PATH ? { executablePath: process.env.CHROME_PATH } : {};
+  const b = await chromium.launch(launchOptions);
   const p = await (await b.newContext({ viewport: { width: 844, height: 390 }, deviceScaleFactor: 2 })).newPage();
   const errs = []; p.on('pageerror', (e) => errs.push(e.message)); p.on('console', (m) => { if (m.type() === 'error') errs.push(m.text()); });
   const GB = process.env.GREYBOX; // two / five：在灰盒入口跑一班
-  await p.goto('file://' + __dirname + '/dist/' + (GB ? 'greybox.html' : 'index.html')); await p.waitForTimeout(400);
+  await p.goto(pathToFileURL(path.join(__dirname, 'dist', GB ? 'greybox.html' : 'index.html')).href); await p.waitForTimeout(400);
   await p.evaluate(() => { window.__penpen.DBG.all = true; window.__penpen.DBG.speed = 3; });
   if (GB) { await p.evaluate((n) => window.__penpen.gbStart(n), GB); await p.waitForTimeout(500); }
   else { await p.fill('#new-name', '测试'); await p.click('#new-save .big'); await p.waitForTimeout(500); }
@@ -40,5 +43,9 @@ const DAYS = +(process.argv[2] || 2), START = +(process.argv[3] || 1);
   const fin = await ev(() => { const s = window.__penpen.save; return { dish: s.dishDex, day: s.day, coins: s.coins, did: s.did, hist: s.history, stock: s.stock, seeds: s.seeds, farm: s.farm }; });
   console.log(log.join('\n')); console.log(JSON.stringify(fin));
   console.log('errors:', errs.length ? errs.slice(0, 5).join('\n') : 'none');
+  if (errs.length || fin.day <= DAYS || (GB && !Object.values(fin.dish).some((count) => count > 0))) {
+    console.error('Regression failed: expected days did not finish, a browser error occurred, or the greybox served no meals.');
+    process.exitCode = 1;
+  }
   await b.close();
 })();
