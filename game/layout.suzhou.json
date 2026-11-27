@@ -5,7 +5,7 @@
     "h": 720
   },
   "source": {
-    "image": "assets/09-母稿草稿/G-058/room_suzhou_level_spring.png",
+    "image": "assets/09-母稿草稿/G-059/room_suzhou_counter_spring.png",
     "w": 1813,
     "h": 868,
     "crop": {
@@ -108,7 +108,8 @@
       16,
       427
     ],
-    "footClearance": 6
+    "footClearance": 6,
+    "paintRevision": "g059"
   },
   "presets": {
     "two": [
@@ -913,11 +914,11 @@
           323
         ],
         [
-          464,
-          407
+          462,
+          368
         ],
         [
-          406,
+          391,
           529
         ],
         [

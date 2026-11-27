@@ -1497,10 +1497,12 @@
   }
   const ART_ROOM = () => ok(A('room_courtyard'));
   const GARDEN_ART = new Map();
+  const GARDEN_ROOM_PAINT = new Set(['spring', 'winter', 'counter_spring', 'counter_winter', 'counter_rear_spring', 'counter_rear_winter']);
   function gardenArt(name, extension = 'png') {
     if (!GARDEN_ART.has(name)) {
       const im = new Image();
-      im.src = 'assets/suzhou/' + name + '.' + extension;
+      const version = GARDEN_ROOM_PAINT.has(name) ? LAYOUT?.scene.paintRevision : null;
+      im.src = 'assets/suzhou/' + name + '.' + extension + (version ? '?v=' + version : '');
       GARDEN_ART.set(name, im);
     }
     return GARDEN_ART.get(name);
