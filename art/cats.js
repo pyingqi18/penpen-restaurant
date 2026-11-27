@@ -248,6 +248,12 @@ function catSVG(def, view = 'front', opts = {}) {
 
   // ---- 衣服（淡彩 + 细墨线）----
   const cloth = (d, col) => `<path d="${d}" fill="${col}" opacity="0.92" filter="url(#${id}wash)"/><path d="${d}" fill="none" ${lineThin} filter="url(#${id}ink)"/>`;
+  if (opts.uniform) {
+    const cut = back
+      ? 'M '+(cx-bw*0.66)+' 132 Q '+cx+' 124 '+(cx+bw*0.66)+' 132 L '+(cx+bw*0.75)+' 184 Q '+cx+' 199 '+(cx-bw*0.75)+' 184 Z'
+      : 'M '+(cx-bw*0.69)+' 135 Q '+(cx-11)+' 131 '+cx+' 145 Q '+(cx+14)+' 134 '+(cx+bw*0.67)+' 133 L '+(cx+bw*0.75)+' 183 Q '+cx+' 200 '+(cx-bw*0.72)+' 183 Z';
+    g.push(cloth(cut, opts.uniform));
+  }
   if (outfit === 'apron') {
     g.push(back
       ? `<path d="M ${cx - bw + 4} 146 Q ${cx} 154 ${cx + bw - 4} 146" fill="none" stroke="#e9b8a6" stroke-width="6"/>${cloth(`M ${cx} 151 l -12 -8 v 16 Z M ${cx} 151 l 12 -8 v 16 Z`, '#e9b8a6')}`

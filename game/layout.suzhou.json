@@ -5,7 +5,7 @@
     "h": 720
   },
   "source": {
-    "image": "assets/09-母稿草稿/G-059/room_suzhou_counter_spring.png",
+    "image": "assets/09-母稿草稿/G-060/room_suzhou_counter_spring.png",
     "w": 1813,
     "h": 868,
     "crop": {
@@ -109,7 +109,7 @@
       427
     ],
     "footClearance": 6,
-    "paintRevision": "g059"
+    "paintRevision": "g060"
   },
   "presets": {
     "two": [
@@ -774,14 +774,14 @@
       "id": "menurack",
       "kind": "menurack",
       "anchor": [
-        955,
-        175
+        943,
+        178
       ],
       "hit": {
-        "x": 926,
-        "y": 159,
-        "w": 65,
-        "h": 127
+        "x": 911,
+        "y": 146,
+        "w": 64,
+        "h": 64
       }
     },
     {
