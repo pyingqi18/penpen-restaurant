@@ -139,7 +139,8 @@
   #mail-body .pcard { width: 540px; height: 360px; transform: rotate(-2deg); box-shadow: 0 6px 18px #0003; border-radius: 8px; }
   #mail-body .pmsg b { font-size: 24px; font-family: "ZCOOL KuaiLe", sans-serif; font-weight: 400; } #mail-body .pmsg p { font-size: 21px; line-height: 1.6; margin: 10px 0; }
   #mail-body .gift { color: #b04a3c; font-weight: 700; }
-  .dx img.card { width: 240px; height: 160px; border-radius: 6px; }
+  #mail-body .pmsg .aju { float: right; width: 150px; height: 150px; margin: -18px -6px 0 8px; object-fit: contain; }
+  .dx img.pcimg { width: 240px; height: 160px; border-radius: 6px; object-fit: cover; flex: none; }
   #order .ocols { display: grid; grid-template-columns: repeat(var(--n, 2), minmax(0, 1fr)); gap: 10px; margin: 6px 0 10px; }
   .ocol { background: #f3ead9; border-radius: 18px; padding: 8px 10px 10px; display: flex; flex-direction: column; gap: 6px; }
   .ohd { display: flex; align-items: center; gap: 6px; } .ohd .av { width: 48px; height: 52px; } .ohd .no { font-size: 22px; color: #b04a3c; }
@@ -183,8 +184,11 @@
   .dcard .dp { font-size: 14px; color: #8a6a50; }
   .dcard.on { background: #fff1c9; border-color: #e3a43a; box-shadow: 0 0 0 3px #e3a43a55; }
   .go:disabled { background: #d9c7b5; color: #7b6352; }
-  .srow { display: grid; grid-template-columns: 64px 70px 1fr; align-items: center; gap: 10px; background: #f3ead9; border-radius: 16px; padding: 6px 12px; margin: 6px 0; }
-  .srow img { width: 64px; height: 70px; } .srow b { font-size: 24px; font-family: "ZCOOL KuaiLe", sans-serif; font-weight: 400; }
+  .srow { display: grid; grid-template-columns: 96px 96px 1fr; align-items: center; gap: 12px; background: #f3ead9; border-radius: 18px; padding: 8px 14px; margin: 8px 0; border: 3px solid #e2d2b6; }
+  .srow > img { width: 96px; height: 96px; object-fit: contain; }
+  #staff .srow .jobs .pill { font-size: 22px; min-height: 54px; padding: 8px 18px; border: 3px solid #cdb894; background: #fffaf0; color: #5a4030; }
+  #staff .srow .jobs .pill.on { background: #b04a3c; border-color: #7e2e24; color: #fff; box-shadow: 0 3px 0 #7e2e24; }
+  #staff .srow .jobs .pill.on i { background: #fff; color: #b04a3c; } .srow b { font-size: 24px; font-family: "ZCOOL KuaiLe", sans-serif; font-weight: 400; }
   .srow .jobs { display: flex; gap: 8px; flex-wrap: wrap; } .srow .pill i { font-style: normal; background: #b04a3c; color: #fff; border-radius: 50%; padding: 0 6px; margin-right: 4px; font-size: 14px; }
   #order .ings { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
   .ing { background: #f3ece2; border: 3px solid #e0d3c2; border-radius: 16px; font-size: 22px; padding: 10px 6px; min-height: 58px; }
@@ -370,7 +374,7 @@
       <div class="hud r">
         <div id="h-timebox" class="shop-only" title="今天剩余营业时间"><div id="h-time"></div></div>
         <button class="hb shop-only" id="b-dex2">笔记</button>
-        <button class="hb shop-only" id="b-staff">安排店员</button>
+        <button class="hb day-only" id="b-staff">安排店员</button>
         <button class="hb shop-only" id="b-dance">帅老头跳舞</button>
         <button class="hb day-only" id="b-menu">今日菜单</button>
         <button class="hb day-only" id="b-pantry">储藏室</button>
@@ -458,10 +462,10 @@
     </section>
     <section id="staff" class="screen modal">
       <div class="card" style="min-width:640px">
-        <h2>安排店员</h2>
-        <p class="goal">店员会按安排自己干活；随时可以换。</p>
+        <h2>今天谁干什么？</h2>
+        <p class="goal">点亮要干的活，店员开店后会自己去做。</p>
         <div id="staff-list"></div>
-        <button class="primary" id="staff-ok">好了，继续营业</button>
+        <button class="primary big" id="staff-ok">安排好了</button>
       </div>
     </section>
 

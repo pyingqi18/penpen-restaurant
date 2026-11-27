@@ -1,12 +1,15 @@
 // 跟着引导自己玩：每次读当前提示，点它指的地方。用来检查引导能不能把一整天带完。
-const { chromium } = require('/opt/npm-tools/node_modules/playwright');
+const path = require('node:path');
+const { pathToFileURL } = require('node:url');
+const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
 const DAYS = +(process.argv[2] || 2), START = +(process.argv[3] || 1);
 (async () => {
-  const b = await chromium.launch({ executablePath: '/usr/bin/google-chrome' });
-  const p = await (await b.newContext({ viewport: { width: 844, height: 390 }, deviceScaleFactor: 2 })).newPage();
+  const launchOptions = process.env.CHROME_PATH ? { executablePath: process.env.CHROME_PATH } : {};
+  const b = await chromium.launch(launchOptions);
+  const p = await (await b.newContext({ viewport: { width: 844, height: +(process.env.BOT_HEIGHT || 390) }, deviceScaleFactor: 2 })).newPage();
   const errs = []; p.on('pageerror', (e) => errs.push(e.message)); p.on('console', (m) => { if (m.type() === 'error') errs.push(m.text()); });
   const GB = process.env.GREYBOX; // two / five：在灰盒入口跑一班
-  await p.goto('file://' + __dirname + '/dist/' + (GB ? 'greybox.html' : 'index.html')); await p.waitForTimeout(400);
+  await p.goto(pathToFileURL(path.join(__dirname, 'dist', GB ? 'greybox.html' : process.env.SUZHOU_PREVIEW ? 'suzhou.html' : 'index.html')).href); await p.waitForTimeout(400);
   await p.evaluate(() => { window.__penpen.DBG.all = true; window.__penpen.DBG.speed = 3; });
   if (GB) { await p.evaluate((n) => window.__penpen.gbStart(n), GB); await p.waitForTimeout(500); }
   else { await p.fill('#new-name', '测试'); await p.click('#new-save .big'); await p.waitForTimeout(500); }
@@ -25,7 +28,7 @@ const DAYS = +(process.argv[2] || 2), START = +(process.argv[3] || 1);
     if (!shots[key]) { shots[key] = 1; await shot(key); log.push(`${key}:${h.text}`); }
     if (h.sel) await ev(() => { const h = window.__penpen.hint; h.el && h.el.click(); });
     else if (st.mode === 'day') await ev(([x, y]) => window.__penpen.dayTap({ x, y }), [h.wx, h.wy]);
-    else { const r = await ev(() => { const b = document.getElementById('game').getBoundingClientRect(); const s = Math.min(b.width / 1280, b.height / 720); return { l: b.left + (b.width - 1280 * s) / 2, t: b.top + (b.height - 720 * s) / 2, s }; }); await p.mouse.click(r.l + h.x * r.s, r.t + h.y * r.s); } // T-15：画布铺满，场景居中
+    else { const r = await ev(() => { const b = document.getElementById('game').getBoundingClientRect(); const { scale: s, SX, SY } = window.__penpen.ui; return { l: b.left + SX, t: b.top + SY, s }; }); await p.mouse.click(r.l + h.x * r.s, r.t + h.y * r.s); } // T-15：画布铺满，场景居中
     await p.waitForTimeout(h.type === 'open' ? 900 : 500);
     if (key === lastType) same++; else { same = 0; lastType = key; }
     if (same > 60) { log.push('STUCK ' + key); await shot('stuck'); break; }
@@ -37,8 +40,12 @@ const DAYS = +(process.argv[2] || 2), START = +(process.argv[3] || 1);
       const plates = P.gbPlates();
       const expected = 4 + G.tables.reduce((a, t) => a + t.size, 0);
       return { plateLog: P.GB.plateLog.slice(0, 12), unreach: G.unreach || [], trail: P.GB.trail.length, wallHits: wallHits.slice(0, 10), wallHitCount: wallHits.length, plates: { expected, counted: plates }, tables: G.tables.map((t) => t.id) }; }); log.push('GREYBOX ' + JSON.stringify(g)); await p.waitForTimeout(300); await shot('greybox-' + GB + '-trail'); }
-  const fin = await ev(() => { const s = window.__penpen.save; return { dish: s.dishDex, day: s.day, coins: s.coins, did: s.did, hist: s.history, stock: s.stock, seeds: s.seeds, farm: s.farm }; });
+  const fin = await ev(() => { const P = window.__penpen, s = P.save; return { unreachable: P.G.unreach || [], plates: P.gbPlates(), dish: s.dishDex, day: s.day, coins: s.coins, did: s.did, hist: s.history, stock: s.stock, seeds: s.seeds, farm: s.farm }; });
   console.log(log.join('\n')); console.log(JSON.stringify(fin));
   console.log('errors:', errs.length ? errs.slice(0, 5).join('\n') : 'none');
+  if (errs.length || fin.unreachable.length || fin.day <= DAYS || (GB && !Object.values(fin.dish).some((count) => count > 0))) {
+    console.error('Regression failed: expected days did not finish, a browser error occurred, or the greybox served no meals.');
+    process.exitCode = 1;
+  }
   await b.close();
 })();

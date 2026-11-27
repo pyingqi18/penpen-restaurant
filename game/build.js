@@ -9,12 +9,18 @@ const tpl = fs.readFileSync(path.join(dir, 'template.html'), 'utf8');
 const adir = path.join(dir, 'assets');
 const man = fs.existsSync(path.join(adir, 'manifest.json')) ? fs.readFileSync(path.join(adir, 'manifest.json'), 'utf8') : '{}';
 const lay = fs.existsSync(path.join(dir, 'layout.json')) ? JSON.stringify(JSON.parse(fs.readFileSync(path.join(dir, 'layout.json'), 'utf8'))) : 'null';
-const page = (grey) => tpl.replace('/*CATS_JS*/', () => 'const ART_MANIFEST = ' + man.replace(/\s+/g, '') + ';\n' + cats)
-  .replace('/*GAME_JS*/', () => `const PENPEN_LAYOUT = ${lay};\nconst PENPEN_GREYBOX = ${grey};\n` + game);
-const out = page(false), grey = page(true); // 正式版 index.html；灰盒单独入口 greybox.html
+const gardenPath = path.join(dir, 'layout.suzhou.json');
+const garden = fs.existsSync(gardenPath) ? JSON.stringify(JSON.parse(fs.readFileSync(gardenPath, 'utf8'))) : null;
+const page = (grey, suzhou = false, preview = false) => tpl.replace('/*CATS_JS*/', () => 'const ART_MANIFEST = ' + man.replace(/\s+/g, '') + ';\n' + cats)
+  .replace('/*GAME_JS*/', () => `const PENPEN_LAYOUT = ${suzhou ? garden : lay};\nconst PENPEN_GREYBOX = ${grey};\nconst PENPEN_SUZHOU = ${suzhou};\nconst PENPEN_SUZHOU_PREVIEW = ${preview};\n` + game);
+const out = page(false, Boolean(garden)), grey = page(true); // 正式版 index.html；灰盒单独入口 greybox.html
 fs.mkdirSync(path.join(dir, 'dist/assets'), { recursive: true });
 if (fs.existsSync(adir)) for (const f of fs.readdirSync(adir)) if (f.endsWith('.webp')) fs.copyFileSync(path.join(adir, f), path.join(dir, 'dist/assets', f));
 fs.mkdirSync(path.join(dir, 'dist'), { recursive: true });
 fs.writeFileSync(path.join(dir, 'dist/index.html'), out);
 fs.writeFileSync(path.join(dir, 'dist/greybox.html'), grey);
+if (garden) {
+  fs.cpSync(path.join(adir, 'suzhou'), path.join(dir, 'dist/assets/suzhou'), { recursive: true });
+  fs.writeFileSync(path.join(dir, 'dist/suzhou.html'), page(false, true, true));
+}
 console.log('built', (out.length / 1024).toFixed(1) + ' KB');
