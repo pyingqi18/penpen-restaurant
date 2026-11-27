@@ -239,7 +239,12 @@ function catSVG(def, view = 'front', opts = {}) {
     + inkPath(brush(sample([rev(b6), rev(b5)], 14).slice(1, -2), 4.4, { bias: 0.6 }), 0.92)
     + inkPath(brush(sample([b3, b4], 10).slice(2, -2), 1.8), 0.55)));
   // 脚
-  for (const s of [-1, 1]) g.push(inkG(inkPath(brush(quadPts(P(cx + s * (bw * 0.45) - 12, bot - 3), P(cx + s * (bw * 0.45), bot + 6), P(cx + s * (bw * 0.45) + 12, bot - 3)), 2.2), 0.8)));
+  for (const side of [-1, 1]) {
+    const stride = side * (opts.stride || 0), x = cx + side * bw * 0.45 + stride * 2;
+    const y = bot - 3 + stride * 5;
+    if (opts.stride) g.push(inkG('<ellipse cx="' + x + '" cy="' + (y + 4) + '" rx="12" ry="7" fill="' + fur + '"/>'));
+    g.push(inkG(inkPath(brush(quadPts(P(x - 12, y), P(x, y + 9), P(x + 12, y)), 2.2), 0.8)));
+  }
 
   // ---- 衣服（淡彩 + 细墨线）----
   const cloth = (d, col) => `<path d="${d}" fill="${col}" opacity="0.92" filter="url(#${id}wash)"/><path d="${d}" fill="none" ${lineThin} filter="url(#${id}ink)"/>`;
