@@ -21,8 +21,8 @@
     -webkit-user-select: none; user-select: none; }
   body { display: flex; align-items: center; justify-content: center;
     padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
-  #stage { position: relative; }
-  #game { position: absolute; inset: 0; width: 100%; height: 100%; border-radius: 6px; }
+  #stage { position: fixed; inset: 0; }
+  #game { position: absolute; inset: 0; width: 100%; height: 100%; }
   #start-tip .tip-open { background: #b04a3c; color: #fff; border: 0; box-shadow: 0 5px 0 #7d2f25; font-size: 32px; padding: 14px 64px; border-radius: 20px; margin-top: 6px; pointer-events: none; } /* T-02：整张卡片都能点，按钮只是醒目 */
   #ui { position: fixed; left: 0; top: 0; width: 1280px; height: 720px; transform-origin: 0 0; pointer-events: none; z-index: 2; } /* T-01：界面层铺满安全区，大小由 resize() 算 */
   #order { transform-origin: 50% 0; }
@@ -89,6 +89,22 @@
   #start-tip h3 { margin: 0 0 6px; font-size: 28px; color: #b04a3c; }
   #start-tip ol { margin: 0; padding-left: 28px; }
 
+
+  #yard-task:not([hidden]),#yard-fishing:not([hidden]){display:flex;align-items:center;gap:12px;position:absolute;bottom:12px;left:14px;max-width:min(645px,90%);padding:9px 12px;background:#fcf1ddf3;border:1px solid #ab8c69;border-radius:10px;box-shadow:0 3px 10px #60442d38;color:#5c4534;pointer-events:auto;font-family:"PingFang SC",system-ui,sans-serif}
+  #yard-task-title{font-size:20px}#yard-task-text{font-size:16px;line-height:1.35;margin-top:2px}
+  #yard-task button,#yard-fishing button{height:43px;padding:0 12px;flex:none;border-radius:7px;background:#877c57;color:#fff3df;font-size:18px}
+  #yard-fish-close{background:#e3d3b9!important;color:#594335!important}
+  #yard-fishing:not([hidden]){bottom:13px;left:auto;right:14px}
+  #hud-screen.mode-day.suzhou .hud{gap:5px}
+  #hud-screen.mode-day.suzhou .chipbox,#hud-screen.mode-day.suzhou .hb{background:#fbf1dff0;border:1px solid #ab8e70;border-radius:10px;box-shadow:0 2px 4px #60473138;color:#5e4938;padding:6px 10px;font-size:19px;min-height:43px}
+  #hud-screen.mode-day.suzhou #b-open{background:#947353;color:#fff5e4}
+
+
+  #b-yard-more{display:none}
+  #yard-more-menu{display:contents}
+  #hud-screen.mode-day.suzhou #b-yard-more{display:inline-block}
+  #hud-screen.mode-day.suzhou #yard-more-menu{display:none}
+  #hud-screen.mode-day.suzhou.yard-more-open #yard-more-menu{display:grid;grid-template-columns:repeat(2,max-content);gap:6px;position:absolute;right:0;top:50px;padding:7px;background:#f8edd8;border:1px solid #ac8e6a;border-radius:9px;box-shadow:0 4px 9px #4d362869}
   /* 点单面板 */
   #hud-screen.mode-day .shop-only, #hud-screen.mode-shop .day-only { display: none !important; }
   .hb.primary { background: #b04a3c; color: #fff; }
@@ -443,16 +459,25 @@
       <div class="hud r">
         <div id="h-timebox" class="shop-only" title="今天剩余营业时间"><div id="h-time"></div></div>
         <button class="hb shop-only" id="b-dex2">笔记</button>
-        <button class="hb day-only" id="b-staff">安排店员</button>
         <button class="hb shop-only" id="b-dance">帅老头跳舞</button>
+        <button class="hb day-only" id="b-yard-more" aria-expanded="false">备料</button>
+        <div id="yard-more-menu">        <button class="hb day-only" id="b-staff">安排店员</button>
         <button class="hb day-only" id="b-menu">今日菜单</button>
         <button class="hb day-only" id="b-pantry">储藏室</button>
         <button class="hb day-only" id="b-decor" style="display:none">装修</button>
         <button class="hb day-only" id="b-invent" style="display:none">试菜</button>
+        </div>
         <button class="hb day-only" id="b-dex">笔记</button>
         <button class="hb day-only primary" id="b-open">开店营业</button>
         <button class="hb" id="b-pause" aria-label="暂停">暂停</button>
       </div>
+
+      <section id="yard-task" class="day-only" hidden>
+        <div><b id="yard-task-title"></b><div id="yard-task-text"></div></div><button id="yard-task-go"></button>
+      </section>
+      <section id="yard-fishing" class="day-only" hidden>
+        <span id="yard-fish-text"></span><button id="yard-fish-action">抛竿</button><button id="yard-fish-close">离开钓台</button>
+      </section>
       <div id="start-tip">
         <div id="tip-body"></div>
         <p id="tip-close" style="margin:8px 0 0;color:#8a6a50;text-align:center">点这里关闭</p>
@@ -467,6 +492,7 @@
         <h2>暂停中</h2>
         <button class="primary" id="p-resume">继续营业</button>
         <button id="p-dex">笔记</button>
+        <button id="p-fullscreen">全屏</button>
         <button id="p-look">捏脸 / 换衣服</button>
         <button id="p-quit">回到存档列表</button>
       </div>
@@ -1969,7 +1995,7 @@ if (typeof module !== 'undefined') module.exports = { iconSVG, fishSVG, FISH };
 
 </script>
 <script>
-const PENPEN_LAYOUT = {"version":1,"space":{"w":1280,"h":720},"source":{"image":"assets/09-母稿草稿/G-061/room_suzhou_menu_shell_spring.png","w":1813,"h":868,"crop":{"x":0,"y":0,"w":1813,"h":868}},"scene":{"width":1280,"height":613,"window":[342,53,579,183],"doorPatch":[955,16,269,416],"threshold":[[1003,323],[1164,409]],"walkArea":[[0,528],[83,423],[106,382],[188,282],[917,282],[973,311],[1000,280],[1016,239],[1154,237],[1169,274],[1175,345],[1202,410],[1280,452],[1280,613],[0,613]],"dance":[662,572],"windowSource":[480,67,830,266],"counterForeground":[16,427],"footClearance":6,"paintRevision":"g067","wallArt":{"left":{"x":100,"y":74,"w":71,"h":198},"right":{"x":1208,"y":117,"w":64,"h":77}}},"presets":{"two":["table.1","table.3"],"five":["table.1","table.2","table.3","table.4","table.5"]},"notes":"G-057 三后两前的室内桌位。方桌巾透视沿椭圆桌边。座位、椅背遮挡与端菜靠逻辑坐标；墙、两排柜体与假门依原首店操作。","items":[{"id":"table.1","kind":"table","anchor":[563,459],"seats":2,"scale":0.96,"hit":{"x":507,"y":405,"w":112,"h":121},"stand":[[634,463]],"footprint":[[528.76,445],[597.24,445],[605.24,473],[605.24,504],[598.24,513],[527.76,513],[520.76,504],[520.76,473]],"seatPos":[[587,447.48],[536.12,490.68]],"chip":[614,417]},{"id":"table.2","kind":"table","anchor":[785,459],"seats":2,"scale":0.96,"hit":{"x":729,"y":405,"w":112,"h":121},"stand":[[852,470]],"footprint":[[750.76,445],[819.24,445],[827.24,473],[827.24,504],[820.24,513],[749.76,513],[742.76,504],[742.76,473]],"seatPos":[[761,447.48],[811.88,490.68]],"chip":[836,417]},{"id":"table.3","kind":"table","anchor":[855,314],"seats":4,"scale":0.92,"hit":{"x":773,"y":260,"w":164,"h":121},"stand":[[961,340]],"footprint":[[797.68,300],[912.32,300],[920.32,328],[920.32,359],[913.32,368],[796.68,368],[789.68,359],[789.68,328]],"seatPos":[[822.8,303.88],[887.2,303.88],[812.68,345.28],[897.32,345.28]],"chip":[922,272]},{"id":"table.4","kind":"table","anchor":[604,314],"seats":4,"scale":0.92,"hit":{"x":522,"y":260,"w":164,"h":121},"stand":[[713,340]],"footprint":[[546.68,300],[661.32,300],[669.32,328],[669.32,359],[662.32,368],[545.68,368],[538.68,359],[538.68,328]],"seatPos":[[571.8,303.88],[636.2,303.88],[561.68,345.28],[646.32,345.28]],"chip":[671,272]},{"id":"table.5","kind":"table","anchor":[1000,459],"seats":2,"scale":0.96,"hit":{"x":944,"y":405,"w":112,"h":121},"stand":[[1063,489]],"footprint":[[965.76,445],[1034.24,445],[1042.24,473],[1042.24,504],[1035.24,513],[964.76,513],[957.76,504],[957.76,473]],"seatPos":[[976,447.48],[1026.88,490.68]],"chip":[1051,417]},{"id":"queue.1","kind":"queue","anchor":[1122,551],"stand":[[1080,561]],"zone":"inside"},{"id":"queue.2","kind":"queue","anchor":[1113,490],"stand":[[1063,500]],"zone":"inside"},{"id":"queue.3","kind":"queue","anchor":[1104,429],"stand":[[1062,439]],"zone":"inside"},{"id":"queue.4","kind":"queue","anchor":[1095,368],"stand":[[1053,378]],"zone":"inside"},{"id":"queue.5","kind":"queue","anchor":[1086,307],"stand":[[1044,317]],"zone":"outside"},{"id":"queue.6","kind":"queue","anchor":[1077,246],"stand":[[1035,256]],"zone":"outside"},{"id":"door","kind":"door","anchor":[1084,332],"stand":[[1084,332]],"hit":{"x":972,"y":126,"w":223,"h":275}},{"id":"stove.wok","kind":"stove","anchor":[218,319],"hit":{"x":194,"y":293,"w":48,"h":42}},{"id":"stove.pot","kind":"stove","anchor":[282,319],"hit":{"x":258,"y":293,"w":48,"h":42}},{"id":"stove.steamer","kind":"stove","anchor":[345,319],"hit":{"x":321,"y":293,"w":48,"h":42}},{"id":"stove.clay","kind":"stove","anchor":[406,319],"hit":{"x":382,"y":293,"w":48,"h":42}},{"id":"chef","kind":"chef","anchor":[213,430],"stand":[[213,430]],"range":[[149,430],[367,430]],"wash":[150,430]},{"id":"pass","kind":"pass","anchor":[413,367],"stand":[[488,410]],"slots":[[430,337],[423,351],[416,367],[409,385],[401,400]],"hit":{"x":370,"y":306,"w":96,"h":127},"label":[434,320]},{"id":"sink","kind":"sink","anchor":[146,313],"stand":[[190,310]],"hit":{"x":110,"y":275,"w":74,"h":68}},{"id":"rail","kind":"rail","anchor":[395,414],"spike":[395,414],"hit":{"x":370,"y":391,"w":53,"h":51}},{"id":"menurack","kind":"menurack","anchor":[1241,300],"hit":{"x":1207,"y":237,"w":69,"h":135},"paper":[[1211,242],[1271,253],[1211,345],[1271,371]]},{"id":"tea","kind":"tea","anchor":[290,451],"stand":[[278,562]],"hit":{"x":250,"y":409,"w":77,"h":63}},{"id":"teacart","kind":"tea","anchor":[215,451],"stand":[[190,563]],"hit":{"x":126,"y":406,"w":128,"h":71},"needs":["tea","snack"]},{"id":"idle.penpen","kind":"idle","anchor":[681,393],"stand":[[681,393]]},{"id":"staff.laoer","kind":"staff","anchor":[717,513],"stand":[[717,513]],"rest":[702,570]},{"id":"staff.mimi","kind":"staff","anchor":[1110,569],"stand":[[1110,569]],"rest":[1090,585]},{"id":"wall.heater","kind":"wall","season":"winter","footprint":[[345,282],[404,282],[404,298],[345,298]]},{"id":"wall.kitchen","kind":"wall","footprint":[[104,323],[461,323],[462,368],[391,529],[13,529],[13,475],[75,426],[105,385]]}]};
+const PENPEN_LAYOUT = {"version":1,"space":{"w":1280,"h":720},"source":{"image":"assets/09-母稿草稿/G-061/room_suzhou_menu_shell_spring.png","w":1813,"h":868,"crop":{"x":0,"y":0,"w":1813,"h":868}},"scene":{"width":1280,"height":613,"window":[342,53,579,183],"doorPatch":[955,16,269,416],"threshold":[[1003,323],[1164,409]],"walkArea":[[0,528],[83,423],[106,382],[188,282],[917,282],[973,311],[1000,280],[1016,239],[1100,237],[1125,273],[1169,274],[1175,345],[1202,410],[1280,452],[1280,613],[0,613]],"dance":[662,572],"windowSource":[480,67,830,266],"counterForeground":[16,427],"footClearance":6,"paintRevision":"g068","wallArt":{"left":{"x":100,"y":74,"w":71,"h":198},"right":{"x":1208,"y":117,"w":64,"h":77}},"kitchenArt":{"source":[0,354,701,478],"rear":[[[147,475],[177,440],[610,440],[612,518],[530,556],[148,556]],[[170,390],[220,390],[239,441],[234,470],[160,470]]],"front":[[[553,441],[610,441],[610,516],[504,767],[23,767],[23,654],[76,605],[458,605]]]},"courtyardOpening":[[1004,97],[1159,43],[1160,408],[1004,324]]},"presets":{"two":["table.1","table.3"],"five":["table.1","table.2","table.3","table.4","table.5"]},"notes":"G-057 三后两前的室内桌位。方桌巾透视沿椭圆桌边。座位、椅背遮挡与端菜靠逻辑坐标；墙、两排柜体与假门依原首店操作。","items":[{"id":"table.1","kind":"table","anchor":[563,459],"seats":2,"scale":0.96,"hit":{"x":507,"y":405,"w":112,"h":121},"stand":[[634,463]],"footprint":[[528.76,445],[597.24,445],[605.24,473],[605.24,504],[598.24,513],[527.76,513],[520.76,504],[520.76,473]],"seatPos":[[587,447.48],[536.12,490.68]],"chip":[614,417]},{"id":"table.2","kind":"table","anchor":[785,459],"seats":2,"scale":0.96,"hit":{"x":729,"y":405,"w":112,"h":121},"stand":[[852,470]],"footprint":[[750.76,445],[819.24,445],[827.24,473],[827.24,504],[820.24,513],[749.76,513],[742.76,504],[742.76,473]],"seatPos":[[761,447.48],[811.88,490.68]],"chip":[836,417]},{"id":"table.3","kind":"table","anchor":[855,314],"seats":4,"scale":0.92,"hit":{"x":773,"y":260,"w":164,"h":121},"stand":[[961,340]],"footprint":[[797.68,300],[912.32,300],[920.32,328],[920.32,359],[913.32,368],[796.68,368],[789.68,359],[789.68,328]],"seatPos":[[822.8,303.88],[887.2,303.88],[812.68,345.28],[897.32,345.28]],"chip":[922,272]},{"id":"table.4","kind":"table","anchor":[604,314],"seats":4,"scale":0.92,"hit":{"x":522,"y":260,"w":164,"h":121},"stand":[[713,340]],"footprint":[[546.68,300],[661.32,300],[669.32,328],[669.32,359],[662.32,368],[545.68,368],[538.68,359],[538.68,328]],"seatPos":[[571.8,303.88],[636.2,303.88],[561.68,345.28],[646.32,345.28]],"chip":[671,272]},{"id":"table.5","kind":"table","anchor":[1000,459],"seats":2,"scale":0.96,"hit":{"x":944,"y":405,"w":112,"h":121},"stand":[[1063,489]],"footprint":[[965.76,445],[1034.24,445],[1042.24,473],[1042.24,504],[1035.24,513],[964.76,513],[957.76,504],[957.76,473]],"seatPos":[[976,447.48],[1026.88,490.68]],"chip":[1051,417]},{"id":"queue.1","kind":"queue","anchor":[1210,513],"stand":[[1164,536]],"zone":"inside"},{"id":"queue.2","kind":"queue","anchor":[1157,471],"stand":[[1113,490]],"zone":"inside"},{"id":"queue.3","kind":"queue","anchor":[1104,429],"stand":[[1060,447]],"zone":"inside"},{"id":"queue.4","kind":"queue","anchor":[1051,387],"stand":[[1017,404]],"zone":"inside"},{"id":"queue.5","kind":"queue","anchor":[1064,311],"stand":[[1088,331]],"zone":"outside"},{"id":"queue.6","kind":"queue","anchor":[1038,257],"stand":[[1061,274]],"zone":"outside"},{"id":"door","kind":"door","anchor":[1082,330],"stand":[[1082,330]],"hit":{"x":972,"y":126,"w":223,"h":275}},{"id":"stove.wok","kind":"stove","anchor":[218,325],"hit":{"x":194,"y":299,"w":48,"h":42}},{"id":"stove.pot","kind":"stove","anchor":[282,325],"hit":{"x":258,"y":299,"w":48,"h":42}},{"id":"stove.steamer","kind":"stove","anchor":[345,325],"hit":{"x":321,"y":299,"w":48,"h":42}},{"id":"stove.clay","kind":"stove","anchor":[406,325],"hit":{"x":382,"y":299,"w":48,"h":42}},{"id":"chef","kind":"chef","anchor":[213,430],"stand":[[213,430]],"range":[[147,432],[320,432]],"wash":[150,430]},{"id":"pass","kind":"pass","anchor":[397,367],"stand":[[461,417]],"slots":[[405,333],[397,352],[388,372],[380,390],[371,408]],"hit":{"x":354,"y":312,"w":83,"h":119},"label":[421,320]},{"id":"sink","kind":"sink","anchor":[136,324],"stand":[[190,303]],"hit":{"x":104,"y":274,"w":78,"h":67}},{"id":"rail","kind":"rail","anchor":[357,431],"spike":[357,431],"hit":{"x":333,"y":405,"w":61,"h":58}},{"id":"menurack","kind":"menurack","anchor":[1241,300],"hit":{"x":1207,"y":237,"w":69,"h":135},"paper":[[1211,242],[1271,253],[1211,345],[1271,371]]},{"id":"tea","kind":"tea","anchor":[270,458],"stand":[[279,565]],"hit":{"x":234,"y":418,"w":94,"h":62}},{"id":"teacart","kind":"tea","anchor":[190,460],"stand":[[190,566]],"hit":{"x":112,"y":423,"w":121,"h":60},"needs":["tea","snack"]},{"id":"idle.penpen","kind":"idle","anchor":[681,393],"stand":[[681,393]]},{"id":"staff.laoer","kind":"staff","anchor":[717,513],"stand":[[717,513]],"rest":[702,570]},{"id":"staff.mimi","kind":"staff","anchor":[1110,569],"stand":[[1110,569]],"rest":[1090,585]},{"id":"wall.heater","kind":"wall","season":"winter","footprint":[[345,282],[404,282],[404,298],[345,298]]},{"id":"wall.kitchen","kind":"wall","footprint":[[103,321],[432,321],[432,369],[356,543],[17,543],[17,466],[54,424],[105,390]]}],"yard":{"source":[1672,941],"sites":[{"id":"door","name":"餐厅","hit":[652,178,185,168],"sign":[744,313],"stand":[742,363]},{"id":"market","name":"早市","hit":[153,350,382,193],"sign":[357,488],"stand":[390,552]},{"id":"plot","i":0,"name":"第 1 畦","hit":[939,465,280,91],"sign":[1081,553],"stand":[1093,578]},{"id":"plot","i":1,"name":"第 2 畦","hit":[1249,451,277,98],"sign":[1382,546],"stand":[1382,566]},{"id":"plot","i":2,"name":"第 3 畦","hit":[931,352,246,98],"sign":[1058,443],"stand":[1054,454]},{"id":"plot","i":3,"name":"第 4 畦","hit":[1219,334,256,107],"sign":[1347,431],"stand":[1337,444]},{"id":"pond","name":"钓台","hit":[942,645,702,156],"sign":[1038,693],"stand":[1016,720]},{"id":"mail","name":"邮筒","hit":[1035,234,60,91],"sign":[1066,274],"stand":[1065,332]},{"id":"cottage","name":"旅行小屋","hit":[1112,148,205,146],"sign":[1231,271],"stand":[1223,309]},{"id":"coop","name":"鸡舍","hit":[1420,199,215,114],"sign":[1518,280],"stand":[1494,325]},{"id":"plaza","name":"石桌小院","hit":[156,637,275,152],"sign":[315,722],"stand":[372,759]},{"id":"tea","name":"茶圃","hit":[478,562,153,78],"sign":[546,623],"stand":[589,591]},{"id":"mirror","name":"照镜子","hit":[523,241,112,90],"sign":[585,296],"stand":[577,348]}],"lanes":[{"width":40,"points":[[743,353],[741,382],[721,430],[703,486],[693,527],[671,576],[689,625],[680,684],[659,742],[636,812]]},{"width":32,"points":[[390,551],[440,552],[502,556],[555,561],[615,580],[675,577],[749,593],[824,612],[913,611],[1035,588],[1144,578],[1296,571],[1451,568],[1539,541]]},{"width":31,"points":[[575,345],[650,357],[743,353],[843,346],[963,337],[1064,328],[1167,320],[1240,307],[1324,292],[1399,266]]},{"width":23,"points":[[1398,267],[1481,299],[1534,342],[1572,393],[1590,467],[1579,518],[1539,541]]},{"width":18,"points":[[914,342],[898,399],[909,447],[918,493],[930,548],[936,600]]},{"width":12,"points":[[907,450],[983,454],[1054,453],[1137,451],[1205,450],[1270,448],[1337,444],[1422,439],[1483,439],[1556,442]]},{"width":15,"points":[[1208,320],[1200,360],[1205,414],[1215,450],[1234,490],[1244,537],[1260,571]]},{"width":15,"points":[[913,611],[897,640],[933,654],[954,670],[987,700],[1016,720]]},{"width":24,"points":[[656,735],[604,737],[549,738],[482,757],[434,768],[372,759],[324,762]]}],"beds":[[[967,476],[1183,471],[1200,538],[986,545]],[[1266,464],[1492,459],[1514,525],[1287,531]],[[943,363],[1158,358],[1168,426],[955,435]],[[1236,351],[1445,341],[1457,415],[1255,424]]],"bobber":[1206,708],"spawn":[740,388],"staff":[812,347],"helper":[937,575],"actorScale":0.56}};
 const PENPEN_GREYBOX = false;
 const PENPEN_SUZHOU = true;
 const PENPEN_SUZHOU_PREVIEW = true;
@@ -1982,7 +2008,8 @@ const PENPEN_SUZHOU_PREVIEW = true;
   const SUZHOU_PREVIEW = SUZHOU && typeof PENPEN_SUZHOU_PREVIEW !== 'undefined' && PENPEN_SUZHOU_PREVIEW;
   const PREVIEW_SEASON = SUZHOU_PREVIEW && new URLSearchParams(window.location.search).get('season');
   let gardenMode = false;
-  const SUZHOU_RELEASE = 'G067';
+  let yardMode = false;
+  const SUZHOU_RELEASE = 'G068';
   const DAY_LEN = SUZHOU ? 230 : 150; // 每天营业秒数
   const cv = document.getElementById('game');
   const ctx = cv.getContext('2d');
@@ -2001,22 +2028,28 @@ const PENPEN_SUZHOU_PREVIEW = true;
     const vw = window.innerWidth, vh = window.innerHeight, cs = getComputedStyle(document.body);
     const pl = parseFloat(cs.paddingLeft) || 0, pr = parseFloat(cs.paddingRight) || 0, pt = parseFloat(cs.paddingTop) || 0, pb = parseFloat(cs.paddingBottom) || 0;
     const aw = Math.max(200, vw - pl - pr), ah = Math.max(150, vh - pt - pb);
+
+
     const stageHeight = gardenMode ? LAYOUT.scene.height : H;
-    scale = Math.min(aw / W, ah / (gardenMode ? 480 : H));
-    SX = (aw - W * scale) / 2;
-    SY = (ah - stageHeight * scale) * (gardenMode ? 0.64 : 0.5);
-    stage.style.width = aw + 'px';
-    stage.style.height = ah + 'px';
-    cv.width = Math.round(aw * dpr);
-    cv.height = Math.round(ah * dpr);
+    const visibleHeight = gardenMode ? stageHeight - 26 : yardMode ? 590 : stageHeight;
+    scale = Math.min(aw / W, ah / visibleHeight);
+    SX = pl + (aw - W * scale) / 2;
+    const topRatio = yardMode && ah < stageHeight * scale ? 0.16 : 0.5;
+    SY = pt + (ah - stageHeight * scale) * topRatio;
+    stage.style.width = vw + 'px';
+    stage.style.height = vh + 'px';
+    cv.width = Math.round(vw * dpr);
+    cv.height = Math.round(vh * dpr);
     uiScale = Math.max(scale, UI_MIN); UW = aw / uiScale; UH = ah / uiScale;
     const sr = stage.getBoundingClientRect(); OX = sr.left - pl + SX; OY = sr.top - pt + SY;
-    Object.assign(ui.style, { left: pl + 'px', top: pt + 'px', width: UW + 'px', height: UH + 'px', transform: `scale(${uiScale})` });
+    Object.assign(ui.style, { left: pl + 'px', top: pt + 'px', width: UW + 'px', height: UH + 'px', transform: 'scale(' + uiScale + ')' });
     placeTeaMenu(); fitPanels();
     document.getElementById('rotate').style.display = vh > vw ? 'flex' : 'none';
   }
   window.addEventListener('resize', resize);
   window.addEventListener('orientationchange', () => setTimeout(resize, 200));
+  window.visualViewport?.addEventListener('resize', resize);
+  document.addEventListener('fullscreenchange', resize);
 
   // ---------- 声音（点一下后才能播放） ----------
   let actx = null;
@@ -2126,7 +2159,14 @@ const PENPEN_SUZHOU_PREVIEW = true;
   const LOOK0 = { eye2: 'same', tuft: 'none', pupil: 'normal', brows: '', ...CATS.penpen.look };
   const nv = (v) => (v === undefined || v === null || v === false || v === 0 || v === '0' ? '' : String(v));
   const plainLook = (lk) => Object.keys({ ...LOOK0, ...(lk || {}) }).every((k) => nv((lk || {})[k] ?? LOOK0[k]) === nv(LOOK0[k]));
-  const penImg = (back, blink) => (SPR.pPaint && P('s_penpen')) || (back ? SPR.pB : blink ? SPR.pBlink : SPR.pF);
+  
+  const penImg = (back, blink) => {
+    if (SPR.pPaint && SUZHOU) {
+      const pic = gardenArt('s_penpen_empty');
+      if (ok(pic)) { PAINTED.add(pic); return pic; }
+    } else if (SPR.pPaint && P('s_penpen')) return P('s_penpen');
+    return back ? SPR.pB : blink ? SPR.pBlink : SPR.pF;
+  };
   const AJU_AT = { snowpeak: 'snowpeak', aurora: 'snowpeak', karst: 'bamboo', river: 'arcade', huizhou: 'wave', autumn: 'autumn', sakura: 'sakura', hotspring: 'hotspring' };
   // D-030：剧情明信片按路线一定寄到；路上的「随手拍」随机寄（像旅行青蛙），图到了才会出现
   const pcURL = (id, v) => { const k = v ? `snap_${id}_${v}` : `pc_${id}`; return !GREY && ART[k] ? 'assets/' + k + '.webp' : v ? null : dataURL(postcardSVG(id)); };
@@ -2422,7 +2462,7 @@ const PENPEN_SUZHOU_PREVIEW = true;
   const TEA_HIT = LI.teacart && LI.teacart.hit;
   const qCard = (c) => {
     const spot = SUZHOU && QSPOTS[c.qi];
-    if (spot) return { x: c.x + 57, y: c.y - 72, w: 58, h: 40 };
+    if (spot) return { x: c.x + (c.x > 1162 ? -115 : 55), y: c.y - 73, w: 58, h: 40 };
     return { x: c.x - 118, y: c.y - 95, w: 68, h: 50 };
   }; // 排队人数牌（左上）
   const qBody = (c) => ({ x: c.x - 51, y: c.y - (SUZHOU ? 116 : 100), w: 102, h: SUZHOU ? 123 : 120 }); // 排队这组人的身子
@@ -2460,6 +2500,7 @@ const PENPEN_SUZHOU_PREVIEW = true;
     const { cols: C, rows: R, b: blocked, tile } = grid;
     const cell = (p) => ({ c: Math.max(0, Math.min(C - 1, Math.floor(p.x / tile))), r: Math.max(0, Math.min(R - 1, Math.floor(p.y / tile))) });
     const s = cell(from), g = cell(to);
+    if (grid === YARD_GRID && (grid.b[g.r][g.c] || grid.blocked(to.x, to.y))) return null;
     const shop = SUZHOU && grid === SHOP_GRID;
     const center = (c, r) => ({ x: (c + 0.5) * tile, y: (r + 0.5) * tile });
     const clear = (a, b) => [0.25, 0.5, 0.75, 1].every((p) => !grid.blocked(a.x + (b.x - a.x) * p, a.y + (b.y - a.y) * p));
@@ -2484,7 +2525,7 @@ const PENPEN_SUZHOU_PREVIEW = true;
         const goal = nc === g.c && nr === g.r;
         if (blocked[nr][nc] && !goal) continue;
         if (dc && dr && (blocked[cur.r][nc] || blocked[nr][cur.c])) continue;
-        if (shop) {
+        if (shop || grid === YARD_GRID) {
           const a = cur.c === s.c && cur.r === s.r ? from : center(cur.c, cur.r);
           const b = goal ? to : center(nc, nr);
           if (!clear(a, b)) continue;
@@ -2516,7 +2557,12 @@ const PENPEN_SUZHOU_PREVIEW = true;
     s.album.placements ||= {};
     if (!s.farmLesson) s.farmLesson = s.day < 3 ? (s.did.plant ? 'wait' : s.did.seed ? 'plant' : 'seed')
       : (s.did.harvest && !s.did.fish && s.day === 3 ? 'fish' : 'done');
+
     s.dex = s.dex || {}; s.dishDex = s.dishDex || {}; s.fishDex = s.fishDex || {};
+    if (s.farmLesson === 'plant' && s.farmLessonSown == null) {
+      s.farmLessonSown = Math.min(3, s.farm[0].cells.filter((item) => item?.k === 'chili').length);
+      s.seeds.chili = Math.max(s.seeds.chili || 0, 3 - s.farmLessonSown);
+    }
     return s;
   }
 
@@ -2570,11 +2616,11 @@ const PENPEN_SUZHOU_PREVIEW = true;
       waiter: { x: IDLE.x, y: IDLE.y, path: [], hands: [], queue: [], tickets: [], face: 1, back: false, blinkT: 2 },
       staff: staffIds().filter((id) => !jobsOf(id).includes('farm') && !skipping(id)).map((id) => ({ id, x: STAFF_DEF[id].home.x, y: STAFF_DEF[id].home.y, path: [], hands: [], task: null, face: 1, back: false })),
       danceCD: 0, selected: null, orderOpen: null, dancer: null,
-      D: { x: WMAP.shop.door.x, y: WMAP.shop.door.y + 30, path: [], face: 1, back: false, task: null, energy: save.energyDay === save.day && save.energy != null ? save.energy : ENERGY, fish: 0, cam: { x: 360, y: 300 }, manual: false },
+      D: { ...(YARD ? yardPoint(YARD.spawn) : { x: WMAP.shop.door.x, y: WMAP.shop.door.y + 30 }), path: [], face: 1, back: false, task: null, energy: save.energyDay === save.day && save.energy != null ? save.energy : ENERGY, fish: 0, cam: { x: 360, y: 300 }, manual: false },
     };
     if (SUZHOU) {
       for (const id of Object.keys(IDLE_BEATS)) gardenArt('s_' + id + '_idle');
-      for (const id of ['wall_bamboo_g067','wall_canal','order_spike','tea_set_g066','tea_bowl','tea_bowl_water']) gardenArt(id);
+      for (const id of ['kitchen_g068','s_penpen_empty','s_penpen_empty_idle','s_penpen_empty_walk','wall_bamboo_g067','wall_canal','order_spike','tea_set_g066','tea_bowl','tea_bowl_water']) gardenArt(id);
     }
     TEA_IMG = (has('tea') || has('snack')) ? svgImg(teaCartSVG(has('tea'), has('snack'))) : null;
     setSeason(seasonOf(save.day)); G.parts = []; rollTrend();
@@ -2603,14 +2649,21 @@ const PENPEN_SUZHOU_PREVIEW = true;
   }
   function setMode(m) {
     G.mode = m;
-    if (SUZHOU && gardenMode !== (m === 'shop')) { gardenMode = m === 'shop'; resize(); }
+    if (YARD) {
+      syncFishingPanel();
+      if (m === 'day') gardenArt('yard_' + CUR_SE, 'jpg');
+      $('#hud-screen').classList.remove('yard-more-open');
+    }
+    if (SUZHOU && (gardenMode !== (m === 'shop') || yardMode !== (m === 'day'))) {
+      gardenMode = m === 'shop'; yardMode = m === 'day'; resize();
+    }
     $('#hud-screen').classList.toggle('mode-day', m === 'day');
     $('#hud-screen').classList.toggle('mode-shop', m === 'shop');
     $('#hud-screen').classList.toggle('suzhou', SUZHOU);
   }
   function openShop() {
     if (!G || G.mode !== 'day') return;
-    if (['seed','plant'].includes(farmPhase()) && !save.ck) { toast(teachingFarm().msg, 2600); return; }
+    if (YARD && teachingFarm() && save.ck?.day !== save.day) { toast(teachingFarm().msg, 2900); return; }
     if (save.day === 1) { save.menu = ['mapo', 'mian']; save.menuDay = 1; }
     if (save.menuDay !== save.day && !G.menuAsked) { G.menuAsked = true; openMenuPick(); return; }
     if (staffIds().length && G.staffDay !== save.day) { G.staffDay = save.day; openStaff(true); return; } // 开店前先安排店员
@@ -2634,6 +2687,30 @@ const PENPEN_SUZHOU_PREVIEW = true;
     { id: 'tea', r: { x: 1060, y: 890, w: 230, h: 140 }, spot: () => ({ x: 1170, y: 1060 }) },
     { id: 'onsen', r: { x: 2050, y: 200, w: 300, h: 120 }, spot: () => ({ x: 2200, y: 340 }) },
   ];
+
+  const YARD = SUZHOU ? LAYOUT.yard : null;
+  const yardPoint = ([x, y]) => ({ x: x * W / YARD.source[0], y: y * H / YARD.source[1] });
+  const YARD_PLACES = YARD ? YARD.sites.map((site) => {
+    const [x, y, w, h] = site.hit;
+    const p = yardPoint([x, y]), end = yardPoint([x + w, y + h]), stand = yardPoint(site.stand);
+    return { id: site.id, i: site.i, name: site.name, sign: yardPoint(site.sign),
+      r: { x: p.x, y: p.y, w: end.x - p.x, h: end.y - p.y }, spot: () => stand };
+  }) : HOT;
+  const yardPlace = (id, plot = 0) => YARD_PLACES.find((h) => h.id === id && (id !== 'plot' || h.i === plot));
+  const YARD_GRID = YARD ? (() => {
+    const tile = 12;
+    const segments = YARD.lanes.flatMap((lane) => lane.points.slice(1).map((p, i) => ({
+      a: yardPoint(lane.points[i]), b: yardPoint(p), width: lane.width * W / YARD.source[0],
+    })));
+    const clear = (x, y) => segments.some(({ a, b, width }) => {
+      const dx = b.x - a.x, dy = b.y - a.y;
+      const t = Math.max(0, Math.min(1, ((x - a.x) * dx + (y - a.y) * dy) / (dx ** 2 + dy ** 2)));
+      return (x - a.x - t * dx) ** 2 + (y - a.y - t * dy) ** 2 <= width ** 2;
+    }) || YARD_PLACES.some((h) => Math.hypot(x - h.spot().x, y - h.spot().y) < 16);
+    const grid = makeGrid(Math.ceil(W / tile), Math.ceil(H / tile), (x, y) => !clear(x, y), tile);
+    grid.blocked = (x, y) => !clear(x, y);
+    return grid;
+  })() : null;
   const plotOpen = (i) => i < prog().plots;
   const cellRipe = (c) => !!c && c.ready <= save.day;
   const plotReady = (i) => plotOpen(i) && save.farm[i].cells.some(cellRipe);
@@ -2644,15 +2721,17 @@ const PENPEN_SUZHOU_PREVIEW = true;
     return got;
   }
   const seedBuyable = () => prog().seeds.find((k) => mktLeft(k + '_seed') >= 3 && save.coins >= SEED_PRICE[k] * 3);
-  const spotOpen = (id) => ['door', 'plaza', 'onsen'].includes(id) || prog().map.includes(id);
+  const spotOpen = (id) => ['door', 'plaza', 'onsen'].includes(id) || (id === 'cottage' ? prog().map.includes('mail') : prog().map.includes(id));
   const did = (k) => { save.did[k] = (save.did[k] || 0) + 1; };
 
+
   const FARM_LESSON = {
-    seed: { site: 'market', msg: '先去早市领三颗辣椒种子。', x: 370, y: 430 },
-    plant: { site: 'plot', msg: '去菜地，点一格空地种下辣椒。' },
-    harvest: { site: 'plot', msg: '辣椒熟了，去菜地收菜。' },
-    fish: { site: 'pond', msg: '去鱼塘抛竿，浮漂动了再收线。', x: 1520, y: 990 },
-    buy: { site: 'market', msg: '收菜钓鱼之后，再去早市看看菜单缺什么。', x: 370, y: 430 },
+    seed: { site: 'market', title: '领一包种子', msg: '去早市，用教学券领三颗辣椒种子。' },
+    plant: { site: 'plot', title: '种三格辣椒', msg: '到第一畦，把三颗种子种进三格空地。' },
+    harvest: { site: 'plot', title: '收昨天种的菜', msg: '先到第一畦收菜，收获会进储藏室。' },
+    fish: { site: 'pond', title: '学抛竿和收线', msg: '去木钓台，先抛竿，再看浮漂。' },
+    plan: { title: '定今天的菜单', msg: '先选菜，再用收获和鱼获对照库存。' },
+    buy: { site: 'market', title: '按清单补货', msg: '去早市，只补今天菜单里还缺的食材。' },
   };
   const farmPhase = () => SUZHOU && save.day >= 2 ? save.farmLesson : 'done';
   const teachingFarm = () => FARM_LESSON[farmPhase()];
@@ -2661,28 +2740,43 @@ const PENPEN_SUZHOU_PREVIEW = true;
     persist();
   }
   function updateFarmLesson() {
-    if (!SUZHOU) return;
-    if (farmPhase() === 'wait' && save.farm.some((f, i) => plotReady(i))) setFarmPhase('harvest');
-    if (farmPhase() === 'harvest' && !save.farm.some((f, i) => plotReady(i))) setFarmPhase('fish');
-    if (farmPhase() === 'buy' && !prog().ings.some((k) => needIngs()[k])) setFarmPhase('done');
+    if (!YARD) return;
+    if (farmPhase() === 'wait' && plotReady(0)) setFarmPhase('harvest');
+    if (farmPhase() === 'harvest' && !plotReady(0)) setFarmPhase('fish');
+    if (farmPhase() === 'buy' && !Object.keys(farmShortages()).length) setFarmPhase('done');
   }
   function farmGate(h) {
-    if (farmPhase() === 'wait' && h.id === 'market') { toast('种子已经种下。收菜钓鱼之后，再来补缺的食材。', 3000); return true; }
-    const lesson = teachingFarm();
-    if (!lesson || !['market', 'plot', 'pond', 'coop', 'tea'].includes(h.id) || h.id === lesson.site) return false;
-    toast(lesson.msg, 2600); return true;
+    const phase = farmPhase(), lesson = teachingFarm();
+    if (phase === 'wait' && h.id === 'market') { toast('明早先收菜和钓鱼，再来看缺货单。', 2700); return true; }
+    if (!lesson || !['door','market','plot','pond','coop','tea'].includes(h.id)) return false;
+    if (h.id === lesson.site && (h.id !== 'plot' || h.i === 0)) return false;
+    toast(lesson.msg, 2700); return true;
+  }
+  function yardGoal() {
+    const phase = farmPhase(), step = teachingFarm();
+    if (step) return { ...step, key: phase, place: step.site ? yardPlace(step.site) : null };
+    if (phase === 'wait') return { key: phase, title: '种好了，明早来收', msg: '种子正在长。今天可以开店营业。', place: yardPlace('door') };
+    return null;
   }
   function dayTap(p) {
     const D = G.D;
-    const h = HOT.find((h) => inRect(p.x, p.y, h.r));
-    if (D.fish > 0) return;
+    const h = YARD_PLACES.find((h) => inRect(p.x, p.y, h.r));
+    if (D.fish > 0 || D.fishing) return;
     if (h && (!spotOpen(h.id) || (h.id === 'plot' && !plotOpen(h.i)))) { // 还没开放：只冒一句「第几天开」
-      const d = h.id === 'plot' ? openDay('plots', h.i + 1) : openDay('map', h.id);
+      const d = h.id === 'plot' ? openDay('plots', h.i + 1) : openDay('map', h.id === 'cottage' ? 'mail' : h.id);
       float(p.x, p.y - 30, `第 ${d} 天开放`, '#8a6a50'); sfx.tap(); return;
     }
     if (h && farmGate(h)) return;
-    if (h) { const sp = h.spot(); D.task = h; D.path = findPath(D, sp, WORLD_GRID) || (noWay('盆盆', sp), (D.task = null), []); D.manual = false; D.camGoal = null; sfx.tap(); return; }
-    D.task = null; D.path = findPath(D, p, WORLD_GRID) || (noWay('盆盆', p), []); D.manual = false; D.camGoal = null;
+
+    if (h) { walkToYard(h); return; }
+    const grid = YARD_GRID || WORLD_GRID;
+    if (YARD && grid.blocked(p.x, p.y)) return;
+    D.task = null; D.path = findPath(D, p, grid) || []; D.manual = false; D.camGoal = null;
+  }
+  function walkToYard(h) {
+    const D = G.D, sp = h.spot();
+    D.task = h; D.path = findPath(D, sp, YARD_GRID || WORLD_GRID) || (noWay('盆盆', sp), (D.task = null), []);
+    D.manual = false; D.camGoal = null; sfx.tap();
   }
   const spend = () => { if (G.D.energy <= 0) { toast('今天累了，没体力了；去开店吧'); return false; } G.D.energy--; save.energy = G.D.energy; save.energyDay = save.day; return true; }; // T-03：体力记进存档，重开不回满
   function gain(ing, n, x, y) { save.stock[ing] = stockOf(ing) + n; float(x, y, `${ING[ing].n} +${n}`, '#3f7a34'); sfx.ding(); }
@@ -2690,10 +2784,11 @@ const PENPEN_SUZHOU_PREVIEW = true;
     const D = G.D;
     if (h.id === 'door') { ask(`收拾好了，开门营业吗？${D.energy ? `（体力还剩 ${D.energy}）` : ''}`, '开店').then((ok) => ok && openShop()); return; }
     if (h.id === 'market') { openMarket(); did('market'); return; }
+    if (h.id === 'cottage') { openTravelAlbum('hud-screen'); return; }
     if (h.id === 'tea') {
-      if (save.teaDay === save.day) { float(1170, 900, '明天再来摘', '#8a6a50'); return; }
+      if (save.teaDay === save.day) { float(h.sign?.x ?? 1170, h.sign?.y ?? 900, '明天再来摘', '#8a6a50'); return; }
       if (!spend()) return;
-      save.teaDay = save.day; gain('tealeaf', 4, 1170, 940); did('tea'); return;
+      save.teaDay = save.day; gain('tealeaf', 4, h.sign?.x ?? 1170, h.sign?.y ?? 940); did('tea'); persist(); return;
     }
     if (h.id === 'mirror') { G.paused = true; openCreator(save, false); did('mirror'); return; }
     if (h.id === 'plot') {
@@ -2701,24 +2796,30 @@ const PENPEN_SUZHOU_PREVIEW = true;
       return;
     }
     if (h.id === 'coop') {
-      if (save.coopDay === save.day) { float(2160, 400, '明天再来', '#8a6a50'); return; }
+      if (save.coopDay === save.day) { float(h.sign?.x ?? 2160, h.sign?.y ?? 400, '明天再来', '#8a6a50'); return; }
       if (!spend()) return;
-      save.coopDay = save.day; gain('egg', 3, 2160, 420); did('egg'); return;
+      save.coopDay = save.day; gain('egg', 3, h.sign?.x ?? 2160, h.sign?.y ?? 420); did('egg'); persist(); return;
     }
     if (h.id === 'pond') {
+      if (YARD) { G.D.fishing = { stage: 'ready', t: 0 }; G.D.face = 1; syncFishingPanel(); return; }
       if (!spend()) return;
       D.fish = 2.2; D.face = 1;
       if (farmPhase() === 'fish') toast('浮漂动了就收线。');
       return;
     }
-    if (h.id === 'mail') { if (save.mail) { openMail(); did('mail'); } else float(1317, 520, '今天没有信', '#8a6a50'); return; }
+    if (h.id === 'mail') { if (save.mail) { openMail(); did('mail'); } else float(h.sign?.x ?? 1317, h.sign?.y ?? 520, '今天没有信', '#8a6a50'); return; }
     if (h.id === 'onsen') { if (!save.soaked) { save.soaked = true; speedUp('泡了个温泉', 2200, 220); } else float(2200, 200, '店员休息时来泡温泉', '#3f6680'); return; }
-    if (h.id === 'plaza') { if (!save.danced && save.day >= 3) { save.danced = true; speedUp('跟着帅老头练了练广场舞', 560, 900); } else float(560, 880, '帅老头在广场练舞', '#b04a3c'); return; }
+    if (h.id === 'plaza') { const [x, y] = [h.sign?.x ?? 560, h.sign?.y ?? 900]; if (!save.danced && save.day >= 3) { save.danced = true; speedUp('跟着帅老头练了练广场舞', x, y); persist(); } else float(x, y - 20, '院子里坐一会儿', '#775b47'); return; }
   }
   function updateDay(dt) {
     const D = G.D;
-    if (D.fish > 0) { D.fish -= dt; if (D.fish <= 0) { D.fish = 0; if (farmPhase() === 'fish') openFishLesson(); else catchFish(); } }
+    if (D.fishing) {
+      const fish = D.fishing;
+      fish.t += dt;
+      if (fish.stage === 'cast' && fish.t >= fish.wait) { fish.stage = 'bite'; fish.t = 0; sfx.tap(); syncFishingPanel(); }
+    } else if (D.fish > 0) { D.fish -= dt; if (D.fish <= 0) { D.fish = 0; if (farmPhase() === 'fish') openFishLesson(); else catchFish(); } }
     else if (D.path.length) { if (moveAlong(D, 340 * SPD(), dt) && D.task) { const h = D.task; D.task = null; dayArrive(h); } }
+    if (YARD) { G.floats = G.floats.filter((f) => (f.t += dt) < (f.life || 1.6)); return; }
     const tx = Math.max(0, Math.min(WORLD_W - W, D.x - W / 2)), ty = Math.max(0, Math.min(WORLD_H - H, D.y - H * 0.74));
     if (D.camGoal) { // 引导要指的地方不在画面里：镜头慢慢移过去
       D.cam.x += (D.camGoal.x - D.cam.x) * Math.min(1, dt * 3); D.cam.y += (D.camGoal.y - D.cam.y) * Math.min(1, dt * 3);
@@ -2761,6 +2862,7 @@ const PENPEN_SUZHOU_PREVIEW = true;
     }
     G.paused = false; show('hud-screen');
   });
+
   function openFishLesson() {
     G.paused = true; sfx.tap(); show('fish-lesson');
   }
@@ -2769,12 +2871,41 @@ const PENPEN_SUZHOU_PREVIEW = true;
     catchFish(true); setFarmPhase('buy'); updateFarmLesson();
     G.paused = false; show('hud-screen');
   };
+  function syncFishingPanel() {
+    const fish = G?.D.fishing, panel = $('#yard-fishing');
+    panel.hidden = G?.mode !== 'day' || !fish;
+    if (panel.hidden) return;
+    $('#yard-fish-text').textContent = {
+      ready: '把鱼钩抛进水里。', cast: '看水面，等浮漂动。', bite: '浮漂沉下去了！',
+    }[fish.stage];
+    $('#yard-fish-action').textContent = { ready: '抛竿', cast: '试收线', bite: '收线' }[fish.stage];
+  }
+  $('#yard-fish-action').onclick = () => {
+    const fish = G?.D.fishing;
+    if (!fish || G.mode !== 'day') return;
+    if (fish.stage === 'ready') {
+      if (G.D.energy <= 0 && farmPhase() !== 'fish') { toast('今天的体力用完了，明早再来。'); return; }
+      fish.stage = 'cast'; fish.t = 0; fish.wait = rand(1.45, 2.5); sfx.tap(); syncFishingPanel(); return;
+    }
+    if (fish.stage === 'cast') { toast('浮漂还没动，再等等。'); return; }
+    const lesson = farmPhase() === 'fish';
+    if ((G.D.energy > 0 || !lesson) && !spend()) return;
+    G.D.fishing = null;
+    catchFish(lesson);
+    if (lesson) setFarmPhase('plan');
+    syncFishingPanel();
+  };
+  $('#yard-fish-close').onclick = () => {
+    if (!G) return;
+    G.D.fishing = null; syncFishingPanel();
+  };
   function catchFish(lesson = false) {
     const se = CUR_SE, pool = FISH.filter((f) => f.se.includes(se));
     const f = (lesson && pool.find((f) => f.ing === 'fish')) || pickW(pool), cm = Math.round(rand(f.size[0], f.size[1]));
     const rec = (save.fishDex[f.id] = save.fishDex[f.id] || { n: 0, max: 0 }), first = !rec.n;
     rec.n++; rec.max = Math.max(rec.max, cm);
-    const x = 1600, y = 900;
+    const point = YARD ? yardPlace('pond').sign : { x: 1600, y: 900 };
+    const { x, y } = point;
     if (f.ing) { const n = f.ing === 'shrimp' ? 2 : 1; save.stock[f.ing] = stockOf(f.ing) + n; }
     if (f.coins) save.coins += f.coins;
     if (f.luck) save.luckDay = save.day;
@@ -2784,6 +2915,16 @@ const PENPEN_SUZHOU_PREVIEW = true;
     sfx.ding();
   }
   // 今日菜单：开店前先选；没食材的地方在地图上高亮
+
+  function farmShortages() {
+    const needed = {};
+    for (const k of menuNow()) {
+      const ing = DISH[k].ing;
+      if (prog().ings.includes(ing)) needed[ing] = (needed[ing] || 0) + 3;
+    }
+    return Object.fromEntries(Object.entries(needed).filter(([k, n]) => stockOf(k) < n)
+      .map(([k, n]) => [k, n - stockOf(k)]));
+  }
   const needIngs = () => { const n = {}; for (const k of menuNow()) { const ing = DISH[k].ing; if (stockOf(ing) < 6) n[ing] = true; } return n; };
   function openMenuPick() {
     if (!G) return; G.paused = true;
@@ -2828,8 +2969,8 @@ const stations = {};
       if (!mains([...pick]).length) { toast('至少选一道主菜'); return; }
       save.menu = [...pick]; save.menuDay = save.day;
       save.prep = { day: save.day, table: res.hidden ? null : Number(selector.value) || null };
+      if (farmPhase() === 'plan') { setFarmPhase('buy'); updateFarmLesson(); }
       persist();
-      const need = Object.keys(needIngs()).map((k) => ING[k].n);
       G.paused = false; show('hud-screen');
 
     };
@@ -2860,19 +3001,22 @@ const stations = {};
     G.paused = true;
     const sp = special();
     const box = $('#market-list');
-    const phase = farmPhase();
+    const phase = farmPhase(), shortages = phase === 'buy' ? farmShortages() : {};
     $('#market-lesson').hidden = !['seed','buy'].includes(phase);
-    $('#market-lesson').textContent = phase === 'seed' ? '第一包种子由早市送。先领三颗辣椒种子。' : '按今天的菜单补货。已有食材可以留着慢慢用。';
+    $('#market-lesson').textContent = phase === 'seed' ? '教学券抵掉第一包的价钱。每颗种一格，明早成熟。' : '清单已扣除储藏室里的存量。';
     const canSeed = phase !== 'buy', canBuy = phase !== 'seed';
     box.innerHTML = (canSeed ? prog().seeds : []).map((k) => { const p = SEED_PRICE[k], nw = openDay('seeds', k) === save.day;
       const left = mktLeft(k + '_seed');
       if (phase === 'seed') return '<div class="mrow seed"><img alt="" src="' + ingURL(k) + '"><div><b>' + ING[k].n + '种子</b><small>种下后，下一天收成</small></div><button class="buy1" data-k="' + k + '" data-seed="1" data-n="3">领 3 颗</button></div>';
       return `<div class="mrow seed"><img alt="" src="${ingURL(k)}"><div><b>${ING[k].n}种子</b>${nw ? '<span class="tag-new">新</span>' : ''}<small>一颗种一格，明天收　·　有 ${save.seeds[k] || 0} 颗　·　<em class="left">今天还剩 ${left}</em></small></div>
         <span class="mp">¥${p}</span><button class="buy1" data-k="${k}" data-seed="1" data-n="3" ${save.coins >= p * 3 && left >= 3 ? '' : 'disabled'}>买 3</button><button class="buy1" data-k="${k}" data-seed="1" data-n="9" ${save.coins >= p * 9 && left >= 9 ? '' : 'disabled'}>买 9</button></div>`; }).join('')
-    + (canBuy ? prog().ings.filter((k) => phase !== 'buy' || needIngs()[k]) : []).map((k) => {
-      const p = priceOf(k), uses = Object.keys(DISH).filter((d) => DISH[d].ing === k && knownDish(d)).map((d) => DISH[d].n).join('、') || '泡茶';
-      const nd = needIngs()[k];
+    + (canBuy ? prog().ings.filter((k) => phase !== 'buy' || shortages[k]) : []).map((k) => {
+      const p = priceOf(k), pending = Math.min(shortages[k] || 0, Math.floor(save.coins / priceOf(k)), mktLeft(k)), uses = Object.keys(DISH).filter((d) => DISH[d].ing === k && knownDish(d)).map((d) => DISH[d].n).join('、') || '泡茶';
+      const nd = phase === 'buy' ? shortages[k] : needIngs()[k];
       const left = mktLeft(k), r = priceRate(k), trend = k === sp ? '' : r < 1 ? '<span class="tag-dn">今天便宜</span>' : r > 1 ? '<span class="tag-up">今天贵</span>' : '';
+
+      if (phase === 'buy') return '<div class="mrow nd"><img alt="" src="' + ingURL(k) + '"><div><b>' + ING[k].n + '</b><small>已有 ' + stockOf(k) + ' 份 · 还差 ' + nd + ' 份</small></div>'
+        + '<span class="mp">¥' + p + '</span><button class="buy1" data-k="' + k + '" data-n="' + pending + '" ' + (pending ? '' : 'disabled') + '>补 ' + pending + ' 份</button></div>';
       return `<div class="mrow ${k === sp ? 'sp' : ''} ${nd ? 'nd' : ''} ${left ? '' : 'out'}"><img alt="" src="${ingURL(k)}"><div><b>${ING[k].n}</b>${k === sp ? '<span class="tag-sp">妈妈特价 半价</span>' : trend}${nd ? '<span class="tag-nd">菜单要用</span>' : ''}<small>做 ${uses}　·　家里有 ${stockOf(k)}　·　<em class="left">${left ? `今天还剩 ${left}` : '卖完了'}</em></small></div>
         <span class="mp">¥${p}${p !== ING[k].price ? `<s>¥${ING[k].price}</s>` : ''}</span><button class="buy1" data-k="${k}" data-n="1" ${save.coins >= p && left >= 1 ? '' : 'disabled'}>买 1</button><button class="buy1" data-k="${k}" data-n="5" ${save.coins >= p * 5 && left >= 5 ? '' : 'disabled'}>买 5</button></div>`;
     }).join('');
@@ -2880,14 +3024,14 @@ const stations = {};
     box.querySelectorAll('.buy1').forEach((b) => b.addEventListener('click', () => {
       const k = b.dataset.k, n = +b.dataset.n, seed = !!b.dataset.seed;
       if (farmPhase() === 'seed' && seed) {
-        save.seeds[k] = (save.seeds[k] || 0) + n; did('seed'); setFarmPhase('plant'); sfx.coin();
+        save.seeds[k] = (save.seeds[k] || 0) + n; save.farmLessonSown = 0; did('seed'); setFarmPhase('plant'); sfx.coin();
         G.paused = false; show('hud-screen'); toast(teachingFarm().msg, 2600); return;
       }
       const cost = (seed ? SEED_PRICE[k] : priceOf(k)) * n;
       const lk = seed ? k + '_seed' : k; if (save.coins < cost || mktLeft(lk) < n) return;
       save.mkt.left[lk] -= n; save.coins -= cost; if (seed) { save.seeds[k] = (save.seeds[k] || 0) + n; did('seed'); } else { save.stock[k] = stockOf(k) + n; did('buy'); } persist(); sfx.coin(); openMarket();
     }));
-    $('#market-ok').textContent = phase === 'buy' ? '补货看好了' : '买好了';
+    $('#market-ok').textContent = phase === 'buy' ? (Object.keys(shortages).length ? '先用现有食材' : '备齐了') : '买好了';
     show('market');
   }
   function openPantry() {
@@ -3346,6 +3490,7 @@ const stations = {};
     G.idle = 0;
     if (G.teaOpen) { closeTea(); return; }
     const p = toLogical(e);
+    if (G.mode === 'day' && YARD) { dayTap(p); return; }
     if (G.mode === 'day') { G.idle = 0; drag = { x: p.x, y: p.y, cx: G.D.cam.x, cy: G.D.cam.y, moved: false }; return; }
     shopTap(p);
   });
@@ -3715,7 +3860,7 @@ const stations = {};
       if (w.brew.t >= w.brew.need) { const o = w.brew.o; w.brew = null; if (o.cust.state !== 'leaving' && !full()) { w.hands.push(o); did('drink'); sfx.tap(); } else o.cust.members[o.mi].dClaim = null; }
     } else if (w.busyAct) {
       const act = w.busyAct;
-      const greeting = SUZHOU && act.kind === 'seat' && act.phase === 1 && act.cust.state === 'called' && G.t - act.cust.calledAt < 0.58;
+      const greeting = SUZHOU && act.kind === 'seat' && act.phase === 1 && act.cust.state === 'called' && G.t - act.cust.calledAt < 0.83;
       if (moveAlong(w, (SUZHOU ? 265 : 300) * SPD(), dt) && !greeting) {
         const a = w.busyAct;
         if (a.kind === 'seat' && a.phase === 1) {
@@ -3822,11 +3967,11 @@ const stations = {};
   }
   const ART_ROOM = () => ok(A('room_courtyard'));
   const GARDEN_ART = new Map();
-  const GARDEN_ROOM_PAINT = new Set(['spring_g066', 'winter_g066', 'winter_open_g066', 'counter_g066', 'counter_winter_g066', 'table_small_g066', 'table_large_g066', 'wall_bamboo_g067', 'wall_canal', 'order_spike', 'tea_set_g066', 'tea_bowl', 'tea_bowl_water']);
+  const GARDEN_ROOM_PAINT = new Set(['kitchen_g068', 'spring_g066', 'winter_g066', 'winter_open_g066', 'counter_g066', 'counter_winter_g066', 'table_small_g066', 'table_large_g066', 'wall_bamboo_g067', 'wall_canal', 'order_spike', 'tea_set_g066', 'tea_bowl', 'tea_bowl_water']);
   function gardenArt(name, extension = 'png') {
     if (!GARDEN_ART.has(name)) {
       const im = new Image();
-      const version = GARDEN_ROOM_PAINT.has(name) ? LAYOUT?.scene.paintRevision : (/^(g_.+_dressed_|s_)/.test(name) ? SUZHOU_RELEASE : null);
+      const version = (GARDEN_ROOM_PAINT.has(name) || /^yard_/.test(name)) ? LAYOUT?.scene.paintRevision : (/^(g_.+_dressed_|s_)/.test(name) ? SUZHOU_RELEASE : null);
       im.src = 'assets/suzhou/' + name + '.' + extension + (version ? '?v=' + version : '');
       GARDEN_ART.set(name, im);
     }
@@ -3852,11 +3997,29 @@ const stations = {};
     const open = G.doorBlend || 0;
     G.doorBlend = moving ? Math.min(1, open + dt * 6) : Math.max(0, open - dt * 4);
   }
+
+  function paintGardenMargins(room, h, landscape = false) {
+    const l = Math.max(0, SX / scale), r = Math.max(0, (cv.width / dpr - SX) / scale - W);
+    const up = Math.max(0, SY / scale), down = Math.max(0, (cv.height / dpr - SY) / scale - h);
+    const iw = room.naturalWidth, ih = room.naturalHeight;
+    const side = landscape ? Math.min(196, iw * 0.12) : Math.min(15, iw * 0.012), edge = Math.min(74, ih * 0.09);
+    if (l + r > 0.5) {
+      ctx.save(); ctx.scale(-1, 1);
+      if (landscape) ctx.filter = 'blur(6px)';
+      if (l > 0.2) ctx.drawImage(room, 0, 0, side, ih, 0, 0, l + 0.3, h);
+      if (r > 0.2) ctx.drawImage(room, iw - side, 0, side, ih, -W - r - 0.3, 0, r + 0.3, h);
+      ctx.restore();
+    }
+    if (up > 0.2) ctx.drawImage(room, 0, 0, iw, edge, -l, -up, W + l + r, up + 0.3);
+    if (down > 0.2) ctx.drawImage(room, 0, ih - edge, iw, edge, -l, h - 0.2, W + l + r, down + 0.3);
+  }
   function drawGardenRoom() {
     const winter = CUR_SE === 'winter', room = gardenArt(winter ? 'winter_g066' : 'spring_g066', 'jpg');
     if (!ok(room)) return;
     const { height } = LAYOUT.scene;
+    paintGardenMargins(room, height);
     ctx.drawImage(room, 0, 0, W, height);
+    drawKitchenPlane();
     const patch = LAYOUT.scene.windowSource;
     const wx = W / LAYOUT.source.w, wy = height / LAYOUT.source.h;
     const [px, py, pw, ph] = patch;
@@ -4046,7 +4209,10 @@ const stations = {};
     const f = save.farm[PLOT.i], k = PLOT.seed;
     if (f.cells[j] || !k || !(save.seeds[k] > 0)) return false;
     save.seeds[k]--; f.cells[j] = { k, ready: save.day + 1 }; did('plant');
-    if (farmPhase() === 'plant') setFarmPhase('wait');
+    if (farmPhase() === 'plant') {
+      save.farmLessonSown = (save.farmLessonSown || 0) + 1;
+      if (save.farmLessonSown >= 3) setFarmPhase('wait'); else persist();
+    }
     if (!(save.seeds[k] > 0)) PLOT.seed = prog().seeds.find((x) => save.seeds[x] > 0) || null;
     return true;
   }
@@ -4062,7 +4228,7 @@ const stations = {};
     const hb = $('#plot-harvest'), fb = $('#plot-fill');
     hb.disabled = !ripeN; hb.textContent = ripeN ? `收菜 ${ripeN} 格（用 1 体力）` : '还没熟';
     fb.disabled = !emptyN || !PLOT.seed; fb.textContent = PLOT.seed && emptyN ? `空地全种${ING[PLOT.seed].n}` : '种满';
-    $('#plot-tip').textContent = PLOT.msg || (ripeN ? '熟了！点「收菜」一起收' : emptyN && PLOT.seed ? '先选种子，再点空地种下' : emptyN ? '没有种子了，去早市买' : '都种上了，明天来收');
+    $('#plot-tip').textContent = farmPhase() === 'plant' ? '辣椒已种 ' + (save.farmLessonSown || 0) + ' / 3，明早一起收。' : PLOT.msg || (ripeN ? '熟了！点「收菜」一起收' : emptyN && PLOT.seed ? '先选种子，再点空地种下' : emptyN ? '没有种子了，去早市买' : '都种上了，明天来收');
     $('#plot-grid').querySelectorAll('.pc').forEach((b) => { b.onclick = () => {
       const c = f.cells[+b.dataset.j]; PLOT.msg = '';
       if (!c) { if (plantCell(+b.dataset.j)) sfx.tap(); else PLOT.msg = '没有种子了，去早市买'; }
@@ -4073,14 +4239,15 @@ const stations = {};
     $('#plot-seeds').querySelectorAll('.sd').forEach((b) => { b.onclick = () => { PLOT.seed = b.dataset.k; PLOT.msg = ''; sfx.tap(); renderPlot(); }; });
   }
   function plotHarvest() {
-    if (!spend()) { PLOT.msg = '今天没体力了'; return renderPlot(); }
-    const g = harvestPlot(PLOT.i), [x, y] = WMAP.farm.plots[PLOT.i];
+    if ((G.D.energy > 0 || farmPhase() !== 'harvest') && !spend()) { PLOT.msg = '今天没体力了'; return renderPlot(); }
+    const g = harvestPlot(PLOT.i), point = YARD ? yardPlace('plot', PLOT.i).sign : { x: WMAP.farm.plots[PLOT.i][0], y: WMAP.farm.plots[PLOT.i][1] };
+    const { x, y } = point;
     PLOT.msg = '收了 ' + Object.keys(g).map((k) => `${ING[k].n}×${g[k]}`).join('、');
     Object.keys(g).forEach((k, n) => float(x, y - 60 - n * 30, `${ING[k].n} +${g[k]}`, '#3f7a34'));
     sfx.ding(); did('harvest'); updateFarmLesson(); persist(); renderPlot();
   }
   $('#plot-harvest').addEventListener('click', plotHarvest);
-  $('#plot-fill').addEventListener('click', () => { let n = 0; save.farm[PLOT.i].cells.forEach((c, j) => { if (plantCell(j)) n++; }); PLOT.msg = n ? `种下 ${n} 格` : ''; if (n) sfx.ding(); renderPlot(); });
+  $('#plot-fill').addEventListener('click', () => { let n = 0; const limit = farmPhase() === 'plant' ? 3 - (save.farmLessonSown || 0) : Infinity; save.farm[PLOT.i].cells.forEach((c, j) => { if (n < limit && plantCell(j)) n++; }); PLOT.msg = n ? `种下 ${n} 格` : ''; if (n) sfx.ding(); renderPlot(); });
   $('#plot-ok').addEventListener('click', () => { $('#plot').classList.remove('show'); did('plotok'); persist(); if (G) G.paused = false; });
   // 多个按钮的选择框（比如种什么）
   function choose(title, opts) {
@@ -4211,12 +4378,7 @@ const stations = {};
         G.gardenChefX = CHEF_NAP.x;
       }
       if (!acted) drawCat(P('s_laoda') || SPR.chef, G.gardenChefX, LA('chef').y + bob * 0.18, G.chefFace || 1, moving, 1.14, 'laoda', G.chefWalk, idle);
-      const counter = gardenArt(CUR_SE === 'winter' ? 'counter_winter_g066' : 'counter_g066');
-      if (ok(counter)) {
-        const [x, y] = LAYOUT.scene.counterForeground;
-        const sx = W / LAYOUT.source.w, sy = LAYOUT.scene.height / LAYOUT.source.h;
-        ctx.drawImage(counter, x * sx, y * sy, counter.naturalWidth * sx, counter.naturalHeight * sy);
-      }
+      drawKitchenPlane('front');
     } else if (ART_B()) { // 主人 11/26：老大待在两条木台围出来的厨房圈里，站在灶台前左右走；洗碗时走到洗碗池旁
       const ch = LI.chef || {}, [lo, hi] = ch.range ? [ch.range[0][0], ch.range[1][0]] : [-60, 110], cy = ch.anchor ? ch.anchor[1] : 548;
       const C = G.chef || (G.chef = { x: 96, y: cy, path: [] }), tx = Math.max(lo, Math.min(hi, G.chefWash && !busy.length && ch.wash ? ch.wash[0] : cx));
@@ -4249,7 +4411,7 @@ const stations = {};
       else if (ws.q.length) { ctx.fillStyle = '#b04a3c'; ctx.beginPath(); ctx.arc(wd.x + 26, wd.y - 40, 11, 0, 7); ctx.fill(); label(`${ws.q.length}`, wd.x + 26, wd.y - 39, 15, '#fff'); }
     }
     // 出菜台上的菜、水壶、收碗处
-    if (SUZHOU) readyMeals().forEach((meal, i) => { const [x, y] = PASS.slots[i]; drawMealTray(meal, x, y, 0.77); });
+    if (SUZHOU) readyMeals().forEach((meal, i) => { const [x, y] = PASS.slots[i]; drawMealTray(meal, x, y, 0.85); });
     else k.pass.forEach((o, i) => { const [x, y] = PASS.slots[i] || PASS.slots[PASS.slots.length - 1]; drawPlate(x, y, o, 0.72, true); });
     if (SUZHOU) gardenSprite('tea_set_g066', WATER.x, WATER.y, 76);
     else if (!spr('water_set', WATER.x, WATER.y, ART_B() ? 46 : 66) && DISH_IMG.water.complete) ctx.drawImage(DISH_IMG.water, WATER.x - 21, WATER.y - 28, 42, 28);
@@ -4515,15 +4677,32 @@ const stations = {};
     ctx.restore();
     return true;
   }
+
+  function guestExpression(c) {
+    if (c.state === 'called' || (c.sayT > 0 && c.say === c.type.say.happy)) return 'greet';
+    if (c.upset || c.hearts < 1.5 || (c.state === 'leaving' && c.angry)) return 'upset';
+    if (c.hearts < 3) return 'worry';
+    return 'calm';
+  }
+  function guestPose(look, pose) {
+    const key = guestNativeName(look, pose);
+    if (!key) return null;
+    return gardenArt(key);
+  }
   function drawGardenDiner(c, i, seat, t, surface, chairTop) {
     const look = guestLook(c, i);
     const frames = guestFrames(look);
     const tasting = c.state === 'eating' && c.members[i]?.st === 'served';
     const delighted = tasting && Math.sin(G.t * 1.25 + i * 0.78 + c.bob) > 0.1;
-    const im = seat.front ? frames.rear : delighted && ok(frames.smile) ? frames.smile : frames.sit;
+
+    const mood = guestExpression(c);
+    const uneasy = !seat.front && !tasting && (mood === 'worry' || mood === 'upset');
+    const face = uneasy ? guestPose(look, 'sit_worry') : null;
+    const im = seat.front ? frames.rear : delighted && ok(frames.smile) ? frames.smile : ok(face) ? face : frames.sit;
+
     const nod = tasting ? Math.max(0, Math.sin(G.t * 2.1 + i * 0.78 + c.bob)) : 0;
     const settling = 1 - (c.seatEase ?? 1);
-    const h = (look.startsWith('bunny') ? 78 : 67) * t.k - 2 * nod * t.k;
+    const h = (look.startsWith('bunny') ? 83 : 73) * t.k - 2 * nod * t.k;
     const hem = seat.front ? 6 * t.k : 0;
     const bottom = (seat.front ? chairTop + 18 * t.k : surface.y - 2 * t.k) + (2 * nod - 7 * settling) * t.k;
     ctx.save(); ctx.translate(seat.x, bottom);
@@ -4583,10 +4762,10 @@ const stations = {};
         const seat = t.seats[i], px = surface.x + (seat.x - surface.x) * 0.70;
         const py = t.topY[Number(seat.front)] + 7 * k;
         if (c.state === 'linger') drawPlate(px, py, null, 0.49 * k);
-        else if (m.st === 'served' && c.state !== 'bill') drawPlate(px, py, { dish: m.dish }, 0.62 * k);
+        else if (m.st === 'served' && c.state !== 'bill') drawPlate(px, py, { dish: m.dish }, 0.69 * k);
         if (m.dst === 'served' && c.state !== 'bill') {
           const side = Math.sign(seat.x - surface.x) || 1;
-          drawCup(px + (t.size === 4 ? side : -side) * 24 * k, py + 3 * k, m.drink, 0.72 * k);
+          drawCup(px + (t.size === 4 ? side : -side) * 24 * k, py + 3 * k, m.drink, 0.78 * k);
         }
       }
     }
@@ -4639,7 +4818,12 @@ const stations = {};
   function memberPos(c, i) {
     if (seated(c) && c.state !== 'toSeat') return c.table.seats[i];
     if (!SUZHOU && c.state === 'toSeat' && c.table) { const sp = c.table.seats[i], f = Math.min(1, Math.hypot(c.x - sp.x, c.y - sp.y) / 200); return { x: sp.x + (c.x - sp.x) * f, y: sp.y + (c.y - sp.y) * f }; }
+
     const n = c.size;
+    if (SUZHOU && inLine(c) && QSPOTS[c.qi]?.zone === 'outside' && c.y < doorLine(c.x)) {
+      const row = Math.floor(i / 2), count = Math.min(2, n - row * 2);
+      return { x: c.x + (i % 2 - (count - 1) / 2) * 26 - row * 6, y: c.y - row * 12 + (i % 2) * 5 };
+    }
     const r = i < 2 ? 0 : 1, inRow = r ? n - 2 : 2;
     const group = n <= 2
       ? { x: c.x + (i - (n - 1) / 2) * 30, y: c.y + (i % 2) * 6 - 3 }
@@ -4664,28 +4848,50 @@ const stations = {};
     ctx.restore();
     return true;
   }
+
+  function drawWaitingPose(im, x, y, size, flip, time, lean, nod, mood) {
+    const w = im.naturalWidth, h = im.naturalHeight, unit = size / h;
+    const easing = mood === 'upset' ? -0.88 : 1;
+    const sway = Math.sin(time * 1.6) * 0.8;
+    const breath = Math.sin(time * 2.2) * 0.75;
+    const edges = [0, 23, 45, 63, 80, 99, 121, 144];
+    ctx.save(); ctx.translate(x, y); if (flip) ctx.scale(-1, 1);
+    const dx = (v) => (sway + easing * lean * 4 - nod * 4.3) * Math.max(0, 1 - v / 106) * unit;
+    const dy = (v) => (breath - lean * 1.35 - nod * 5.3) * Math.max(0, 1 - v / 111) * unit;
+    for (let i = 1; i < edges.length; i++) {
+      const a = edges[i - 1], b = edges[i], top = a * size / 144, bottom = b * size / 144;
+      ctx.save();
+      ctx.translate(dx(a) - size / 2, top - size * 0.875 + dy(a));
+      ctx.transform(1, 0, (dx(b) - dx(a)) / (bottom - top), 1, 0, 0);
+      ctx.drawImage(im, 0, a * h / 144, w, (b - a) * h / 144, 0, 0, size, bottom - top + dy(b) - dy(a) + 0.22);
+      ctx.restore();
+    }
+    ctx.restore();
+  }
   function drawMember(c, i) {
     const p = memberPos(c, i);
     if (SUZHOU) {
-      const frames = guestFrames(guestLook(c, i));
-      if (!ok(frames.stand)) return;
 
-      const scale = (c.size > 1 ? 0.95 : 1.02) * K(p.y) * 1.15, size = GUEST_S * scale;
-      const calling = c.state === 'called', reaction = G.t - (c.calledAt ?? -1) - i * 0.08;
-      const greet = calling && reaction >= 0 && reaction < 0.55 ? Math.sin(Math.PI * reaction / 0.55) : 0;
+      const look = guestLook(c, i), frames = guestFrames(look);
+      if (!ok(frames.stand)) return;
+      const scale = (c.size > 1 ? 0.95 : 1.02) * K(p.y) * 1.23, size = GUEST_S * scale;
+      const called = c.state === 'called' ? G.t - (c.calledAt ?? G.t) - i * 0.06 : -1;
       const time = G.t + c.bob + i * 0.62;
-      const glance = c.state === 'queue' && time % 6.4 > 5.3;
-      const moving = c.path.length > 0;
-      const flip = (calling && !moving ? G.waiter.x > p.x : c.face > 0) !== glance;
-      const shift = moving ? 0 : Math.sin(time * 1.55) * 1.6;
-      ctx.fillStyle = '#00000018'; ctx.beginPath(); ctx.ellipse(p.x + shift, p.y, 24 * scale, 7 - greet * 1.7, 0, 0, 7); ctx.fill();
+      const moving = c.path.length > 0, flip = c.face > 0;
+      const mood = guestExpression(c);
+      const idleBeat = time % (4.5 + (i % 3) * 0.47);
+      const lean = idleBeat > 3.16 && idleBeat < 4.02 ? Math.sin((idleBeat - 3.16) * Math.PI / 0.86) : 0;
+      const nod = called > 0.06 && called < 0.8 ? Math.sin((called - 0.06) * Math.PI / 0.74) : 0;
+      ctx.fillStyle = '#00000018'; ctx.beginPath(); ctx.ellipse(p.x, p.y, 24 * scale, 7 - nod, 0, 0, 7); ctx.fill();
       if (moving && drawGardenWalk(frames.walk, p.x, p.y, size, flip, (c.walkDistance || 0) + 11 * i)) return;
-      if (greet > 0 && drawGardenWalk(frames.walk, p.x + shift, p.y - greet * 7, size, flip, Math.floor(reaction / 0.145) * 22)) return;
-      ctx.save(); ctx.translate(p.x + shift, p.y - greet * 6);
-      ctx.rotate(shift * 0.009);
-      ctx.scale(flip ? -1 : 1, moving ? 1 : 1 + Math.sin(time * 2.6) * 0.016);
-      ctx.drawImage(frames.stand, -size / 2, -0.875 * size, size, size);
-      ctx.restore(); return;
+      if (called >= 0.06 && called < 0.30
+        && drawGardenWalk(frames.walk, p.x, p.y - nod * 3, size, flip, (called < 0.18 ? 1 : 3) * 22)) return;
+      const blink = idleBeat > 1.29 && idleBeat < 1.45;
+      const next = mood === 'upset' || mood === 'worry' ? 'stand_worry'
+        : (called > 0.30 && called < 0.91) || (mood === 'greet' && c.state !== 'called') ? 'greet' : blink ? 'blink' : null;
+      const alternate = next ? guestPose(look, next) : null;
+      drawWaitingPose(ok(alternate) ? alternate : frames.stand, p.x, p.y, size, flip, time, lean, nod, mood);
+      return;
     }
     const moving = ['enter', 'toSeat', 'leaving', 'following'].includes(c.state);
     const bob = Math.sin(c.bob + i) * (moving ? 4 : 1.2);
@@ -4770,7 +4976,8 @@ const stations = {};
       ctx.strokeStyle = '#a5866b'; ctx.lineWidth = 1;
       ctx.fillStyle = called ? '#f6e6ce' : '#f9f0df';
       rr(r.x, r.y, r.w, r.h, 7); ctx.fill(); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(r.x + 1, r.y + 17); ctx.lineTo(r.x - 6, r.y + 21); ctx.lineTo(r.x + 1, r.y + 24); ctx.fill();
+      const left = r.x > c.x, p = left ? r.x + 1 : r.x + r.w - 1;
+      ctx.beginPath(); ctx.moveTo(p, r.y + 17); ctx.lineTo(p + (left ? -7 : 7), r.y + 21); ctx.lineTo(p, r.y + 24); ctx.fill();
       label(called ? '已叫到' : c.size + ' 位', r.x + r.w / 2, r.y + 13, 15, '#655044');
       for (let i = 0; i < 5; i++) heart(r.x + 9 + i * 10, r.y + 28, 8.5, c.hearts >= i + 0.5 ? '#bb766b' : '#dcd0be');
       ctx.restore();
@@ -4927,7 +5134,7 @@ const stations = {};
   }
   function drawHands(actor, k, bob, staff = false) {
     if (SUZHOU && actor.hands[0]?.kind === 'dish') {
-      drawMealTray(actor.hands, actor.x, actor.y - 51 * k + bob, k); return;
+      drawMealTray(actor.hands, actor.x + (actor.face || 1) * 28 * k, actor.y - 61 * k + bob, k); return;
     }
     actor.hands.forEach((h, i) => {
       const x = actor.x + (staff && actor.sinkDrop === undefined ? 32 / k : i ? 42 : -42) * k;
@@ -4952,7 +5159,7 @@ const stations = {};
     const frame = walking && SPR.pWalk && SPR.pWalk[w.back ? 1 : 0][Math.floor((w.walkDistance || 0) / 22) % 4];
     const idle = crewIdle('penpen', !walking && !w.busyAct && !w.wash && !w.brew && w.sinkDrop === undefined);
     const blink = SUZHOU ? idle?.pose : w.blinkT < 0;
-    const bob = drawCat(ok(frame) ? frame : penImg(w.back && walking, blink), w.x, w.y, w.face, walking, (SUZHOU ? 1.18 : 1.05) * k, SPR.pPaint ? 'penpen' : null, w.walkDistance, idle);
+    const bob = drawCat(ok(frame) ? frame : penImg(w.back && walking, blink), w.x, w.y, w.face, walking, (SUZHOU ? 1.18 : 1.05) * k, SPR.pPaint ? (SUZHOU ? 'penpen_empty' : 'penpen') : null, w.walkDistance, idle);
     if (w.sinkDrop === undefined) drawHands(w, k, bob);
     if (w.tickets.length) { const im = icon('order'); if (im.complete) ctx.drawImage(im, w.x + 18 * k, w.y - 132 * k, 30, 30); label(`单×${w.tickets.length}`, w.x + 33 * k, w.y - 92 * k, 17, '#8a5a10', '#fbf6ec'); }
   }
@@ -5039,7 +5246,121 @@ const stations = {};
     for (const l of WORLD_LABELS.filter((l) => !MAP_SPR || !/[→←]|盆盆餐厅/.test(l.t))) { x.font = `${l.size}px ${FONT}`; x.textAlign = 'center'; x.textBaseline = 'middle'; x.lineJoin = 'round'; if (l.stroke) { x.lineWidth = l.lw; x.strokeStyle = l.stroke; x.strokeText(l.t, l.x, l.y); } x.fillStyle = l.fill; x.fillText(l.t, l.x, l.y); }
     WORLD_CV = c; return c;
   }
+
+  function yardTag(x, y, text, active = false) {
+    ctx.save();
+    ctx.font = (active ? '600 19px ' : '16px ') + '"PingFang SC","Microsoft YaHei",sans-serif';
+    const w = ctx.measureText(text).width + 20;
+    ctx.fillStyle = active ? '#f9e8be' : '#fff7e4e8';
+    ctx.strokeStyle = active ? '#a7804c' : '#927b60b0'; ctx.lineWidth = active ? 1.5 : 0.85;
+    rr(x - w / 2, y - 15, w, 27, 7); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#554332'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(text, x, y - 1);
+    ctx.restore();
+  }
+  function interpolateBed(corners, x, y) {
+    const [a, b, c, d] = corners;
+    return yardPoint([
+      (a[0] + (b[0] - a[0]) * x) * (1 - y) + (d[0] + (c[0] - d[0]) * x) * y,
+      (a[1] + (b[1] - a[1]) * x) * (1 - y) + (d[1] + (c[1] - d[1]) * x) * y,
+    ]);
+  }
+  function yardWater() {
+    const p = yardPoint(YARD.bobber), D = G.D, fish = D.fishing;
+    const tick = (G.ambientTime || G.D.fishing?.t || performance.now() / 1000);
+    ctx.save();
+    for (let i = 0; i < 3; i++) {
+      const a = (tick * 0.21 + i / 3) % 1, x = p.x + 31 * i - 20, y = p.y + 10 + i * 9;
+      ctx.globalAlpha = 0.24 * Math.sin(Math.PI * a); ctx.strokeStyle = '#f3fff7'; ctx.lineWidth = 1.3;
+      ctx.beginPath(); ctx.ellipse(x, y, 4 + a * 15, 1.8 + 5 * a, -0.08, 0, Math.PI * 2); ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+    if (fish && fish.stage !== 'ready') {
+      const nibble = fish.stage === 'bite', y = p.y + (nibble ? 3 + Math.sin(fish.t * 15) * 3 : Math.sin(fish.t * 3));
+      ctx.strokeStyle = '#6a4c35'; ctx.lineWidth = 2.2; ctx.beginPath();
+      ctx.moveTo(D.x + 12, D.y - 30); ctx.quadraticCurveTo(p.x - 25, p.y - 85, p.x - 6, p.y - 31); ctx.stroke();
+      ctx.strokeStyle = '#fcf7db'; ctx.lineWidth = 0.8; ctx.beginPath(); ctx.moveTo(p.x - 6, p.y - 31); ctx.lineTo(p.x, y); ctx.stroke();
+      ctx.fillStyle = '#ad5a49'; ctx.beginPath(); ctx.ellipse(p.x, y, 4, 5, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#f9eddb'; ctx.beginPath(); ctx.ellipse(p.x, y + 1, 4, 2.7, 0, 0, Math.PI); ctx.fill();
+      if (nibble) yardTag(p.x, p.y - 22, '咬钩了', true);
+    }
+    ctx.restore();
+  }
+  function drawYard() {
+    const art = gardenArt('yard_' + CUR_SE, 'jpg');
+    if (!ok(art)) return;
+    paintGardenMargins(art, H, true); ctx.drawImage(art, 0, 0, W, H);
+    const D = G.D, lesson = yardGoal(), target = lesson?.place;
+    const nodes = [];
+    for (const [i, bed] of YARD.beds.entries()) {
+      const site = yardPlace('plot', i);
+      if (!plotOpen(i)) continue;
+      save.farm[i].cells.forEach((plant, k) => {
+        if (!plant) return;
+        const ground = interpolateBed(bed, 0.17 + 0.33 * (k % 3), 0.18 + Math.floor(k / 3) * 0.33);
+        const crop = CROP_IMG[plant.k + Number(cellRipe(plant))];
+        if (ok(crop)) {
+          const w = cellRipe(plant) ? 34 : 24;
+          ctx.drawImage(crop, ground.x - w / 2, ground.y - w + 5, w, w);
+        }
+      });
+      if (!lesson || target === site) {
+        const ripe = save.farm[i].cells.filter(cellRipe).length;
+        const growing = save.farm[i].cells.filter(Boolean).length - ripe;
+        const text = ripe ? site.name + ' · 熟了 ' + ripe + ' 格' : growing ? site.name + ' · 明早收' : site.name;
+        nodes.push(() => yardTag(site.sign.x, site.sign.y - 4, text, target === site));
+      }
+    }
+    yardWater();
+    if (staffIds().includes('laoer')) {
+      const q = yardPoint(YARD.staff);
+      drawCat(staffImg('laoer'), q.x, q.y, -1, false, 0.47, 'laoer', 0, crewIdle('laoer', true));
+    }
+    if (staffIds().includes('mimi')) {
+      const q = yardPoint(YARD.helper);
+      drawCat(staffImg('mimi'), q.x, q.y, 1, false, 0.43, 'mimi', 0, crewIdle('mimi', true));
+    }
+    const walking = D.path.length > 0;
+    drawCat(penImg(D.back && walking, false), D.x, D.y, D.face, walking,
+      YARD.actorScale, SPR.pPaint ? 'penpen_empty' : null, D.walkDistance, crewIdle('penpen', !walking && !D.fishing));
+    for (const h of YARD_PLACES) {
+      if (h.id === 'plot' || !spotOpen(h.id)) continue;
+      if (lesson && target !== h) continue;
+      if (!['door', 'market', 'pond', 'mail', 'coop', 'cottage', 'tea'].includes(h.id)) continue;
+      const name = h.id === 'mail' && save.mail ? '邮筒 · 有信' : h.name;
+      nodes.push(() => yardTag(h.sign.x, h.sign.y, name, target === h || (h.id === 'mail' && Boolean(save.mail))));
+    }
+    for (const node of nodes) node();
+    if (target && D.task === target) {
+      const p = target.spot();
+      ctx.strokeStyle = '#c28b50'; ctx.lineWidth = 1.2;
+      ctx.beginPath(); ctx.ellipse(p.x, p.y, 13, 4, 0, 0, Math.PI * 2); ctx.stroke();
+    }
+    drawFloats();
+  }
+  function refreshYardTask() {
+    const box = $('#yard-task'), goal = yardGoal();
+    box.hidden = !goal || Boolean(G.D.fishing);
+    if (box.hidden) return;
+    const button = $('#yard-task-go');
+    if (button.dataset.step === goal.key) return;
+    button.dataset.step = goal.key;
+    $('#yard-task-title').textContent = goal.title;
+    $('#yard-task-text').textContent = goal.msg;
+    button.textContent = goal.place ? '去' + goal.place.name : '选菜单';
+  }
+  $('#yard-task-go').onclick = () => {
+    if (G?.mode !== 'day' || G.paused || G.D.fishing) return;
+    const goal = yardGoal();
+    if (!goal) return;
+    if (goal.place) walkToYard(goal.place);
+    else openMenuPick();
+  };
+  $('#b-yard-more').onclick = () => {
+    const menu = $('#hud-screen'), open = menu.classList.toggle('yard-more-open');
+    $('#b-yard-more').setAttribute('aria-expanded', String(open));
+  };
   function renderDay() {
+    if (YARD) { drawYard(); return; }
     const D = G.D, cam = D.cam, wc = worldCanvas(), EX = SX / scale, EY = SY / scale; // 全屏：两侧多画一截地图
     ctx.fillStyle = '#d5dfb8'; ctx.fillRect(-EX, -EY, W + 2 * EX, H + 2 * EY);
     if (wc) { const x0 = Math.max(0, cam.x - EX), x1 = Math.min(WORLD_W, cam.x + W + EX); ctx.drawImage(wc, x0 * WS, cam.y * WS, (x1 - x0) * WS, H * WS, x0 - cam.x, 0, x1 - x0, H); }
@@ -5130,25 +5451,31 @@ const stations = {};
     ctx.restore();
   }
 
-  function drawRearCounter() {
-    const room = gardenArt(CUR_SE === 'winter' ? 'winter_g066' : 'spring_g066', 'jpg');
-    if (!ok(room)) return;
-    ctx.save(); ctx.beginPath();
-    const edge = [[108,325],[125,306],[460,306],[460,363],[424,383],[109,383]];
-    edge.forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y));
-    ctx.closePath();
-    ctx.rect(121, 272, 45, 55);
-    ctx.clip();
-    ctx.drawImage(room, 0, 0, W, LAYOUT.scene.height);
+
+  function drawKitchenPlane(layer) {
+    const art = gardenArt('kitchen_g068'), geom = LAYOUT.scene.kitchenArt;
+    if (!ok(art)) return;
+    const [left, top, w, h] = geom.source;
+    ctx.save();
+    ctx.scale(W / 1816, LAYOUT.scene.height / 866);
+    if (layer) {
+      ctx.beginPath();
+      for (const polygon of geom[layer]) {
+        polygon.forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y));
+        ctx.closePath();
+      }
+      ctx.clip();
+    }
+    ctx.drawImage(art, left, top, w, h);
     ctx.restore();
   }
   function drawShopScene() {
     if (GREY) drawGreyBase(); else { drawRoom(); if (!SUZHOU && !ART_B()) sideFill(); } // B 背景自带两侧延伸；旧图才镜像
 
-    const behind = (a) => SUZHOU && a.y < 323 && a.x < 505;
+    const behind = (a) => SUZHOU && a.y < 320 && a.x < 474;
     const backActors = [G.waiter, ...G.staff].filter(behind).sort((a, b) => a.y - b.y);
     for (const a of backActors) a === G.waiter ? drawWaiter() : drawStaff(a);
-    if (backActors.length) drawRearCounter();
+    if (backActors.length) drawKitchenPlane('rear');
     drawKitchen();
     if (SUZHOU) {
       if (save.decor.bench) drawGardenBench();
@@ -5177,14 +5504,16 @@ const stations = {};
       for (let i = 0; i < c.size; i++) {
         const p = memberPos(c, i);
         const d = () => {
-          if (!SUZHOU || CUR_SE !== 'winter' || G.doorBlend > 0.6 || p.x < 1000 || p.x > 1180 || p.y >= doorLine(p.x)) {
-            drawMember(c, i);
-            return;
+
+          if (!SUZHOU || p.x < 989 || p.x > 1180 || p.y >= doorLine(p.x)) { drawMember(c, i); return; }
+          ctx.save(); ctx.beginPath();
+          if (CUR_SE === 'winter' && G.doorBlend < 0.62) {
+            ctx.rect(1005, 113, 64, 124);
+            ctx.rect(1081, 112, 78, 131);
+          } else {
+            LAYOUT.scene.courtyardOpening.forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y));
+            ctx.closePath();
           }
-          ctx.save();
-          ctx.beginPath();
-          ctx.rect(1005, 113, 64, 124);
-          ctx.rect(1081, 112, 96, 131);
           ctx.clip();
           drawMember(c, i);
           ctx.restore();
@@ -5235,7 +5564,9 @@ const stations = {};
     for (const b of ['#b-dex', '#b-dex2']) $(b).classList.toggle('newdot', !!save.noteNew);
     $('#b-decor').style.display = SUZHOU && G.mode === 'day' && save.day >= 2 ? '' : 'none';
     $('#b-staff').style.display = staffIds().length ? '' : 'none'; $('#b-invent').style.display = G.mode === 'day' && (ideaNow() || practiceDishes().length) ? '' : 'none'; $('#b-invent').classList.toggle('newdot', !!ideaNow()); $('#b-menu').classList.toggle('newdot', !!save.menuNew && G.mode === 'day'); $('#b-dance').style.display = prog().dance ? '' : 'none';
+
     if (G.mode === 'day') {
+      if (YARD) refreshYardTask();
       $('#h-energy').textContent = `体力 ${G.D.energy}/${ENERGY}`;
       $('#h-save').textContent = `存款 ¥ ${save.coins}`;
       return;
@@ -5248,7 +5579,7 @@ const stations = {};
     db.disabled = G.danceCD > 0;
     db.textContent = G.danceCD > 0 ? `跳舞 ${Math.ceil(G.danceCD)}s` : '跳广场舞';
   }
-  function show(id) { document.querySelectorAll('.screen').forEach((s) => s.classList.toggle('show', s.id === id)); }
+  function show(id) { if (id !== 'hud-screen') { $('#hud-screen').classList.remove('yard-more-open'); $('#b-yard-more').setAttribute('aria-expanded', 'false'); } document.querySelectorAll('.screen').forEach((s) => s.classList.toggle('show', s.id === id)); }
 
   function renderSaves() {
     const list = loadSaves();
@@ -5729,6 +6060,14 @@ const stations = {};
   }
   $('#b-home').addEventListener('click', () => { G = null; renderSaves(); show('title'); });
   $('#b-pause').addEventListener('click', () => { if (!G) return; G.paused = true; $('#p-resume').textContent = G.mode === 'day' ? '继续' : '继续营业'; show('pause'); });
+
+  $('#p-fullscreen').addEventListener('click', async () => {
+    if (document.fullscreenElement) { await document.exitFullscreen(); return; }
+    if (document.fullscreenEnabled && document.documentElement.requestFullscreen) {
+      try { await document.documentElement.requestFullscreen(); return; } catch {}
+    }
+    toast('在 Safari 的分享菜单选「添加到主屏幕」，再从主屏幕打开。', 6500);
+  });
   $('#p-resume').addEventListener('click', () => { G.paused = false; show('hud-screen'); });
   $('#p-look').style.display = 'none'; // 换样子改成在地图上照镜子
   $('#p-quit').addEventListener('click', () => { ask('回到存档列表？今天的进度不会保存。', '回去').then((ok) => { if (ok) { G = null; renderSaves(); show('title'); } }); });
@@ -5737,7 +6076,7 @@ const stations = {};
     G.dancer = { t: 4 }; G.danceCD = 45; sfx.dance();
     G.customers.forEach((c) => { if (c.state !== 'leaving') { addHeart(c); const a = anchor(c); float(a.x, a.y - 20, '+♥', '#ef6f7a'); } });
   });
-  $('#start-tip').addEventListener('click', () => { $('#start-tip').classList.remove('show'); if (G && G.mode === 'shop') G.paused = false; if (G && G.mode === 'day') { if (save.day === 1) openShop(); else if (save.menuDay !== save.day && !teachingFarm()) openMenuPick(); } });
+  $('#start-tip').addEventListener('click', () => { $('#start-tip').classList.remove('show'); if (G && G.mode === 'shop') G.paused = false; if (G && G.mode === 'day') { if (save.day === 1) openShop(); else if (save.menuDay !== save.day && !YARD && !teachingFarm()) openMenuPick(); } });
 
   // ---------- 老大试菜 ----------
   const INV = { target: null, ing: null, ware: null, running: false };
@@ -5908,6 +6247,7 @@ const stations = {};
     return need('go') ? { type: 'go', sel: shown('#order .go:not([disabled])'), text: '下单' } : null;
   }
   function dayHint() {
+    if (YARD) return null;
     const D = G.D; if (D.path.length || D.fish > 0) return null;
     const W_ = (x, y, r, text, type) => ({ type, x: x - D.cam.x, y: y - D.cam.y, r, text, wx: x, wy: y });
     const cand = [], plots = WMAP.farm.plots;
@@ -5952,7 +6292,10 @@ const stations = {};
     if (shown('#start-tip.show')) return null;
     if (shown('#result.show')) return need('next') ? { type: 'next', sel: shown('#b-next'), text: '下一天' } : null;
     if (shown('#menu.show')) return need('menu') ? { type: 'menu', sel: shown('#menu-ok'), text: '就这些' } : null;
+
     if (shown('#market.show')) {
+      if (farmPhase() === 'seed') return { type: 'seed', sel: shown('#market .buy1[data-seed]'), text: '领种子' };
+      if (farmPhase() === 'buy') return null;
       const low = menuNow().map((k) => DISH[k].ing).find((ing) => prog().ings.includes(ing) && stockOf(ing) < 6 && save.coins >= priceOf(ing) * 5 && mktLeft(ing) >= 5);
       if (low && need('buy', 4)) return { type: 'buy', sel: shown(`#market .buy1:not([data-seed])[data-k="${low}"][data-n="5"]`), text: `买${ING[low].n}` };
       const sk = !prog().seeds.some((k) => save.seeds[k] > 0) && seedBuyable(), sn = sk && mktLeft(sk + '_seed') >= 9 && save.coins >= SEED_PRICE[sk] * 9 ? 9 : 3;
@@ -6104,7 +6447,7 @@ const stations = {};
     fold.onclick = () => setOpen(true); btn('收起 ◂', () => setOpen(false));
     document.body.append(p, fold); setOpen(window.innerHeight >= 500); setInterval(gbInfo, 1000);
   }
-  window.__penpen = { release: SUZHOU_RELEASE, hasWare, get season() { return CUR_SE; }, QSPOTS, DOOR, openMenuPick, catchFish, openMail, openMarket, openOrder, endDay, spawnCustomer, get ui() { return { scale, uiScale, UW, UH, SX, SY }; }, newDay: () => { newDay(); show('hud-screen'); showTip('day'); }, openDex, get G() { return G; }, get save() { return save; }, TABLES, PASS, SINK, WATER, DISH, findPath, get LAYOUT() { return LAYOUT; }, GB, gbStart, gbPreset: gbStart, get SHOP_GRID() { return SHOP_GRID; }, enqueue, gbPlates, WMAP, openShop, dayTap, openRack, openOrder, startOrdering, CT, DBG, get hint() { const h = HINT; return h && { type: h.type, text: h.text, sel: h.sel ? true : false, el: h.sel || null, x: h.x, y: h.y, wx: h.wx, wy: h.wy }; } };
+  window.__penpen = { release: SUZHOU_RELEASE, hasWare, get season() { return CUR_SE; }, QSPOTS, DOOR, openMenuPick, catchFish, openMail, openMarket, openOrder, endDay, spawnCustomer, get ui() { return { scale, uiScale, UW, UH, SX, SY }; }, newDay: () => { newDay(); show('hud-screen'); showTip('day'); }, openDex, get G() { return G; }, get save() { return save; }, TABLES, PASS, SINK, WATER, DISH, findPath, YARD_PLACES, YARD_GRID, get LAYOUT() { return LAYOUT; }, GB, gbStart, gbPreset: gbStart, get SHOP_GRID() { return SHOP_GRID; }, enqueue, gbPlates, WMAP, openShop, dayTap, openRack, openOrder, startOrdering, CT, DBG, get hint() { const h = HINT; return h && { type: h.type, text: h.text, sel: h.sel ? true : false, el: h.sel || null, x: h.x, y: h.y, wx: h.wx, wy: h.wy }; } };
 })();
 
 </script>

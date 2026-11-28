@@ -21,8 +21,8 @@
     -webkit-user-select: none; user-select: none; }
   body { display: flex; align-items: center; justify-content: center;
     padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
-  #stage { position: relative; }
-  #game { position: absolute; inset: 0; width: 100%; height: 100%; border-radius: 6px; }
+  #stage { position: fixed; inset: 0; }
+  #game { position: absolute; inset: 0; width: 100%; height: 100%; }
   #start-tip .tip-open { background: #b04a3c; color: #fff; border: 0; box-shadow: 0 5px 0 #7d2f25; font-size: 32px; padding: 14px 64px; border-radius: 20px; margin-top: 6px; pointer-events: none; } /* T-02：整张卡片都能点，按钮只是醒目 */
   #ui { position: fixed; left: 0; top: 0; width: 1280px; height: 720px; transform-origin: 0 0; pointer-events: none; z-index: 2; } /* T-01：界面层铺满安全区，大小由 resize() 算 */
   #order { transform-origin: 50% 0; }
@@ -89,6 +89,22 @@
   #start-tip h3 { margin: 0 0 6px; font-size: 28px; color: #b04a3c; }
   #start-tip ol { margin: 0; padding-left: 28px; }
 
+
+  #yard-task:not([hidden]),#yard-fishing:not([hidden]){display:flex;align-items:center;gap:12px;position:absolute;bottom:12px;left:14px;max-width:min(645px,90%);padding:9px 12px;background:#fcf1ddf3;border:1px solid #ab8c69;border-radius:10px;box-shadow:0 3px 10px #60442d38;color:#5c4534;pointer-events:auto;font-family:"PingFang SC",system-ui,sans-serif}
+  #yard-task-title{font-size:20px}#yard-task-text{font-size:16px;line-height:1.35;margin-top:2px}
+  #yard-task button,#yard-fishing button{height:43px;padding:0 12px;flex:none;border-radius:7px;background:#877c57;color:#fff3df;font-size:18px}
+  #yard-fish-close{background:#e3d3b9!important;color:#594335!important}
+  #yard-fishing:not([hidden]){bottom:13px;left:auto;right:14px}
+  #hud-screen.mode-day.suzhou .hud{gap:5px}
+  #hud-screen.mode-day.suzhou .chipbox,#hud-screen.mode-day.suzhou .hb{background:#fbf1dff0;border:1px solid #ab8e70;border-radius:10px;box-shadow:0 2px 4px #60473138;color:#5e4938;padding:6px 10px;font-size:19px;min-height:43px}
+  #hud-screen.mode-day.suzhou #b-open{background:#947353;color:#fff5e4}
+
+
+  #b-yard-more{display:none}
+  #yard-more-menu{display:contents}
+  #hud-screen.mode-day.suzhou #b-yard-more{display:inline-block}
+  #hud-screen.mode-day.suzhou #yard-more-menu{display:none}
+  #hud-screen.mode-day.suzhou.yard-more-open #yard-more-menu{display:grid;grid-template-columns:repeat(2,max-content);gap:6px;position:absolute;right:0;top:50px;padding:7px;background:#f8edd8;border:1px solid #ac8e6a;border-radius:9px;box-shadow:0 4px 9px #4d362869}
   /* 点单面板 */
   #hud-screen.mode-day .shop-only, #hud-screen.mode-shop .day-only { display: none !important; }
   .hb.primary { background: #b04a3c; color: #fff; }
@@ -443,16 +459,25 @@
       <div class="hud r">
         <div id="h-timebox" class="shop-only" title="今天剩余营业时间"><div id="h-time"></div></div>
         <button class="hb shop-only" id="b-dex2">笔记</button>
-        <button class="hb day-only" id="b-staff">安排店员</button>
         <button class="hb shop-only" id="b-dance">帅老头跳舞</button>
+        <button class="hb day-only" id="b-yard-more" aria-expanded="false">备料</button>
+        <div id="yard-more-menu">        <button class="hb day-only" id="b-staff">安排店员</button>
         <button class="hb day-only" id="b-menu">今日菜单</button>
         <button class="hb day-only" id="b-pantry">储藏室</button>
         <button class="hb day-only" id="b-decor" style="display:none">装修</button>
         <button class="hb day-only" id="b-invent" style="display:none">试菜</button>
+        </div>
         <button class="hb day-only" id="b-dex">笔记</button>
         <button class="hb day-only primary" id="b-open">开店营业</button>
         <button class="hb" id="b-pause" aria-label="暂停">暂停</button>
       </div>
+
+      <section id="yard-task" class="day-only" hidden>
+        <div><b id="yard-task-title"></b><div id="yard-task-text"></div></div><button id="yard-task-go"></button>
+      </section>
+      <section id="yard-fishing" class="day-only" hidden>
+        <span id="yard-fish-text"></span><button id="yard-fish-action">抛竿</button><button id="yard-fish-close">离开钓台</button>
+      </section>
       <div id="start-tip">
         <div id="tip-body"></div>
         <p id="tip-close" style="margin:8px 0 0;color:#8a6a50;text-align:center">点这里关闭</p>
@@ -467,6 +492,7 @@
         <h2>暂停中</h2>
         <button class="primary" id="p-resume">继续营业</button>
         <button id="p-dex">笔记</button>
+        <button id="p-fullscreen">全屏</button>
         <button id="p-look">捏脸 / 换衣服</button>
         <button id="p-quit">回到存档列表</button>
       </div>
