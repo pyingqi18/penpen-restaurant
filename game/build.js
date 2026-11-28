@@ -19,6 +19,8 @@ const out = page(false, Boolean(garden)), grey = page(true); // 正式版 index.
 fs.mkdirSync(path.join(dir, 'dist/assets'), { recursive: true });
 if (fs.existsSync(adir)) for (const f of fs.readdirSync(adir)) if (f.endsWith('.webp')) fs.copyFileSync(path.join(adir, f), path.join(dir, 'dist/assets', f));
 fs.mkdirSync(path.join(dir, 'dist'), { recursive: true });
+const audio = path.join(adir, 'audio');
+if (fs.existsSync(audio)) fs.cpSync(audio, path.join(dir, 'dist/assets/audio'), { recursive: true });
 fs.writeFileSync(path.join(dir, 'dist/index.html'), out);
 fs.writeFileSync(path.join(dir, 'dist/greybox.html'), grey);
 if (garden) {

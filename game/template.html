@@ -9,6 +9,7 @@
 <meta name="apple-mobile-web-app-title" content="盆盆餐厅">
 <meta name="theme-color" content="#f3ead9">
 <title>盆盆餐厅 · 新美术试玩</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 48 48%27%3E%3Crect width=%2748%27 height=%2748%27 rx=%2711%27 fill=%27%23f0debf%27/%3E%3Cpath d=%27M11 30c0-6 5-11 13-11s13 5 13 11c0 5-5 8-13 8s-13-3-13-8Zm3-6V11l9 10m3 0 8-10v13%27 fill=%27%23b36f50%27/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&display=swap" rel="stylesheet">
@@ -432,6 +433,43 @@
   #decor-preview { display: flex; justify-content: center; gap: 26px; margin: 12px 0 0; }
   #decor-preview figure { margin: 0; text-align: center; color: #6d5445; }
   #decor-preview img { width: 90px; height: 70px; object-fit: contain; }
+
+  #hud-screen.mode-shop.suzhou .chipbox, #hud-screen.mode-day.suzhou .chipbox { font-size: 22px; }
+  #hud-screen.mode-shop.suzhou .hb, #hud-screen.mode-day.suzhou .hb { font: 650 20px "PingFang SC","Microsoft YaHei",sans-serif; }
+  #coach.paper-hint .cap { font-size: 21px; padding: 5px 10px; color: #4e382a; }
+  #yard-task:not([hidden]) { max-width: min(785px, 97%); padding: 10px 14px; }
+  #yard-task-title, #yard-task button { font-size: 22px; }
+  #yard-task-progress { display: block; font-size: 17px; color: #795432; }
+  #yard-task-progress:empty { display: none; }
+  #yard-task-text { font-size: 19px; line-height: 1.35; }
+  #yard-task button { min-height: 48px; padding: 6px 9px; white-space: nowrap; }
+  .guide-card { width: 850px; text-align: left; }
+  .guide-tabs { display:flex; gap: 8px; flex-wrap: wrap; }
+  .guide-tabs button[aria-pressed="true"] { background:#936c4b; color:#fff7ea; }
+  #help-steps { font: 22px/1.5 "PingFang SC","Microsoft YaHei",sans-serif; padding-left: 38px; }
+  #help-steps li { margin-bottom:8px; }
+
+  #decor-slots { gap:5px; }
+  #decor-slots button { font-size: 19px; min-height: 44px; padding: 4px 10px; }
+  #decor-choices { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap:7px; max-height:230px; overflow:auto; }
+  #decor-choices button, #collection-list button { display:grid; justify-items:center; align-content:center; min-height:70px; font-size:19px; border:1px solid #ceb399; background:#f6e9d8; color:#52392b; padding:4px; }
+  #decor-choices button[aria-pressed="true"], #collection-list button[aria-pressed="true"] { background:#ecd4af; border:2px solid #936c4b; }
+  #decor-choices button:disabled { opacity:.45; }
+  #decor-choices img,#collection-list img { width:45px;height:37px;object-fit:contain; }
+  .decor-swatch { width:42px; height:25px; border-radius:4px; font-size:23px; }
+  .collection-card { width:960px; text-align:left; font-size:21px; }
+  .collection-card h2,#collection-guide { margin:0 0 8px; }
+  .collection-grid { display:grid; grid-template-columns:2fr 3fr; gap:18px; min-height:120px; margin-bottom:10px; }
+  #collection-list { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); align-content:start; gap:7px; max-height:250px; overflow:auto; }
+  #collection-detail:not([hidden]) { display:flex;gap:14px;align-items:center;background:#f2e6d4;border-radius:10px;padding:8px; }
+  #collection-art { width:115px; height:145px; object-fit:contain; }
+  #collection-detail h3,#collection-detail p { margin:0 0 8px; }
+  #travel-album [hidden],#collection [hidden] { display:none !important; }
+  #album-empty { padding: 28px 14px; font-size: 24px; }
+
+   .sound-field { display:grid; gap:10px; margin:14px 0; }
+   .sound-field label { display:flex; align-items:center; gap:10px; min-height:44px; font-size:23px; }
+   .sound-field input { width:24px; height:24px; accent-color:#9b6951; }
 </style>
 </head>
 <body>
@@ -470,6 +508,7 @@
         <div id="h-timebox" class="shop-only" title="今天剩余营业时间"><div id="h-time"></div></div>
         <button class="hb shop-only" id="b-dex2">笔记</button>
         <button class="hb shop-only" id="b-dance">帅老头跳舞</button>
+        <button class="hb day-only" id="b-help">玩法</button>
         <button class="hb day-only" id="b-yard-more" aria-expanded="false">备料</button>
         <div id="yard-more-menu">        <button class="hb day-only" id="b-staff">安排店员</button>
         <button class="hb day-only" id="b-menu">今日菜单</button>
@@ -483,7 +522,7 @@
       </div>
 
       <section id="yard-task" class="day-only" hidden>
-        <div><b id="yard-task-title"></b><div id="yard-task-text"></div></div><button id="yard-task-go"></button><button id="yard-decor-intro" hidden>试试装修</button>
+        <div aria-live="polite"><small id="yard-task-progress"></small><b id="yard-task-title"></b><div id="yard-task-text"></div></div><button id="yard-task-go"></button><button id="yard-decor-intro" hidden>试试装修</button>
       </section>
       <section id="yard-fishing" class="day-only" hidden>
         <span id="yard-fish-text"></span><button id="yard-fish-action">抛竿</button><button id="yard-fish-close">离开钓台</button>
@@ -503,12 +542,24 @@
         <button class="primary" id="p-resume">继续营业</button>
         <button id="p-dex">笔记</button>
         <button id="p-fullscreen">全屏</button>
+        <button id="p-help">玩法指引</button>
+        <button id="p-audio">声音</button>
         <button id="p-look">捏脸 / 换衣服</button>
         <button id="p-quit">回到存档列表</button>
       </div>
     </section>
 
 
+    <section id="howto" class="screen modal"><div class="card guide-card">
+      <h2 id="help-title"></h2><div id="help-tabs" class="guide-tabs"><button data-page="shop">营业</button><button data-page="farm">备料</button><button data-page="decor">装修与收藏</button></div>
+      <ol id="help-steps"></ol><button class="primary" id="help-close">回到游戏</button>
+    </div></section>
+    <section id="audio-panel" class="screen modal"><div class="card guide-card">
+      <h2>声音</h2>
+      <div class="sound-field"><label><input type="checkbox" id="sound-music"> 背景音乐</label><label><input type="checkbox" id="sound-effects"> 烹饪、动物和环境声</label></div>
+      <button id="sound-records">打开唱片柜</button><button class="primary" id="sound-close">返回暂停</button>
+      <p class="goal"><a href="assets/audio/credits.txt" target="_blank" rel="noopener">查看音频来源</a></p>
+    </div></section>
     <section id="fish-lesson" class="screen modal">
       <div class="card">
         <h2>浮漂动了</h2>
@@ -541,6 +592,7 @@
           <select id="album-clock" aria-label="收件日期显示方式"><option value="game">店里日历</option><option value="real">现实收件日</option></select>
           <button type="button" id="album-close">合上</button>
         </header>
+        <p id="album-empty" hidden>相簿还空着。去邮筒收呆猫寄来的旅途照片。</p>
         <div class="album-spread">
           <figure class="album-left">
             <div class="album-print"><img id="album-photo" alt=""></div>
@@ -561,15 +613,27 @@
         <footer class="album-bar">
           <div class="album-pages"><button type="button" id="album-prev" aria-label="上一页">‹</button><span id="album-page-number"></span><button type="button" id="album-next" aria-label="下一页">›</button></div>
           <select id="album-add-photo" aria-label="选择要贴的照片"></select>
-          <div id="album-wall-controls"><button type="button" id="album-hang-left">挂左墙</button><button type="button" id="album-hang-right">挂右墙</button></div>
         </footer>
       </div>
     </section>
 
+    <section id="collection" class="screen modal">
+      <div class="card collection-card">
+        <h2 id="collection-title"></h2>
+        <div id="collection-tabs" class="guide-tabs"><button data-c="art">艺术品</button><button data-c="post">明信片</button><button data-c="album">旅行相簿</button><button data-c="records">唱片</button></div>
+        <p id="collection-guide"></p>
+        <p id="collection-empty" hidden>等呆猫送来下一封信吧。</p>
+        <div class="collection-grid">
+          <div id="collection-list"></div>
+          <div id="collection-detail"><img id="collection-art" alt=""><div><h3 id="collection-name"></h3><p id="collection-message"></p><button id="collection-decor">去装修</button><button class="primary" id="collection-play">选为营业音乐</button></div></div>
+        </div>
+        <button class="primary" id="collection-close">关上</button>
+      </div>
+    </section>
     <section id="dex" class="screen modal">
       <div class="card" style="width:1100px;max-height:680px">
         <h2>盆盆的笔记</h2>
-        <div class="tabs"><button data-tab="cust">客人</button><button data-tab="dish">菜谱</button><button data-tab="fish">鱼</button><button data-tab="card">明信片</button></div>
+        <div class="tabs"><button data-tab="cust">客人</button><button data-tab="dish">菜谱</button><button data-tab="fish">鱼</button><button data-tab="card">明信片</button><button class="suzhou-tab" data-tab="album">旅行相簿</button><button class="suzhou-tab" data-tab="art">艺术品仓库</button><button class="suzhou-tab" data-tab="records">唱片柜</button></div>
         <div id="dex-list"></div>
         <button class="primary" id="dex-ok">关上</button>
       </div>
@@ -589,13 +653,13 @@
     <section id="decorate" class="screen modal">
       <div class="card">
         <h2>开店前布置</h2>
-        <p id="decor-guide" class="goal" hidden>先给大桌换块桌布，再看预览里的变化。喜欢就保存，也可以直接取消。</p>
-        <div id="decor-body"></div>
+        <p id="decor-guide" class="goal" aria-live="polite"></p>
+        <div id="decor-body"><div id="decor-slots" class="guide-tabs" aria-label="布置位置"></div><div id="decor-choices" aria-label="可摆放"></div></div>
         <div class="decor-stage">
           <canvas id="decor-room" width="840" height="402" aria-label="当前餐厅装修预览"></canvas>
           <p class="goal" id="decor-info" aria-live="polite"></p>
         </div>
-        <div class="inv-btns"><button class="primary" id="decor-apply">摆好了</button><button id="decor-close">取消</button></div>
+        <div class="inv-btns"><button id="decor-reset">还原本次</button><button id="decor-close">取消</button><button class="primary" id="decor-apply">保存布置</button></div>
       </div>
     </section>
 

@@ -9,6 +9,7 @@
 <meta name="apple-mobile-web-app-title" content="盆盆餐厅">
 <meta name="theme-color" content="#f3ead9">
 <title>盆盆餐厅 · 新美术试玩</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 48 48%27%3E%3Crect width=%2748%27 height=%2748%27 rx=%2711%27 fill=%27%23f0debf%27/%3E%3Cpath d=%27M11 30c0-6 5-11 13-11s13 5 13 11c0 5-5 8-13 8s-13-3-13-8Zm3-6V11l9 10m3 0 8-10v13%27 fill=%27%23b36f50%27/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&display=swap" rel="stylesheet">
@@ -432,6 +433,43 @@
   #decor-preview { display: flex; justify-content: center; gap: 26px; margin: 12px 0 0; }
   #decor-preview figure { margin: 0; text-align: center; color: #6d5445; }
   #decor-preview img { width: 90px; height: 70px; object-fit: contain; }
+
+  #hud-screen.mode-shop.suzhou .chipbox, #hud-screen.mode-day.suzhou .chipbox { font-size: 22px; }
+  #hud-screen.mode-shop.suzhou .hb, #hud-screen.mode-day.suzhou .hb { font: 650 20px "PingFang SC","Microsoft YaHei",sans-serif; }
+  #coach.paper-hint .cap { font-size: 21px; padding: 5px 10px; color: #4e382a; }
+  #yard-task:not([hidden]) { max-width: min(785px, 97%); padding: 10px 14px; }
+  #yard-task-title, #yard-task button { font-size: 22px; }
+  #yard-task-progress { display: block; font-size: 17px; color: #795432; }
+  #yard-task-progress:empty { display: none; }
+  #yard-task-text { font-size: 19px; line-height: 1.35; }
+  #yard-task button { min-height: 48px; padding: 6px 9px; white-space: nowrap; }
+  .guide-card { width: 850px; text-align: left; }
+  .guide-tabs { display:flex; gap: 8px; flex-wrap: wrap; }
+  .guide-tabs button[aria-pressed="true"] { background:#936c4b; color:#fff7ea; }
+  #help-steps { font: 22px/1.5 "PingFang SC","Microsoft YaHei",sans-serif; padding-left: 38px; }
+  #help-steps li { margin-bottom:8px; }
+
+  #decor-slots { gap:5px; }
+  #decor-slots button { font-size: 19px; min-height: 44px; padding: 4px 10px; }
+  #decor-choices { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap:7px; max-height:230px; overflow:auto; }
+  #decor-choices button, #collection-list button { display:grid; justify-items:center; align-content:center; min-height:70px; font-size:19px; border:1px solid #ceb399; background:#f6e9d8; color:#52392b; padding:4px; }
+  #decor-choices button[aria-pressed="true"], #collection-list button[aria-pressed="true"] { background:#ecd4af; border:2px solid #936c4b; }
+  #decor-choices button:disabled { opacity:.45; }
+  #decor-choices img,#collection-list img { width:45px;height:37px;object-fit:contain; }
+  .decor-swatch { width:42px; height:25px; border-radius:4px; font-size:23px; }
+  .collection-card { width:960px; text-align:left; font-size:21px; }
+  .collection-card h2,#collection-guide { margin:0 0 8px; }
+  .collection-grid { display:grid; grid-template-columns:2fr 3fr; gap:18px; min-height:120px; margin-bottom:10px; }
+  #collection-list { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); align-content:start; gap:7px; max-height:250px; overflow:auto; }
+  #collection-detail:not([hidden]) { display:flex;gap:14px;align-items:center;background:#f2e6d4;border-radius:10px;padding:8px; }
+  #collection-art { width:115px; height:145px; object-fit:contain; }
+  #collection-detail h3,#collection-detail p { margin:0 0 8px; }
+  #travel-album [hidden],#collection [hidden] { display:none !important; }
+  #album-empty { padding: 28px 14px; font-size: 24px; }
+
+   .sound-field { display:grid; gap:10px; margin:14px 0; }
+   .sound-field label { display:flex; align-items:center; gap:10px; min-height:44px; font-size:23px; }
+   .sound-field input { width:24px; height:24px; accent-color:#9b6951; }
 </style>
 </head>
 <body>
@@ -470,6 +508,7 @@
         <div id="h-timebox" class="shop-only" title="今天剩余营业时间"><div id="h-time"></div></div>
         <button class="hb shop-only" id="b-dex2">笔记</button>
         <button class="hb shop-only" id="b-dance">帅老头跳舞</button>
+        <button class="hb day-only" id="b-help">玩法</button>
         <button class="hb day-only" id="b-yard-more" aria-expanded="false">备料</button>
         <div id="yard-more-menu">        <button class="hb day-only" id="b-staff">安排店员</button>
         <button class="hb day-only" id="b-menu">今日菜单</button>
@@ -483,7 +522,7 @@
       </div>
 
       <section id="yard-task" class="day-only" hidden>
-        <div><b id="yard-task-title"></b><div id="yard-task-text"></div></div><button id="yard-task-go"></button><button id="yard-decor-intro" hidden>试试装修</button>
+        <div aria-live="polite"><small id="yard-task-progress"></small><b id="yard-task-title"></b><div id="yard-task-text"></div></div><button id="yard-task-go"></button><button id="yard-decor-intro" hidden>试试装修</button>
       </section>
       <section id="yard-fishing" class="day-only" hidden>
         <span id="yard-fish-text"></span><button id="yard-fish-action">抛竿</button><button id="yard-fish-close">离开钓台</button>
@@ -503,12 +542,24 @@
         <button class="primary" id="p-resume">继续营业</button>
         <button id="p-dex">笔记</button>
         <button id="p-fullscreen">全屏</button>
+        <button id="p-help">玩法指引</button>
+        <button id="p-audio">声音</button>
         <button id="p-look">捏脸 / 换衣服</button>
         <button id="p-quit">回到存档列表</button>
       </div>
     </section>
 
 
+    <section id="howto" class="screen modal"><div class="card guide-card">
+      <h2 id="help-title"></h2><div id="help-tabs" class="guide-tabs"><button data-page="shop">营业</button><button data-page="farm">备料</button><button data-page="decor">装修与收藏</button></div>
+      <ol id="help-steps"></ol><button class="primary" id="help-close">回到游戏</button>
+    </div></section>
+    <section id="audio-panel" class="screen modal"><div class="card guide-card">
+      <h2>声音</h2>
+      <div class="sound-field"><label><input type="checkbox" id="sound-music"> 背景音乐</label><label><input type="checkbox" id="sound-effects"> 烹饪、动物和环境声</label></div>
+      <button id="sound-records">打开唱片柜</button><button class="primary" id="sound-close">返回暂停</button>
+      <p class="goal"><a href="assets/audio/credits.txt" target="_blank" rel="noopener">查看音频来源</a></p>
+    </div></section>
     <section id="fish-lesson" class="screen modal">
       <div class="card">
         <h2>浮漂动了</h2>
@@ -541,6 +592,7 @@
           <select id="album-clock" aria-label="收件日期显示方式"><option value="game">店里日历</option><option value="real">现实收件日</option></select>
           <button type="button" id="album-close">合上</button>
         </header>
+        <p id="album-empty" hidden>相簿还空着。去邮筒收呆猫寄来的旅途照片。</p>
         <div class="album-spread">
           <figure class="album-left">
             <div class="album-print"><img id="album-photo" alt=""></div>
@@ -561,15 +613,27 @@
         <footer class="album-bar">
           <div class="album-pages"><button type="button" id="album-prev" aria-label="上一页">‹</button><span id="album-page-number"></span><button type="button" id="album-next" aria-label="下一页">›</button></div>
           <select id="album-add-photo" aria-label="选择要贴的照片"></select>
-          <div id="album-wall-controls"><button type="button" id="album-hang-left">挂左墙</button><button type="button" id="album-hang-right">挂右墙</button></div>
         </footer>
       </div>
     </section>
 
+    <section id="collection" class="screen modal">
+      <div class="card collection-card">
+        <h2 id="collection-title"></h2>
+        <div id="collection-tabs" class="guide-tabs"><button data-c="art">艺术品</button><button data-c="post">明信片</button><button data-c="album">旅行相簿</button><button data-c="records">唱片</button></div>
+        <p id="collection-guide"></p>
+        <p id="collection-empty" hidden>等呆猫送来下一封信吧。</p>
+        <div class="collection-grid">
+          <div id="collection-list"></div>
+          <div id="collection-detail"><img id="collection-art" alt=""><div><h3 id="collection-name"></h3><p id="collection-message"></p><button id="collection-decor">去装修</button><button class="primary" id="collection-play">选为营业音乐</button></div></div>
+        </div>
+        <button class="primary" id="collection-close">关上</button>
+      </div>
+    </section>
     <section id="dex" class="screen modal">
       <div class="card" style="width:1100px;max-height:680px">
         <h2>盆盆的笔记</h2>
-        <div class="tabs"><button data-tab="cust">客人</button><button data-tab="dish">菜谱</button><button data-tab="fish">鱼</button><button data-tab="card">明信片</button></div>
+        <div class="tabs"><button data-tab="cust">客人</button><button data-tab="dish">菜谱</button><button data-tab="fish">鱼</button><button data-tab="card">明信片</button><button class="suzhou-tab" data-tab="album">旅行相簿</button><button class="suzhou-tab" data-tab="art">艺术品仓库</button><button class="suzhou-tab" data-tab="records">唱片柜</button></div>
         <div id="dex-list"></div>
         <button class="primary" id="dex-ok">关上</button>
       </div>
@@ -589,13 +653,13 @@
     <section id="decorate" class="screen modal">
       <div class="card">
         <h2>开店前布置</h2>
-        <p id="decor-guide" class="goal" hidden>先给大桌换块桌布，再看预览里的变化。喜欢就保存，也可以直接取消。</p>
-        <div id="decor-body"></div>
+        <p id="decor-guide" class="goal" aria-live="polite"></p>
+        <div id="decor-body"><div id="decor-slots" class="guide-tabs" aria-label="布置位置"></div><div id="decor-choices" aria-label="可摆放"></div></div>
         <div class="decor-stage">
           <canvas id="decor-room" width="840" height="402" aria-label="当前餐厅装修预览"></canvas>
           <p class="goal" id="decor-info" aria-live="polite"></p>
         </div>
-        <div class="inv-btns"><button class="primary" id="decor-apply">摆好了</button><button id="decor-close">取消</button></div>
+        <div class="inv-btns"><button id="decor-reset">还原本次</button><button id="decor-close">取消</button><button class="primary" id="decor-apply">保存布置</button></div>
       </div>
     </section>
 
@@ -2022,7 +2086,7 @@ const PENPEN_SUZHOU_PREVIEW = false;
   const PREVIEW_SEASON = SUZHOU_PREVIEW && new URLSearchParams(window.location.search).get('season');
   let gardenMode = false;
   let yardMode = false;
-  const SUZHOU_RELEASE = 'G069';
+  const SUZHOU_RELEASE = 'G070';
   const DAY_LEN = SUZHOU ? 230 : 150; // 每天营业秒数
   const cv = document.getElementById('game');
   let ctx = cv.getContext('2d');
@@ -2034,18 +2098,23 @@ const PENPEN_SUZHOU_PREVIEW = false;
 
   // T-01（D-005）：界面层不再跟着场景一起缩。界面铺满安全区（手机横屏两侧的空白也能放按钮），
   // 缩放取 uiScale = max(场景缩放, UI_MIN)，所以小屏上字和按钮比场景大一些；UW×UH 是界面层的逻辑尺寸。
-  const UI_MIN = 0.66; // 22–24 px 的字在 844×390 上约 15–16 CSS px（主人 D-006：字「还行」，不放特别大）
-  let uiScale = 1, UW = W, UH = H, OX = 0, OY = 0, SX = 0, SY = 0; // SX/SY：等比场景在画布里的居中偏移（CSS px）
+  const UI_MIN = 0.72; // 22–24 px 的字在 844×390 上约 15–16 CSS px（主人 D-006：字「还行」，不放特别大）
+  let uiScale = 1, UW = W, UH = H, OX = 0, OY = 0, SX = 0, SY = 0, viewTop = 0, viewBottom = H; // SX/SY：等比场景在画布里的居中偏移（CSS px）
   const toUI = (x, y) => ({ x: (OX + x * scale) / uiScale, y: (OY + y * scale) / uiScale }); // 场景坐标 → 界面坐标
   function resize() {
-    const vw = window.innerWidth, vh = window.innerHeight, cs = getComputedStyle(document.body);
+    const port = window.visualViewport, cs = getComputedStyle(document.body);
+    const vw = Math.round(port?.width || window.innerWidth), vh = Math.round(port?.height || window.innerHeight);
     const pl = parseFloat(cs.paddingLeft) || 0, pr = parseFloat(cs.paddingRight) || 0, pt = parseFloat(cs.paddingTop) || 0, pb = parseFloat(cs.paddingBottom) || 0;
     const aw = Math.max(1, vw - pl - pr), ah = Math.max(1, vh - pt - pb);
 
     const stageHeight = gardenMode ? LAYOUT.scene.height : H;
-    scale = Math.min(aw / W, ah / stageHeight);
-    SX = pl + (aw - W * scale) / 2;
-    SY = pt + (ah - stageHeight * scale) / 2;
+    const maxTrim = gardenMode ? 42 : yardMode ? 32 : 0;
+    const trim = Math.min(maxTrim, Math.max(0, stageHeight - vh * W / vw));
+    viewTop = Math.round(trim * 0.48); viewBottom = stageHeight - (trim - viewTop);
+    const pictureH = viewBottom - viewTop;
+    scale = Math.min(vw / W, vh / pictureH);
+    SX = (vw - W * scale) / 2;
+    SY = (vh - pictureH * scale) / 2 - viewTop * scale;
     stage.style.width = vw + 'px';
     stage.style.height = vh + 'px';
     cv.width = Math.round(vw * dpr);
@@ -2063,7 +2132,10 @@ const PENPEN_SUZHOU_PREVIEW = false;
 
   // ---------- 声音（点一下后才能播放） ----------
   let actx = null;
+  const audioPreferences = { music:true, effects:true };
+  try { Object.assign(audioPreferences, JSON.parse(localStorage.getItem('penpen.sound.v1') || '{}')); } catch { /* Keep defaults when storage is unavailable. */ }
   function beep(freq = 660, dur = 0.08, type = 'sine', vol = 0.06) {
+    if (!audioPreferences.effects) return;
     try {
       if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
       const o = actx.createOscillator(), g = actx.createGain();
@@ -2082,6 +2154,82 @@ const PENPEN_SUZHOU_PREVIEW = false;
     dance: () => [523, 659, 784, 1047].forEach((f, i) => setTimeout(() => beep(f, 0.1, 'square', 0.03), i * 110)),
   };
 
+  const SOUND_LOOPS = new Map(), SOUND_FILES = new Map();
+  let soundReady=false, lastAnimalSound=-Infinity;
+  const RECORDS = {
+    restaurant: { id:'restaurant', title:'茶社午后', msg:'开店就能播放。钢琴曲《Forget Me Not》，Kistol。' },
+    record: { id:'record', title:'雪山来信', msg:'呆猫从雪山牧场寄来的唱片。钢琴曲《A Simple Trifle》，jestar。' },
+  };
+  const recordEntries = () => [RECORDS.restaurant, ...((save.records || []).includes('record') || (save.cards || []).includes('snowpeak') ? [RECORDS.record] : [])];
+  function sound(name, level) {
+    if (!SOUND_FILES.has(name)) {
+      const media=new Audio('assets/audio/'+name+'.mp3?v='+SUZHOU_RELEASE);
+      media.preload='none';
+      const node={ media, level };
+      if (actx) {
+        try {
+          const input=actx.createMediaElementSource(media), gain=actx.createGain();
+          gain.gain.value=level; input.connect(gain).connect(actx.destination); node.gain=gain.gain;
+        } catch { media.volume=level; }
+      } else media.volume=level;
+      SOUND_FILES.set(name,node);
+    }
+    return SOUND_FILES.get(name);
+  }
+  function setSoundLoop(channel, name, level) {
+    const old=SOUND_LOOPS.get(channel);
+    if (old===name) return;
+    if (old) SOUND_FILES.get(old).media.pause();
+    SOUND_LOOPS.delete(channel);
+    if (!name) return;
+    const node=sound(name,level);
+    SOUND_LOOPS.set(channel,name);
+    node.media.loop=true;
+    node.media.play().catch(()=>{ if(SOUND_LOOPS.get(channel)===name)SOUND_LOOPS.delete(channel); });
+  }
+  function syncSound() {
+    if (!SUZHOU || !soundReady) return;
+    const running = Boolean(G && !document.hidden && !$('#pause').classList.contains('show') && !$('#audio-panel').classList.contains('show'));
+    const shop = running && G.mode==='shop', farm=running && G.mode==='day' && save.day>=2;
+    const busy = shop && !G.paused && !G.over && G.mischief?.who!=='laoda';
+    const record = shop && recordEntries().some(r=>r.id===save.record) ? save.record : 'restaurant';
+    setSoundLoop('music',audioPreferences.music ? farm?'farm':shop?record:null : null,0.73);
+    setSoundLoop('outdoors',audioPreferences.effects && farm && !G.paused ? 'birds':null,0.58);
+    setSoundLoop('simmer',audioPreferences.effects && busy && (G.kitchen.wares.pot?.cur || G.kitchen.wares.steamer?.cur) ? 'simmer':null,0.76);
+    setSoundLoop('wok',audioPreferences.effects && busy && G.kitchen.wares.wok?.cur ? 'wok':null,0.79);
+  }
+  function playAnimalCall(species) {
+    const now=performance.now();
+    if (!soundReady || !audioPreferences.effects || now-lastAnimalSound<4400 || document.hidden) return;
+    lastAnimalSound=now;
+    if (species==='cat'||species==='shuai'||species==='shiba') {
+      const {media}=sound(species==='shiba'?'dog':'cat',0.68); media.currentTime=0; media.play().catch(()=>{});
+    } else {
+      const pitch = species==='bunny' ? 720 : species==='shiba' ? 255 : 440;
+      beep(pitch,0.12,'triangle',0.02);
+      setTimeout(()=>{if (G?.mode==='shop' && !G.paused)beep(pitch*0.78,0.13,'sine',0.016);},80);
+    }
+  }
+  function unlockSound() {
+    soundReady=true;
+    try { actx ||= new (window.AudioContext || window.webkitAudioContext)(); if(actx.state==='suspended')actx.resume().catch(()=>{}); } catch {}
+    syncSound();
+  }
+  document.addEventListener('pointerup',unlockSound,{capture:true,once:true});
+  document.addEventListener('keydown',unlockSound,{capture:true,once:true});
+  document.addEventListener('visibilitychange',syncSound);
+  setInterval(syncSound,320);
+  function openSoundPanel() {
+    const fields={music:$('#sound-music'),effects:$('#sound-effects')};
+    for (const [key, el] of Object.entries(fields)) {
+      el.checked=audioPreferences[key];
+      el.onchange=()=> { audioPreferences[key]=el.checked; try { localStorage.setItem('penpen.sound.v1',JSON.stringify(audioPreferences)); } catch {} syncSound(); if (key==='effects'&&el.checked)sfx.tap(); };
+    }
+    show('audio-panel');
+  }
+  $('#p-audio').onclick=openSoundPanel;
+  $('#sound-close').onclick=()=>show('pause');
+  $('#sound-records').onclick=()=>openCollection('records','pause');
   // ---------- 图片 ----------
   // GPT 生成的美术（assets/*.webp）；没加载出来的就先用程序画的顶上
   const ART = (typeof ART_MANIFEST !== 'undefined') ? ART_MANIFEST : {};
@@ -2626,7 +2774,7 @@ const PENPEN_SUZHOU_PREVIEW = false;
       plates: { clean: startingPlates(tables), dirty: 0, washT: 0 }, kitchen: { wares: Object.fromEntries(Object.keys(WARES).map((w) => [w, { q: [], cur: null }])), pass: [], drinkQ: [], drinkCur: null, drinkReady: [], rail: [] },
       waiter: { x: IDLE.x, y: IDLE.y, path: [], hands: [], queue: [], tickets: [], face: 1, back: false, blinkT: 2 },
       staff: staffIds().filter((id) => !jobsOf(id).includes('farm') && !skipping(id)).map((id) => ({ id, x: STAFF_DEF[id].home.x, y: STAFF_DEF[id].home.y, path: [], hands: [], task: null, face: 1, back: false })),
-      danceCD: 0, selected: null, orderOpen: null, dancer: null,
+      danceCD: 0, selected: null, orderOpen: null, dancer: null, greeter: { x:985, y:373, path:[], face:1 },
       D: { ...(YARD ? yardPoint(YARD.spawn) : { x: WMAP.shop.door.x, y: WMAP.shop.door.y + 30 }), path: [], face: 1, back: false, task: null, energy: save.energyDay === save.day && save.energy != null ? save.energy : ENERGY, fish: 0, cam: { x: 360, y: 300 }, manual: false },
     };
     if (SUZHOU) {
@@ -2766,7 +2914,8 @@ const PENPEN_SUZHOU_PREVIEW = false;
   function yardGoal() {
     const phase = farmPhase(), step = teachingFarm();
     if (step) return { ...step, key: phase, place: step.site ? yardPlace(step.site) : null };
-    if (phase === 'wait') return { key: phase, title: '种好了，明早来收', msg: '种子正在长。今天可以开店营业。', place: yardPlace('door') };
+    if (phase === 'wait') return { key: phase, title: '播种完成', msg: '辣椒明早成熟。今天可以先装修，再开门营业。', place: yardPlace('door') };
+    if (save.day >= 2) return { key: 'free', title: '今日备料', msg: '点菜畦收种、去鱼塘钓鱼，或查菜单与库存再去早市。', place: yardPlace('door') };
     return null;
   }
   function dayTap(p) {
@@ -2795,7 +2944,7 @@ const PENPEN_SUZHOU_PREVIEW = false;
     const D = G.D;
     if (h.id === 'door') { ask(`收拾好了，开门营业吗？${D.energy ? `（体力还剩 ${D.energy}）` : ''}`, '开店').then((ok) => ok && openShop()); return; }
     if (h.id === 'market') { openMarket(); did('market'); return; }
-    if (h.id === 'cottage') { openTravelAlbum('hud-screen'); return; }
+    if (h.id === 'cottage') { openCollection('art','hud-screen'); return; }
     if (h.id === 'tea') {
       if (save.teaDay === save.day) { float(h.sign?.x ?? 1170, h.sign?.y ?? 900, '明天再来摘', '#8a6a50'); return; }
       if (!spend()) return;
@@ -2830,7 +2979,16 @@ const PENPEN_SUZHOU_PREVIEW = false;
       if (fish.stage === 'cast' && fish.t >= fish.wait) { fish.stage = 'bite'; fish.t = 0; sfx.tap(); syncFishingPanel(); }
     } else if (D.fish > 0) { D.fish -= dt; if (D.fish <= 0) { D.fish = 0; if (farmPhase() === 'fish') openFishLesson(); else catchFish(); } }
     else if (D.path.length) { if (moveAlong(D, 340 * SPD(), dt) && D.task) { const h = D.task; D.task = null; dayArrive(h); } }
-    if (YARD) { G.floats = G.floats.filter((f) => (f.t += dt) < (f.life || 1.6)); return; }
+    if (YARD) {
+      D.companions ||= {};
+      for (const [id, park, stops] of [['laoer',YARD.staff,['door','market']],['mimi',YARD.helper,['plot','pond']]]) {
+        if (!staffIds().includes(id)) continue;
+        const actor = D.companions[id] ||= { ...yardPoint(park), path:[], face:1 };
+        const points = [yardPoint(park),...stops.map(key=>yardPlace(key).spot())].map(p=>[p.x,p.y]);
+        stroll(actor,points,dt,62,YARD_GRID);
+      }
+      G.floats = G.floats.filter((f) => (f.t += dt) < (f.life || 1.6));return;
+    }
     const tx = Math.max(0, Math.min(WORLD_W - W, D.x - W / 2)), ty = Math.max(0, Math.min(WORLD_H - H, D.y - H * 0.74));
     if (D.camGoal) { // 引导要指的地方不在画面里：镜头慢慢移过去
       D.cam.x += (D.camGoal.x - D.cam.x) * Math.min(1, dt * 3); D.cam.y += (D.camGoal.y - D.cam.y) * Math.min(1, dt * 3);
@@ -2855,7 +3013,7 @@ const PENPEN_SUZHOU_PREVIEW = false;
     const pc = POSTCARDS.find((p) => p.id === save.mail); if (!pc) return;
     G.paused = true;
     const gift = pc.gift.calcium ? '一瓶钙片（盆盆跑得更快）' : pc.gift.coins ? `存款 +¥${pc.gift.coins}` : `${ING[pc.gift.ing].n} +${pc.gift.n}`;
-    const wallGift = pc.id === 'huizhou' ? '<p class="gift">随信附画《白墙黛瓦》</p>' : '';
+    const wallGift = pc.id === 'huizhou' ? '<p class="gift">随信附画《白墙黛瓦》，收进艺术品仓库。</p>' : pc.id === 'snowpeak' && SUZHOU ? '<p class="gift">随信还寄来唱片《雪山来信》和一张旅行照片。</p>' : '';
     const rec = (pc.recipes || []).map((k) => `<div class="prec"><img alt="" src="${dishURL(k)}"><b>${DISH[k].n}</b><small>新食谱</small></div>`).join('');
     $('#mail-body').innerHTML = `<img class="pcard" alt="${pc.n}" src="${pcURL(pc.id)}"><div class="pmsg">${ajuURL(pc.id) && !(ART['pc_' + pc.id] && !GREY) ? `<img class="aju" alt="呆猫" src="${ajuURL(pc.id)}">` : ''}<b>呆猫从「${pc.from}」寄来：${pc.n}</b><p>「${pc.msg}」</p>${rec ? `<div class="precs">${rec}</div>` : ''}<p class="gift">还寄来：${gift}</p>${wallGift}${pc.invite ? '<p class="invite">✈ 呆猫邀请盆盆去樱花之国开分店！（下一版开放）</p>' : ''}</div>`;
     show('mail');
@@ -2869,7 +3027,16 @@ const PENPEN_SUZHOU_PREVIEW = false;
       if (pc.gift.calcium) speedUp('吃了呆猫寄的钙片', G.D.x, G.D.y - 120); else if (pc.gift.coins) save.coins += pc.gift.coins; else save.stock[pc.gift.ing] = stockOf(pc.gift.ing) + pc.gift.n;
       (pc.recipes || []).forEach(learnRecipe); if (pc.invite) save.invite = pc.invite;
       noteReceived('card:' + pc.id);
-      save.cards = (save.cards || []).concat(pc.id); save.mail = null; save.mailDay = save.day + 2; persist(); sfx.coin();
+      save.cards = (save.cards || []).concat(pc.id);
+      if (SUZHOU && pc.id==='snowpeak') {
+        save.records ||= []; if (!save.records.includes('record')) save.records.push('record');
+        const v=[1,2,3,4].find(n=>pcURL(pc.id,n));
+        if (v && !(save.snaps||[]).some(o=>o.id===pc.id&&o.v===v)) {
+          (save.snaps ||= []).push({ id:pc.id,v,day:save.day }); noteReceived('snap:'+pc.id+':'+v,'雪山早晨，刚好看到白云从山腰经过。');
+        }
+        toast('唱片已收进唱片柜。旅行照片可到相簿翻看。',4200);
+      }
+      save.mail = null; save.mailDay = save.day + 2; persist(); sfx.coin();
     }
     G.paused = false; show('hud-screen');
   });
@@ -3096,8 +3263,14 @@ const stations = {};
     if (SUZHOU) c.looks.forEach(guestFrames);
     dexOf(type.id).met++;
     G.customers.push(c);
+    if (SUZHOU && prog().dance && G.t >= (G.greetAgain || 0)) {
+      G.greetSince = G.t; G.greetAgain = G.t + 9;
+      if (wouldEat(c)) c.welcomeUntil = G.t + 7;
+      playAnimalCall('shuai');
+    }
     if (!wouldEat(c)) { c.state = 'browse'; c.timer = 2.4; return c; } // 主人 11/25：不想吃的，在门口看完菜单就走，不进来排队
     layoutQueue(); sfx.tap();
+    if (SUZHOU && !prog().dance) playAnimalCall(type.id);
     if (c.regular) { c.say = '我带姐妹来啦。'; c.sayT = 4; }
     return c;
   }
@@ -3503,6 +3676,7 @@ const stations = {};
     G.idle = 0;
     if (G.teaOpen) { closeTea(); return; }
     const p = toLogical(e);
+    if (SUZHOU && (p.x < 0 || p.x > W || p.y < viewTop || p.y > viewBottom)) return;
     if (G.mode === 'day' && YARD) { dayTap(p); return; }
     if (G.mode === 'day') { G.idle = 0; drag = { x: p.x, y: p.y, cx: G.D.cam.x, cy: G.D.cam.y, moved: false }; return; }
     shopTap(p);
@@ -3564,7 +3738,12 @@ const stations = {};
     }
     if (SUZHOU && !G.selected) {
       const side = ['left', 'right'].find((key) => inRect(p.x, p.y, LAYOUT.scene.wallArt[key]));
-      if (side) { openTravelAlbum('hud-screen', save.decor[side === 'left' ? 'wallLeft' : 'wallRight']); return; }
+      if (side) {
+        const id = save.decor[side === 'left' ? 'wallLeft' : 'wallRight'];
+        if (id?.startsWith('snap:')) openTravelAlbum('hud-screen',id);
+        else if (id) openCollection(id.startsWith('card:')?'post':'art','hud-screen',id);
+        return;
+      }
       if (inRect(p.x, p.y, RACK_HIT)) { openRack(); return; }
     }
     { // G-006：先看点没点到人数牌，再按离哪组身子最近；和 queueChip 用同一套矩形
@@ -3587,8 +3766,9 @@ const stations = {};
       return;
     }
     if (!G.selected && (RACK_HIT ? inRect(p.x, p.y, RACK_HIT) : Math.abs(p.x - RACK.x) < 40 && p.y > RACK.y - 10 && p.y < RACK.y + 175)) { openRack(); return; }
-    for (const t of G.tables) {
-      if (t.hit ? inRect(p.x, p.y, t.hit) : p.x > t.cx - t.rx - 10 && p.x < t.chip.x + 90 && p.y > t.cy - 120 * t.k && p.y < t.cy + 96 * t.k) {
+    const tappedRequest = SUZHOU && G.tables.find((t) => hasTableRequest(t.cust) && inRect(p.x, p.y, tableRequestBox(t)));
+    for (const t of tappedRequest ? [tappedRequest] : G.tables) {
+      if (tappedRequest || (t.hit ? inRect(p.x, p.y, t.hit) : p.x > t.cx - t.rx - 10 && p.x < t.chip.x + 90 && p.y > t.cy - 120 * t.k && p.y < t.cy + 96 * t.k)) {
         if (G.selected && (t.cust || t.dirty || t.reserved)) G.selected = null; // 点到有人的桌：当作对这桌做事
         if (G.selected) {
           const c = G.selected;
@@ -3679,6 +3859,7 @@ const stations = {};
         if (t) { t.busClaim = sf.id; return go({ kind: 'toTable', t }, { x: t.spot.x, y: t.spot.y + 20 }); }
       }
     }
+    if (SUZHOU && !resting(sf.id)) return;
     const home = resting(sf.id) ? def.rest : def.home;
     if (Math.hypot(sf.x - home.x, sf.y - home.y) > 4) { const pth = findPath(sf, home); if (pth) { sf.task = { kind: 'home' }; sf.path = pth; } else { noWay(STAFF_DEF[sf.id].name, home); sf.blockT = G.t + 2; } }
   }
@@ -3736,6 +3917,32 @@ const stations = {};
   }
 
   // ---------- 更新 ----------
+  const SHOP_STROLLS = {
+    penpen: [[510,550],[727,540],[902,561],[980,368],[706,331]],
+    laoer: [[465,557],[526,545],[711,530],[973,370]],
+    mimi: [[545,568],[734,556],[947,550],[846,371]],
+  };
+  function stroll(actor, points, dt, speed, grid) {
+    if (!actor.strollPath?.length) {
+      actor.roaming = false;
+      if (actor.strollAgain == null) actor.strollAgain = G.ambientTime + rand(7, 10);
+      if (G.ambientTime < actor.strollAgain) return;
+      const options = points.filter(([x,y]) => Math.hypot(x-actor.x,y-actor.y)>24);
+      const point = options.length && pick(options);
+      actor.strollAgain = G.ambientTime + rand(10, 17);
+      if (!point) return;
+      actor.strollPath = findPath(actor,{ x:point[0], y:point[1] },grid);
+      if (!actor.strollPath?.length) return;
+    }
+    const duty = actor.path;
+    actor.path = actor.strollPath; actor.roaming = true;
+    if (moveAlong(actor,speed,dt)) actor.roaming = false;
+    actor.path = duty;
+  }
+  function leaveStroll(actor) {
+    if (actor.strollPath) actor.strollPath = null;
+    if (actor.roaming) actor.roaming = false;
+  }
   function moveAlong(e, speed, dt) {
     if (!e.path.length) return true;
     const tgt = e.path[0];
@@ -3837,7 +4044,7 @@ const stations = {};
       else if (c.state === 'linger') { c.timer -= dt; if (c.timer <= 0) { finishLeave(c); continue; } }
       else if (c.state === 'leaving') { if (moveAlong(c, SUZHOU ? 176 : 200, dt)) G.customers.splice(G.customers.indexOf(c), 1); continue; }
       const dr = DRAIN[c.state === 'enter' ? 'queue' : c.state];
-      if (dr) { c.hearts -= dr * c.type.pat * (SUZHOU ? 0.63 : 1) * (c.watered ? 0.75 : 1) * (save.luckDay === save.day ? 0.8 : 1) * (SUZHOU && inLine(c) ? waitingComfort(c) : 1) * dt; if (c.hearts <= 0) { c.hearts = 0; leave(c, true); } }
+      if (dr) { c.hearts -= dr * c.type.pat * (SUZHOU ? 0.63 : 1) * (c.watered ? 0.75 : 1) * (save.luckDay === save.day ? 0.8 : 1) * (SUZHOU && inLine(c) ? waitingComfort(c) * (G.t < (c.welcomeUntil || 0) ? 0.55 : 1) : 1) * dt; if (c.hearts <= 0) { c.hearts = 0; leave(c, true); } }
     }
     // 厨房：每种炊具一次一道
     const k = G.kitchen;
@@ -3865,6 +4072,7 @@ const stations = {};
     // 茶水台：一杯一杯泡
     w.blinkT -= dt; if (w.blinkT < -0.15) w.blinkT = rand(2, 4);
     G.idle = (G.idle || 0) + dt;
+    if (SUZHOU && (w.queue.length || w.hands.length || w.tickets.length || G.selected || G.orderOpen)) leaveStroll(w);
     if (w.sinkDrop !== undefined) {
       w.sinkDrop += dt;
       if (w.sinkDrop >= SINK_DROP_TIME) { delete w.sinkDrop; doAction({ kind: 'sink' }); }
@@ -3901,7 +4109,8 @@ const stations = {};
         noWay('盆盆', to); w.queue.shift();
         if (a.kind === 'seat') { a.table.reserved = null; if (a.cust.state === 'called') a.cust.state = 'queue'; layoutQueue(); }
       }
-    } else w.back = false;
+    } else if (SUZHOU && save.day >= 2 && !w.hands.length && !w.tickets.length && !G.selected && !G.orderOpen) stroll(w, SHOP_STROLLS.penpen, dt, 86);
+    else w.back = false;
     if (GREY) { const n = gbPlates(); if (GB.plates != null && n !== GB.plates) GB.plateLog.push({ t: Math.round(G.t * 10) / 10, from: GB.plates, to: n, hands: w.hands.map((h) => h.kind + (h.cust ? ':' + h.cust.state : '')), staff: G.staff.map((sf) => sf.hands.map((h) => h.kind + (h.cust ? ':' + h.cust.state : '')).join('+')), pass: G.kitchen.pass.length, dirty: G.plates.dirty, clean: G.plates.clean }); GB.plates = n; }
     if (GREY) { GB.tick = (GB.tick || 0) + dt; if (GB.tick > 0.25) { GB.tick = 0; GB.trail.push(['盆盆', w.x, w.y]); for (const sf of G.staff) GB.trail.push([sf.id, sf.x, sf.y]); for (const c of G.customers) if (['enter', 'queue', 'called', 'following'].includes(c.state)) GB.trail.push(['客人', c.x, c.y]); if (GB.trail.length > 6000) GB.trail.splice(0, 1000); } }
     for (const sf of G.staff) {
@@ -3920,7 +4129,15 @@ const stations = {};
           if (SUZHOU && sf.task.kind === 'toSink') { sf.face = -1; sf.sinkDrop = 0; }
           else staffArrive(sf);
         }
-      } else staffThink(sf);
+      } else {
+        staffThink(sf);
+        if (SUZHOU && !sf.task && !sf.hands.length && !resting(sf.id)) stroll(sf, SHOP_STROLLS[sf.id], dt, 80);
+      }
+      if (sf.task || sf.hands.length) leaveStroll(sf);
+    }
+    if (SUZHOU && prog().dance && !G.dancer) {
+      if (G.t - (G.greetSince ?? -20) < 2.2) leaveStroll(G.greeter);
+      else stroll(G.greeter,[[990,371],[970,400],[1010,387]],dt,64);
     }
     G.floats = G.floats.filter((f) => (f.t += dt) < (f.life || 1.6));
     if (G.dancer) { G.dancer.t -= dt; if (G.dancer.t <= 0) G.dancer = null; }
@@ -4020,9 +4237,20 @@ const stations = {};
       const layer = surface.getContext('2d');
       layer.filter = yard ? 'saturate(0.81) contrast(0.93) brightness(1.03)' : 'saturate(0.73) contrast(0.93) brightness(1.035)';
       layer.drawImage(image, 0, 0);
+      if (/\b(?:spring|winter(?:_open)?)_g066\.jpg/.test(image.src)) alignDoorBase(layer, image);
       SCENERY_TONES.set(image, surface);
     }
     return SCENERY_TONES.get(image);
+  }
+  function alignDoorBase(layer, image) {
+    // 只重合成右门柱以外的墙脚与石板边，中间门扇和竖直门柱用原画。
+    const x0 = 1703, yTop = 505, yEnd = 743;
+    for (let x = x0; x < image.naturalWidth; x++) {
+      const dx = x - x0, oldBase = 601 + dx * 0.39;
+      const alignedBase = doorLine(x * W / image.naturalWidth) * image.naturalHeight / LAYOUT.scene.height;
+      layer.drawImage(image, x, yTop, 1, oldBase - yTop, x, yTop, 1, alignedBase - yTop);
+      layer.drawImage(image, x, oldBase, 1, yEnd - oldBase, x, alignedBase, 1, yEnd - alignedBase);
+    }
   }
   function drawGardenRoom(decor = save.decor) {
     const winter = CUR_SE === 'winter', room = gardenArt(winter ? 'winter_g066' : 'spring_g066', 'jpg');
@@ -4445,7 +4673,8 @@ const stations = {};
     if (SUZHOU) {
       drawCookware(k, t);
       const [lo, hi] = LI.chef.range.map(([x]) => x);
-      const target = G.chefWash && !busy.length ? LI.chef.wash[0] : Math.max(lo, Math.min(hi, cx - 22));
+      const quietTarget = save.day >= 2 && !busy.length && !G.chefWash ? [128,221,291,181][Math.floor((G.ambientTime || 0) / 9) % 4] : cx - 22;
+      const target = G.chefWash && !busy.length ? LI.chef.wash[0] : Math.max(lo, Math.min(hi, quietTarget));
       G.gardenChefX ??= LA('chef').x;
       const dx = (target - G.gardenChefX) * 0.06;
       G.gardenChefX += dx;
@@ -4756,7 +4985,8 @@ const stations = {};
     const look = guestLook(c, i);
     const frames = guestFrames(look);
     const tasting = c.state === 'eating' && c.members[i]?.st === 'served';
-    const delighted = tasting && Math.sin(G.t * 1.25 + i * 0.78 + c.bob) > 0.1;
+    const bunny = c.type.id === 'bunny';
+    const delighted = tasting && (bunny ? c.timer < 2.4 : (G.t + i * 1.2 + c.id) % 8 < 1.5);
 
     const mood = guestExpression(c);
     const uneasy = !seat.front && !tasting && (mood === 'worry' || mood === 'upset');
@@ -4841,8 +5071,11 @@ const stations = {};
     ctx.globalAlpha = 1;
     if (preview) return;
     const tx = t.cx - surface.rx * 0.86, ty = surface.y + surface.ry * 0.52;
-    tableTag(t.id, tx, ty - 4 * k, 18);
-    t.sizeAt = { x: tx, y: ty + 12 * k };
+    if (hasTableRequest(c)) t.sizeAt = null;
+    else {
+      tableTag(t.id, tx, ty - 4 * k, 18);
+      t.sizeAt = { x: tx, y: ty + 12 * k };
+    }
     if (spare) label('坐不下 ' + G.selected.size + ' 位', t.cx, surface.y - 10, 16, '#fbf6ec', '#5a4b3a');
   }
   function drawTable(t) {
@@ -4943,7 +5176,7 @@ const stations = {};
       const distanceScale = 1 - Math.min(0.47, depth * 0.0053);
       const scale = (c.size > 1 ? 0.95 : 1.02) * K(p.y) * 1.23 * distanceScale, size = GUEST_S * scale;
       const called = c.state === 'called' ? G.t - (c.calledAt ?? G.t) - i * 0.06 : -1;
-      const time = G.t + c.bob + i * 0.62;
+      const time = G.t + c.id * 0.37 + i * 0.62;
       const moving = c.path.length > 0, flip = c.face > 0;
       const mood = guestExpression(c);
       const idleBeat = time % (4.5 + (i % 3) * 0.47);
@@ -4953,9 +5186,9 @@ const stations = {};
       if (moving && drawGardenWalk(frames.walk, p.x, p.y, size, flip, (c.walkDistance || 0) + 11 * i)) return;
       if (called >= 0.06 && called < 0.30
         && drawGardenWalk(frames.walk, p.x, p.y - nod * 3, size, flip, (called < 0.18 ? 1 : 3) * 22)) return;
-      const blink = idleBeat > 1.29 && idleBeat < 1.45;
+      const blink = c.type.id !== 'bunny' && idleBeat > 1.29 && idleBeat < 1.45;
       const next = mood === 'upset' || mood === 'worry' ? 'stand_worry'
-        : (called > 0.30 && called < 0.91) || (mood === 'greet' && c.state !== 'called') ? 'greet' : blink ? 'blink' : null;
+        : c.type.id !== 'bunny' && ((called > 0.30 && called < 0.91) || (mood === 'greet' && c.state !== 'called')) ? 'greet' : blink ? 'blink' : null;
       const alternate = next ? guestPose(look, next) : null;
       drawWaitingPose(ok(alternate) ? alternate : frames.stand, p.x, p.y, size, flip, time, lean, nod, mood);
       return;
@@ -5001,22 +5234,35 @@ const stations = {};
   }
   // 坐下的客人：状态牌挂在桌子右边（图标 + 字 + 一排小爱心），不挡别的桌
   const CHIP = { thirsty: ['#dceefa', '#3f86c4'], reading: ['#eeeae4', '#9a8f82'], ordering: ['#fff0b8', '#e3a43a'], waitFood: ['#fbf6ec', '#6e5a4b'], eating: ['#e2f3d6', '#4f9a3a'], bill: ['#ffe6a8', '#c98a14'], linger: ['#fbe3ea', '#c0607a'], upset: ['#fbd3cc', '#d0453a'] };
+  function hasTableRequest(c) {
+    return c && ['ordering','thirsty','waitFood','bill'].includes(c.state);
+  }
+  function tableRequestBox(t) {
+    const surface = gardenTableSurface(t), w = Math.min(156, Math.max(126, t.rx * 2));
+    return { x: t.cx - w / 2, y: surface.y + surface.ry - 6, w, h: 38 };
+  }
   function tableChip(c, ic, text, bg = '#fbf6ec', dish = null) {
     const t = c.table, st = c.upset ? 'upset' : c.state === 'ordering-open' ? 'ordering' : c.state, sty = CHIP[st] || ['#fbf6ec', '#2c2420'];
     const now = performance.now() / 1000, x = t.chip.x + (st === 'upset' ? Math.sin(now * 30) * 1.5 : 0), y = t.chip.y - (['ordering', 'bill'].includes(st) ? Math.abs(Math.sin(now * 4)) * 5 : 0);
 
     if (SUZHOU) {
-      ctx.save(); ctx.font = '16px "PingFang SC","Microsoft YaHei",sans-serif';
-      const urgent = c.hearts < 2.5;
-      const w = Math.min(117, Math.max(75, 34 + ctx.measureText(text || '').width));
-      const left = Math.max(12, Math.min(x, W - w - 12)), top = y - 15;
-      ctx.fillStyle = '#fcf2e1'; ctx.strokeStyle = urgent ? '#a77563' : '#ad9178'; ctx.lineWidth = 1.15;
-      rr(left, top, w, urgent ? 43 : 28, 8); ctx.fill(); ctx.stroke();
-      const im = dish ? DISH_IMG[dish] : icon(ic);
-      if (ok(im)) ctx.drawImage(im, left + 5, top + 2, 25, dish ? 19 : 25);
-      ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#5a4336';
-      ctx.fillText(text || '', left + 33, top + 13, w - 36);
-      if (urgent) for (let i = 0; i < 5; i++) heart(left + 14 + i * 12, top + 34, 8.5, c.hearts >= i + 0.5 ? '#bb766b' : '#dcd0be');
+      const box = tableRequestBox(t);
+      const urgent = c.hearts < 2.5, actionable = (['ordering','bill','thirsty'].includes(st) || text === '上菜');
+      const { x: left, y: top, w, h } = box;
+      ctx.save();
+      ctx.shadowColor = '#6348333b'; ctx.shadowBlur = 5; ctx.shadowOffsetY = 2;
+      ctx.fillStyle = actionable ? '#fff0cd' : '#fcf3e3';
+      ctx.strokeStyle = urgent ? '#ae5e4f' : '#ab8966'; ctx.lineWidth = 1.4;
+      rr(left, top, w, h, 9); ctx.fill(); ctx.shadowBlur = 0; ctx.shadowOffsetY = 0; ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(t.cx - 6, top + 1); ctx.lineTo(t.cx, top - 8); ctx.lineTo(t.cx + 6, top + 1);
+      ctx.fill(); ctx.stroke();
+      rr(left + 4, top + 4, 41, h - 8, 6); ctx.fillStyle = '#8d674b'; ctx.fill();
+      label(String(tableNumber(t.id)) + '桌', left + 24, top + h / 2, 16, '#fff6e7');
+      ctx.font = '600 23px "PingFang SC","Microsoft YaHei",sans-serif';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#52382a';
+      ctx.fillText(text || '', left + 45 + (w - 49) / 2, top + h / 2, w - 53);
+      if (urgent) heart(left + w - 8, top + 6, 11, '#b66151');
       ctx.restore();
       return;
     }
@@ -5047,7 +5293,7 @@ const stations = {};
       const left = r.x > c.x, p = left ? r.x + 1 : r.x + r.w - 1;
       ctx.beginPath(); ctx.moveTo(p, r.y + 17); ctx.lineTo(p + (left ? -7 : 7), r.y + 17); ctx.lineTo(p, r.y + 20); ctx.fill();
       const low = c.hearts < 3, named = called ? '已叫到' : c.size + ' 位';
-      label(named, r.x + r.w / 2, r.y + (low ? 11 : r.h / 2), 14, '#655044');
+      label(named, r.x + r.w / 2, r.y + (low ? 11 : r.h / 2), 17, '#655044');
       if (low) for (let i = 0; i < 5; i++) heart(r.x + 7 + i * ((r.w - 14) / 4), r.y + 24, 7, c.hearts >= i + 0.5 ? '#bb766b' : '#dcd0be');
       ctx.restore();
       return;
@@ -5137,11 +5383,15 @@ const stations = {};
         label('随缘', t.chip.x + 22, t.chip.y - 50, 17, '#8a5a8a', '#fbf6ec');
         ks.slice(0, 3).forEach(([x2, b], i) => { const xx = t.chip.x + 60 + i * 32, yy = t.chip.y - 66; const im = icon(x2), bi = icon(b); ctx.fillStyle = '#fbf6ecdd'; ctx.beginPath(); ctx.arc(xx, yy + 14, 16, 0, 7); ctx.fill(); if (im.complete) ctx.drawImage(im, xx - 14, yy, 28, 28); if (bi.complete) ctx.drawImage(bi, xx + 4, yy - 4, 15, 15); });
       }
-      if (SUZHOU && c.sayT > 0 && c.say) { drawGardenSpeech(t.cx, t.chip.y - 15, c.say); return; }
-      if (c.sayT > 0) { tableChip(c, 'order', c.say.length > 6 ? c.say.slice(0, 6) + '…' : c.say, '#fbf6ec'); return; }
+      if (SUZHOU && c.sayT > 0 && c.say) {
+        drawGardenSpeech(t.cx, t.chip.y - 36, c.say);
+        if (!hasTableRequest(c)) return;
+      }
+      if (!SUZHOU && c.sayT > 0) { tableChip(c, 'order', c.say.length > 6 ? c.say.slice(0, 6) + '…' : c.say, '#fbf6ec'); return; }
       if (c.state === 'thirsty') return tableChip(c, 'water', '先要水', '#e4f0f6');
       if (c.state === 'ordering') return c.upset ? tableChip(c, 'cross', '换一道', '#fbdcd8') : want ? tableChip(c, want.want, `想吃${want.want}`, '#fff3c4') : tableChip(c, 'order', '点单', '#fff3c4');
       if (c.state === 'reading') return tableChip(c, 'wait', '看菜单');
+      if (SUZHOU && c.state === 'waitFood' && w.hands.some(h=>h.kind==='dish'&&h.cust===c)) return tableChip(c,null,'上菜');
       if (c.state === 'waitFood' && w.tickets.some((tk) => tk.c === c)) return tableChip(c, 'order', '没送单', '#fde7c8');
       if (c.state === 'waitFood' && waiting.length) return tableChip(c, null, waiting.length > 1 ? `等×${waiting.length}` : '等菜', '#fbf6ec', waiting[0].dish);
       if (c.state === 'bill') return tableChip(c, 'bill', '结账', '#e4f4d8');
@@ -5223,7 +5473,7 @@ const stations = {};
     });
   }
   function drawWaiter() {
-    const w = G.waiter, walking = !!w.busyAct && w.path.length;
+    const w = G.waiter, walking = w.roaming || (!!w.busyAct && w.path.length);
     const k = K(w.y);
     const frame = walking && SPR.pWalk && SPR.pWalk[w.back ? 1 : 0][Math.floor((w.walkDistance || 0) / 22) % 4];
     const idle = crewIdle('penpen', !walking && !w.busyAct && !w.wash && !w.brew && w.sinkDrop === undefined);
@@ -5233,18 +5483,30 @@ const stations = {};
     if (w.tickets.length) { const im = icon('order'); if (im.complete) ctx.drawImage(im, w.x + 18 * k, w.y - 132 * k, 30, 30); label(`单×${w.tickets.length}`, w.x + 33 * k, w.y - 92 * k, 17, '#8a5a10', '#fbf6ec'); }
   }
   function drawStaff(sf) {
-    const moving = sf.task && sf.path.length, zz = !sf.task && resting(sf.id);
+    const moving = sf.roaming || (sf.task && sf.path.length), zz = !sf.task && resting(sf.id);
     const prank = G.mischief;
-    const idle = crewIdle(sf.id, !sf.task && !sf.hands.length && prank?.actor !== sf);
+    const idle = crewIdle(sf.id, !moving && !sf.task && !sf.hands.length && prank?.actor !== sf);
     if (SUZHOU && prank?.actor === sf && gardenSprite(prank.caught ? 's_laoer_caught' : 's_laoer_nibble', sf.x, sf.y, 70)) return;
     drawCat(P('s_' + sf.id) || (sf.back && moving ? custImgBack(sf.id) : custImg(sf.id)), sf.x, sf.y, sf.face, moving, (sf.id === 'mimi' ? 0.8 : 0.92) * K(sf.y) * (SUZHOU ? 1.13 : 1), sf.id, sf.walkDistance, idle);
     if (sf.sinkDrop === undefined) drawHands(sf, K(sf.y), 0, true);
     if (zz) { const t = performance.now() / 1000; ctx.fillStyle = '#4a6384'; ctx.font = `bold 18px ${FONT}`; ctx.textAlign = 'center'; ctx.fillText('z', sf.x + 26, sf.y - 96 - (t * 8 % 10)); ctx.fillText('Z', sf.x + 38, sf.y - 112 - (t * 8 % 10)); } // 主人 11/26：店员脚下不写字
   }
   function drawIdleShuai(x, y) {
-    drawCat(P('s_shuai') || SPR.dancer, x, y, 1, false, 0.99, 'shuai', 0, crewIdle('shuai', true));
+    const beat = G.t - (G.greetSince ?? -20);
+    const greeting = beat < 2.2;
+    const lift = greeting ? Math.sin(Math.min(1,beat/1.3) * Math.PI) * 4 : 0;
+    ctx.save(); ctx.translate(x,y); ctx.rotate(greeting ? Math.sin(beat * 5) * 0.047 : 0);
+    const actor = G.greeter;
+    const pose = greeting ? { pose:true, lean:Math.sin(beat*7)*0.035, stretch:1 } : crewIdle('shuai',!actor.roaming);
+    drawCat(P('s_shuai') || SPR.dancer, 0, -lift, greeting ? 1 : actor.face || 1, actor.roaming, 1.02, actor.roaming ? null : 'shuai', actor.walkDistance, pose);
+    if (greeting && beat < 1.35) {
+      ctx.strokeStyle = '#b77c4e'; ctx.lineWidth = 2.8; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(33,-66); ctx.quadraticCurveTo(52,-74,48,-85); ctx.moveTo(40,-60);ctx.quadraticCurveTo(61,-70,60,-79); ctx.stroke();
+    }
+    ctx.restore();
+    if (greeting) drawGardenSpeech(x + 8, y - 105, '这边请！');
   }
-  const DANCE_SPOT = SUZHOU ? { x: LAYOUT.scene.dance[0], y: LAYOUT.scene.dance[1] } : { x: 760, y: 690 };
+  const DANCE_SPOT = SUZHOU ? { x: 985, y: 373 } : { x: 760, y: 690 };
   function drawDancer(x0, y0, k = 1) {
     const t = performance.now() / 1000, x = x0 + Math.sin(t * 4) * 14;
     ctx.globalAlpha = k;
@@ -5318,11 +5580,11 @@ const stations = {};
 
   function yardTag(x, y, text, active = false) {
     ctx.save();
-    ctx.font = (active ? '600 19px ' : '16px ') + '"PingFang SC","Microsoft YaHei",sans-serif';
+    ctx.font = (active ? '700 24px ' : '19px ') + '"PingFang SC","Microsoft YaHei",sans-serif';
     const w = ctx.measureText(text).width + 20;
     ctx.fillStyle = active ? '#f9e8be' : '#fff7e4e8';
     ctx.strokeStyle = active ? '#a7804c' : '#927b60b0'; ctx.lineWidth = active ? 1.5 : 0.85;
-    rr(x - w / 2, y - 15, w, 27, 7); ctx.fill(); ctx.stroke();
+    rr(x - w / 2, y - 17, w, 32, 8); ctx.fill(); ctx.stroke();
     ctx.fillStyle = '#554332'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(text, x, y - 1);
     ctx.restore();
   }
@@ -5358,7 +5620,7 @@ const stations = {};
     const art = gardenArt('yard_' + CUR_SE, 'jpg');
     if (!ok(art)) return;
     ctx.drawImage(sceneryTone(art, true), 0, 0, W, H);
-    const D = G.D, lesson = yardGoal(), target = lesson?.place;
+    const D = G.D, goal = yardGoal(), lesson = goal?.key === 'free' ? null : goal, target = lesson?.place;
     const nodes = [];
     for (const [i, bed] of YARD.beds.entries()) {
       const site = yardPlace('plot', i);
@@ -5380,13 +5642,10 @@ const stations = {};
       }
     }
     yardWater();
-    if (staffIds().includes('laoer')) {
-      const q = yardPoint(YARD.staff);
-      drawCat(staffImg('laoer'), q.x, q.y, -1, false, 0.47, 'laoer', 0, crewIdle('laoer', true));
-    }
-    if (staffIds().includes('mimi')) {
-      const q = yardPoint(YARD.helper);
-      drawCat(staffImg('mimi'), q.x, q.y, 1, false, 0.43, 'mimi', 0, crewIdle('mimi', true));
+    for (const [id, park, size] of [['laoer',YARD.staff,0.57],['mimi',YARD.helper,0.5]]) {
+      if (!staffIds().includes(id)) continue;
+      const actor=D.companions?.[id]||yardPoint(park);
+      drawCat(staffImg(id),actor.x,actor.y,actor.face||1,Boolean(actor.roaming),size,id,actor.walkDistance,crewIdle(id,!actor.roaming));
     }
     const walking = D.path.length > 0;
     drawCat(penImg(D.back && walking, false), D.x, D.y, D.face, walking,
@@ -5399,24 +5658,33 @@ const stations = {};
       nodes.push(() => yardTag(h.sign.x, h.sign.y, name, target === h || (h.id === 'mail' && Boolean(save.mail))));
     }
     for (const node of nodes) node();
-    if (target && D.task === target) {
-      const p = target.spot();
-      ctx.strokeStyle = '#c28b50'; ctx.lineWidth = 1.2;
-      ctx.beginPath(); ctx.ellipse(p.x, p.y, 13, 4, 0, 0, Math.PI * 2); ctx.stroke();
+    if (target && lesson.key !== 'free') {
+      const p = target.spot(), traveling = D.task === target;
+      ctx.save();
+      if (traveling && D.path.length) {
+        ctx.strokeStyle = '#f7e0a7'; ctx.lineWidth = 3; ctx.setLineDash([4,8]);
+        ctx.beginPath(); ctx.moveTo(D.x,D.y); for (const q of D.path) ctx.lineTo(q.x,q.y); ctx.stroke(); ctx.setLineDash([]);
+      }
+      ctx.strokeStyle = '#a66f38'; ctx.lineWidth = 2.2;
+      ctx.beginPath(); ctx.ellipse(p.x, p.y, 22, 7, 0, 0, Math.PI * 2); ctx.stroke(); ctx.restore();
     }
     drawFloats();
   }
   function refreshYardTask() {
     const box = $('#yard-task'), goal = yardGoal();
+    const meter = { seed:'第 2 天 · 1 / 2', plant:'第 2 天 · 2 / 2', harvest:'第 3 天 · 1 / 4', fish:'第 3 天 · 2 / 4', plan:'第 3 天 · 3 / 4', buy:'第 3 天 · 4 / 4' };
     box.hidden = !goal || Boolean(G.D.fishing);
     $('#yard-decor-intro').hidden = box.hidden || goal.key !== 'wait' || Boolean(save.decorTaught);
     if (box.hidden) return;
     const button = $('#yard-task-go');
+    const travel = goal.place && G.D.task === goal.place && G.D.path.length > 0;
+    button.disabled = Boolean(travel);
+    button.textContent = travel ? '正在前往' : goal.place ? '去' + goal.place.name : '选菜单';
     if (button.dataset.step === goal.key) return;
     button.dataset.step = goal.key;
+    $('#yard-task-progress').textContent = meter[goal.key] || '';
     $('#yard-task-title').textContent = goal.title;
     $('#yard-task-text').textContent = goal.msg;
-    button.textContent = goal.place ? '去' + goal.place.name : '选菜单';
   }
   $('#yard-task-go').onclick = () => {
     if (G?.mode !== 'day' || G.paused || G.D.fishing) return;
@@ -5498,7 +5766,7 @@ const stations = {};
     ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.fillStyle = SUZHOU ? '#d8ceba' : '#e9dcc4'; ctx.fillRect(0, 0, cv.width, cv.height);
     ctx.setTransform(scale * dpr, 0, 0, scale * dpr, SX * dpr, SY * dpr);
     if (!G) { ctx.fillStyle = '#f3ead9'; ctx.fillRect(0, 0, W, H); return; }
-    if (SUZHOU) { ctx.save(); ctx.beginPath(); ctx.rect(0, 0, W, G.mode === 'day' ? H : LAYOUT.scene.height); ctx.clip(); }
+    if (SUZHOU) { ctx.save(); ctx.beginPath(); ctx.rect(0, viewTop, W, viewBottom - viewTop); ctx.clip(); }
     if (G.mode === 'day') renderDay(); else drawShopScene();
     if (SUZHOU) ctx.restore();
   }
@@ -5528,7 +5796,13 @@ const stations = {};
     if (!ok(art)) return;
     const [left, top, w, h] = geom.source;
     ctx.save();
-    ctx.scale(W / 1816, LAYOUT.scene.height / 866);
+    const k = W / 1816;
+    ctx.translate(0, (LAYOUT.scene.height / 866 - k) * 530);
+    ctx.scale(k, k);
+    // 柱与墙脚取自房间原画。厨房合成块只覆盖墙脚以下和柜台。
+    ctx.beginPath();
+    [[0,660],[101,568],[126,539],[261,395],[1816,395],[1816,866],[0,866]].forEach(([x,y],i)=>i ? ctx.lineTo(x,y) : ctx.moveTo(x,y));
+    ctx.closePath(); ctx.clip();
     if (layer) {
       ctx.beginPath();
       for (const polygon of geom[layer]) {
@@ -5562,7 +5836,7 @@ const stations = {};
     if (SUZHOU) {
       items.push({ y: SINK.y, d: drawSink });
       if (G.staff.some((sf) => sf.id === 'laoer')) items.push({ y: 555, d: () => spr('d_catbed', 441, 564, 63) });
-      if (prog().dance && !G.dancer) items.push({ y: DANCE_SPOT.y, d: () => drawIdleShuai(DANCE_SPOT.x, DANCE_SPOT.y) });
+      if (prog().dance && !G.dancer) items.push({ y: G.greeter.y, d: () => drawIdleShuai(G.greeter.x,G.greeter.y) });
       else crewIdle('shuai', false);
     }
     else if (ART_ROOM() && !GREY) {
@@ -5650,7 +5924,11 @@ const stations = {};
     db.disabled = G.danceCD > 0;
     db.textContent = G.danceCD > 0 ? `跳舞 ${Math.ceil(G.danceCD)}s` : '跳广场舞';
   }
-  function show(id) { if (id !== 'hud-screen') { $('#hud-screen').classList.remove('yard-more-open'); $('#b-yard-more').setAttribute('aria-expanded', 'false'); } document.querySelectorAll('.screen').forEach((s) => s.classList.toggle('show', s.id === id)); }
+  function show(id) {
+    if (id !== 'hud-screen') { $('#hud-screen').classList.remove('yard-more-open'); $('#b-yard-more').setAttribute('aria-expanded', 'false'); }
+    document.querySelectorAll('.screen').forEach((screen) => screen.classList.toggle('show', screen.id === id));
+    syncSound();
+  }
 
   function renderSaves() {
     const list = loadSaves();
@@ -5928,60 +6206,81 @@ const stations = {};
     const drawing = frame.getContext('2d'), previous = ctx;
     ctx = drawing;
     try {
-      ctx.setTransform(frame.width / W, 0, 0, frame.height / LAYOUT.scene.height, 0, 0);
+      const k = Math.min(frame.width / W, frame.height / LAYOUT.scene.height);
+      ctx.setTransform(k, 0, 0, k, 0, 0);
       ctx.fillStyle = '#eee4d3'; ctx.fillRect(0, 0, W, LAYOUT.scene.height);
       drawGardenRoom(draft);
       if (draft.bench) drawGardenBench();
       tableSetup(draft).sort((x, y) => x.cy - y.cy).forEach((table) => drawGardenTable(table, draft, true));
     } finally { ctx = previous; }
   }
-  function openDecor() {
+  function openDecor(startSlot) {
     if (!SUZHOU || G?.mode !== 'day' || save.day < 2) return;
     G.paused = true;
-    const draft = { ...save.decor, tables: { ...save.decor.tables } };
+    const clone = () => ({ ...save.decor, tables: { ...save.decor.tables } });
+    let draft = clone(), slot = typeof startSlot === 'string' ? startSlot : 'linen';
     let refreshPreview;
-    $('#decor-guide').hidden = Boolean(save.decorTaught);
-    const box = $('#decor-body');
-    const title = { linen: '大桌桌布', flowers: '插花', curtain: '门帘' };
-    const wallItems = travelEntries();
     const large = TABLES.filter((t) => t.size === 4 && prog().tables.includes(t.id));
-    box.innerHTML = Object.entries(DECOR_OPTIONS).map(([key, names]) =>
-      '<label>' + title[key] + '<select data-field="' + key + '">' +
-      DECOR_SEASONS.map((season, i) => '<option value="' + season + '">' + names[i] + '</option>').join('') +
-      (key === 'flowers' && save.regular?.flower ? '<option value="gift">狸猫阿姨的候位花</option>' : '') + '</select></label>').join('')
-      + large.map((t) => '<label>后排桌 ' + tableNumber(t.id) + '<select data-table="' + t.id + '"><option value="4">四人桌</option><option value="2">两人桌</option></select></label>').join('')
-      + [['wallLeft', '左墙'], ['wallRight', '食单上方']].map(([field, label]) => '<label>' + label + '<select data-field="' + field + '">' + wallItems.map((item) => '<option value="' + item.id + '">' + escapeHTML(item.title) + '</option>').join('') + '</select></label>').join('')
-      + '<label class="bench"><input type="checkbox" data-field="bench"> 门边候位凳</label>';
-    for (const el of box.querySelectorAll('[data-field]')) {
-      const field = el.dataset.field;
-      if (field === 'bench') el.checked = draft.bench; else el.value = draft[field];
-      el.onchange = () => { draft[field] = field === 'bench' ? el.checked : el.value; preview(); };
-    }
-    for (const el of box.querySelectorAll('[data-table]')) {
-      el.value = draft.tables[el.dataset.table] || 4;
-      el.onchange = () => { draft.tables[el.dataset.table] = Number(el.value); preview(); };
+    const wallItems = [...artEntries(), ...photoEntries(), ...postEntries()];
+    const palette = { linen: ['#eac7af','#d9a994','#527187','#ad775d','#8cabc2'], flowers: ['🌿','🌸','🪷','🌾','🌼'], curtain: ['#b6a0b5','#a69bb6','#527665','#aa6856','#545c94'] };
+    const text = { linen: '桌布', flowers: '插花', curtain: '门帘', wallLeft: '左墙挂画', wallRight: '右墙挂画', bench: '候位凳' };
+    const description = {
+      linen:'换上去试试。桌布颜色会即时反映在后排大桌上。',
+      flowers:'为窗边和桌面选一枝花。收藏的候位花会照顾等待的客人。',
+      curtain:'门上布帘。选择随四季，每个季节会自动换色。',
+      wallLeft:'在仓库藏品和寄来的照片中选一件，挂在左墙。',
+      wallRight:'右墙在食单上方。可挂画、旅行照片或明信片。',
+      bench:'放在门边的固定位置，客人等待时更有耐心。',
+    };
+    const slots = [
+      ...Object.keys(DECOR_OPTIONS).map(key => ({ key, n:text[key], options:DECOR_OPTIONS[key].map((n,i)=>({ id:DECOR_SEASONS[i],n, swatch:palette[key][i] })) })),
+      ...large.map(t=>({ key:'table'+t.id, n:tableNumber(t.id)+'号桌', tid:t.id, options:[{ id:4,n:'四人桌',swatch:'4' },{ id:2,n:'两人桌',swatch:'2' }] })),
+      ...['wallLeft','wallRight'].map(key=>({ key,n:text[key], options:[{ id:'',n:'留空' },...wallItems.map(o=>({ id:o.id,n:o.title,src:o.src }))] })),
+      { key:'bench',n:text.bench,options:[{ id:false,n:'留空' },{ id:true,n:'摆候位凳',swatch:'凳' }] },
+    ];
+    if (save.regular?.flower) slots.find(o=>o.key==='flowers').options.push({ id:'gift',n:'狸猫阿姨的候位花',swatch:'🌷' });
+    if (!slots.some(o=>o.key===slot)) slot='linen';
+    function selected(value) { return value.tid ? draft.tables[value.tid] || 4 : draft[value.key]; }
+    function setChoice(field, id) {
+      if (field.tid) {
+        if (id === 2 && !large.some(t=>t.id !== field.tid && (draft.tables[t.id] || 4) === 4)) return;
+        draft.tables[field.tid]=id;
+      } else draft[field.key]=id;
+      render();
     }
     function preview() {
       drawDecorPreview(draft);
       clearTimeout(refreshPreview);
-      refreshPreview = setTimeout(() => { if ($('#decorate').classList.contains('show')) drawDecorPreview(draft); }, 350);
-      const seats = TABLES.filter((t) => prog().tables.includes(t.id)).reduce((n, t) => n + (draft.tables[t.id] || t.size), 0);
-      $('#decor-info').textContent = seats + ' 个座位。' + (draft.bench ? '候位凳让门口客人等得更久。' : '')
-        + (draft.flowers === 'gift' ? '门外候位的客人看花时耐心多一点。' : '');
+      refreshPreview=setTimeout(()=>{if ($('#decorate').classList.contains('show')) drawDecorPreview(draft);},300);
+      const seats=tableSetup(draft).reduce((n,t)=>n+t.size,0);
+      $('#decor-info').textContent=seats+' 个座位'+(draft.bench?' · 已摆候位凳':'');
     }
-    preview();
-    const close = () => { clearTimeout(refreshPreview); G.paused = false; show('hud-screen'); };
-    $('#decor-close').onclick = close;
-    $('#decor-apply').onclick = () => {
-      if (large.length && large.every((t) => draft.tables[t.id] === 2)) { toast('保留一张四人桌，才能招待四位同行的客人'); return; }
-      save.decor = draft;
-      save.decorTaught = true;
-      if (save.prep?.day === save.day && draft.tables[save.prep.table] === 2) save.prep.table = null;
-      G.tables = tableSetup();
-      G.plates.clean = startingPlates(G.tables);
-      persist(); close(); toast('装修已保存，开门后就能看到');
+    function render() {
+      const make=(title,click)=>{const el=document.createElement('button');el.type='button';el.textContent=title;el.onclick=click;return el;};
+      const current=slots.find(f=>f.key===slot);
+      const tabs=$('#decor-slots');
+      tabs.replaceChildren(...slots.map(f=>{const el=make(f.n,()=>{slot=f.key;render();});el.dataset.slot=f.key;el.setAttribute('aria-pressed',String(f.key===slot));return el;}));
+      $('#decor-guide').textContent = !save.decorTaught && slot === 'linen' ? '先点一块桌布试摆，喜欢就保存。其他位置也可以试。' : description[slot] || '选择桌子的容量。店里要留一张四人桌。';
+      $('#decor-choices').replaceChildren(...current.options.map(o=>{
+        const card=make(o.n,()=>setChoice(current,o.id));
+        card.dataset.choice=String(o.id);card.setAttribute('aria-pressed',String(selected(current)===o.id));
+        if(o.src){const img=document.createElement('img');img.src=o.src;img.alt='';card.prepend(img);}
+        else if(o.swatch){const sample=document.createElement('span');sample.className='decor-swatch';if(o.swatch.startsWith('#'))sample.style.background=o.swatch;else sample.textContent=o.swatch;card.prepend(sample);}
+        if(current.tid && o.id===2 && !large.some(t=>t.id!==current.tid && (draft.tables[t.id]||4)===4)){card.disabled=true;card.title='店内至少保留一张四人桌';}
+        return card;
+      }));
+      preview();
+    }
+    const close=()=>{clearTimeout(refreshPreview);G.paused=false;show('hud-screen');};
+    $('#decor-close').onclick=close;
+    $('#decor-reset').onclick=()=>{draft=clone();render();};
+    $('#decor-apply').onclick=()=>{
+      save.decor=draft; save.decorTaught=true;
+      if(save.prep?.day===save.day&&draft.tables[save.prep.table]===2)save.prep.table=null;
+      G.tables=tableSetup();G.plates.clean=startingPlates(G.tables);
+      persist();close();toast('布置已保存');
     };
-    show('decorate'); fitPanels();
+    show('decorate');render();fitPanels();
   }
   $('#b-decor').addEventListener('click', openDecor);
   $('#yard-decor-intro').addEventListener('click', openDecor);
@@ -6012,41 +6311,51 @@ const stations = {};
     const day = (info.day - 1) % 7 + 1;
     return (year === 1 ? '元' : year < 100 ? zhNumber(year) : year) + '年 · ' + SEASONS[seasonOf(info.day)].n + zhNumber(day) + '日';
   }
-  function travelEntries() {
+  function postEntries() {
     const notes = save.album.notes;
-    const cards = (save.cards || []).flatMap((id) => {
+    return (save.cards || []).flatMap((id) => {
       const p = POSTCARDS.find((entry) => entry.id === id);
       return p ? [{ id: 'card:' + id, title: p.n, from: p.from, msg: p.msg, src: pcURL(id), date: notes['card:' + id], kind: '明信片' }] : [];
     });
-    const photos = (save.snaps || []).flatMap(({ id, v, day }) => {
+  }
+  function photoEntries() {
+    const notes = save.album.notes;
+    return (save.snaps || []).flatMap(({ id, v, day }) => {
       const p = POSTCARDS.find((entry) => entry.id === id), key = 'snap:' + id + ':' + v, src = pcURL(id, v);
       return p && src ? [{ id: key, title: '路上的一张照片', from: p.from, msg: notes[key]?.msg || '呆猫在旅途中拍下的风景。', src, date: notes[key] || { day }, kind: '相片' }] : [];
     });
+  }
+  function artEntries() {
+    const notes = save.album.notes;
     const paintings = Object.entries(TRAVEL_PAINTINGS).map(([id, p]) => ({ ...p, id, kind: '挂画', date: notes[id] }));
     if ((save.cards || []).includes('huizhou')) paintings.push({ id: 'paint:huizhou', title: '白墙黛瓦', from: POSTCARDS.find((p) => p.id === 'huizhou').from,
       msg: '桥那头的青瓦在雨里特别好看。想把这一抹墨色也寄给你们。', src: 'assets/suzhou/wall_huizhou.jpg', date: notes['card:huizhou'], kind: '挂画' });
     if (save.day >= 6 && save.history.some((h) => h.day >= 5)) paintings.push({ id: 'family', title: '首店全家福', from: '苏式首店',
       msg: '灶边忙完，大家难得都在。', src: 'assets/suzhou/family_photo.jpg', kind: '相片' });
-    return [...cards, ...photos, ...paintings];
+    return paintings;
   }
   function noteReceived(id, msg) {
     const notes = save.album.notes;
     notes[id] ||= { day: save.day, at: new Date().toISOString(), ...(msg ? { msg } : {}) };
-    if (SUZHOU && !save.album.taught) {
-      save.album.taught = true;
-      toast('照片收进了旅行相簿。开店前可把照片或挂画布置到墙上。', 4500);
+    if (SUZHOU && id.startsWith('snap:') && !save.album.taughtPhoto) {
+      save.album.taughtPhoto = true;
+      toast('旅行照片已收进相簿。在笔记里翻看，或在装修时选来挂上。', 4200);
     }
   }
   function openTravelAlbum(from = 'dex', focus) {
     if (!G || !save) return;
     G.paused = true; travel.from = from; travel.placing = '';
-    travel.ids = travelEntries().map((item) => item.id);
+    travel.ids = photoEntries().map((item) => item.id);
     if (focus) travel.page = Math.max(0, travel.ids.indexOf(focus));
-    travel.page = Math.min(travel.page, travel.ids.length - 1);
+    travel.page = Math.max(0,Math.min(travel.page, travel.ids.length - 1));
     show('travel-album'); renderTravelAlbum();
   }
   function renderTravelAlbum() {
-    const entries = travelEntries(), entry = entries.find((item) => item.id === travel.ids[travel.page]);
+    const entries = photoEntries(), entry = entries[travel.page];
+    $('#album-empty').hidden = Boolean(entry);
+    $('#travel-album .album-spread').hidden = !entry;
+    $('#travel-album footer').hidden = !entry;
+    $('#album-clock').hidden = !entry;
     if (!entry) return;
     const format = $('#album-clock');
     format.value = save.album.clock;
@@ -6059,9 +6368,6 @@ const stations = {};
     $('#album-prev').disabled = travel.page <= 0;
     $('#album-next').disabled = travel.page >= travel.ids.length - 1;
     $('#album-page-number').textContent = (travel.page + 1) + ' / ' + travel.ids.length;
-    $('#album-wall-controls').hidden = !SUZHOU || G.mode !== 'day';
-    $('#album-hang-left').disabled = save.decor.wallLeft === entry.id;
-    $('#album-hang-right').disabled = save.decor.wallRight === entry.id;
     const pick = $('#album-add-photo');
     pick.value = ''; pick.innerHTML = '<option value="">选照片贴到留白处</option>';
     for (const item of entries.filter((item) => item.kind !== '挂画')) pick.add(new Option(item.title + ' · ' + item.from, item.id));
@@ -6084,20 +6390,14 @@ const stations = {};
       $('#album-stickers').append(button);
     });
   }
-  function hangAlbumEntry(side) {
-    if (G?.mode !== 'day') return;
-    save.decor[side] = travel.ids[travel.page];
-    persist(); renderTravelAlbum(); toast(side === 'wallLeft' ? '已经挂在左墙' : '已经挂在食单上方');
-  }
   $('#album-prev').onclick = () => { if (travel.page > 0) { travel.page--; travel.placing = ''; renderTravelAlbum(); } };
   $('#album-next').onclick = () => { if (travel.page + 1 < travel.ids.length) { travel.page++; travel.placing = ''; renderTravelAlbum(); } };
   $('#album-close').onclick = () => {
     if (travel.from === 'dex') openDex('cust');
+    else if (travel.from === 'pause') show('pause');
     else { G.paused = false; show('hud-screen'); }
   };
   $('#album-clock').onchange = (e) => { save.album.clock = e.target.value; persist(); renderTravelAlbum(); };
-  $('#album-hang-left').onclick = () => hangAlbumEntry('wallLeft');
-  $('#album-hang-right').onclick = () => hangAlbumEntry('wallRight');
   $('#album-add-photo').onchange = (e) => { travel.placing = e.target.value; renderTravelAlbum(); };
   $('#album-paper').onclick = (ev) => {
     if (!travel.placing) return;
@@ -6109,9 +6409,72 @@ const stations = {};
     travel.placing = ''; persist(); renderTravelAlbum();
   };
 
+
+  function openHelp() {
+    if (!G) return;
+    G.paused = true;
+    const pages = {
+      shop: ['营业','点候位客人、再点空桌。桌中央有桌号和状态。','点单后要去插单器送票。一桌菜齐后从出菜台取走，再点同号桌。','结账后收盘，到洗碗池放下，再点一次洗碗。老大空闲也会帮忙。'],
+      farm: ['农场','先跟左下的备料卡去早市领种，到第一畦种三格。','明早先收菜再钓鱼。到木钓台抛竿，浮漂动时收线。','定菜单后看缺货单。只补今天缺的，备料完成再开店。'],
+      decor: ['装修与收藏','农场点装修，先选桌面、墙面或门口的位置，再点一件藏品试摆。','保存才会换上新布置。至少留一张四人桌。','旅行照片去旅行相簿，画和全家福在艺术品仓库。呆猫寄来的唱片可在唱片柜播放。'],
+    };
+    const draw = (tab) => {
+      const [title,...steps] = pages[tab];
+      $('#help-title').textContent = title;
+      const list = $('#help-steps'); list.replaceChildren(...steps.map(text=>{const li=document.createElement('li');li.textContent=text;return li;}));
+      $('#help-tabs').querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.page===tab)));
+    };
+    $('#help-tabs').onclick = e => { const tab=e.target.closest('button')?.dataset.page; if (tab) draw(tab); };
+    $('#help-close').onclick = () => { G.paused=false; show('hud-screen'); };
+    draw(G.mode==='day'?'farm':'shop'); show('howto');
+  }
+  $('#b-help').onclick = openHelp;
+  $('#p-help').onclick = openHelp;
+
+  function openCollection(kind, from = 'dex', focus) {
+    if (!G || !save) return;
+    G.paused=true;
+    const config={
+      art:['艺术品仓库','在装修里选择左墙或右墙，就能把藏品挂上。',artEntries],
+      post:['旅行来信','呆猫寄的明信片收在这里。旅途照片可到旅行相簿翻看。',postEntries],
+      records:['唱片柜','在营业时播放所选唱片。新唱片会随呆猫的旅行来信寄来。',recordEntries],
+    };
+    const draw=(place,active)=>{
+      const [title,tip,items]=config[place], entries=items();
+      const entry=entries.find(x=>x.id===active)||entries[0];
+      $('#collection-title').textContent=title;
+      $('#collection-guide').textContent=tip;
+      $('#collection-tabs').querySelectorAll('[data-c]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.c===place)));
+      $('#collection-list').replaceChildren(...entries.map(o=>{
+        const b=document.createElement('button');b.type='button';b.textContent=o.title;
+        b.setAttribute('aria-pressed',String(o===entry)); if(o.src){const i=document.createElement('img');i.src=o.src;i.alt='';b.prepend(i);}
+        b.onclick=()=>draw(place,o.id);return b;
+      }));
+      const figure=$('#collection-detail'), image=$('#collection-art'), play=$('#collection-play'), edit=$('#collection-decor');
+      $('#collection-empty').hidden=Boolean(entry); figure.hidden=!entry;
+      image.hidden=!entry?.src;if(entry?.src){image.src=entry.src;image.alt=entry.title;}
+      $('#collection-name').textContent=entry?.title||'';
+      $('#collection-message').textContent=entry?.msg||'';
+      play.hidden=place!=='records'||!entry; edit.hidden=place!=='art'||G.mode!=='day'||save.day<2;
+      if(place==='records'&&entry){
+        play.disabled=(save.record||'restaurant')===entry.id;
+        play.textContent=play.disabled?'已选这张唱片':'选为营业音乐';
+        play.onclick=()=>{ save.record=entry.id;persist();syncSound();draw(place,entry.id);toast('营业音乐已切换'); };
+      }
+      edit.onclick=()=>openDecor('wallLeft');
+    };
+    $('#collection-tabs').onclick=(e)=>{
+      const tab=e.target.closest('button')?.dataset.c;
+      if(tab==='album')openTravelAlbum(from); else if(tab)draw(tab);
+    };
+    $('#collection-close').onclick=()=>{if(from==='dex')openDex('cust');else if(from==='pause')show('pause');else{G.paused=false;show('hud-screen');}};
+    show('collection');draw(kind,focus);
+  }
+
   // ---------- 图鉴 ----------
   function openDex(tab) {
-    if (SUZHOU && tab === 'card') { openTravelAlbum(); return; }
+    if (SUZHOU && tab === 'album') { openTravelAlbum(); return; }
+    if (SUZHOU && ['card','art','records'].includes(tab)) { openCollection(tab==='card'?'post':tab,'dex'); return; }
     if (G) G.paused = true;
     document.querySelectorAll('#dex .tabs button').forEach((b) => b.classList.toggle('on', b.dataset.tab === tab));
     const box = $('#dex-list');
@@ -6457,6 +6820,7 @@ const stations = {};
     requestAnimationFrame(loop);
     try { for (let i = 0; i < DBG.speed; i++) update(dt); render(); updateCoach(); } catch (e) { console.error(e); }
   }
+  if (!SUZHOU) document.querySelectorAll('.suzhou-tab,#p-audio').forEach(el=>el.hidden=true);
   $('#logo-cat').src = SUZHOU ? gardenArt('s_penpen_empty').src : 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(catSVG('penpen', 'front', { w: 400, h: 440 }));
   resize(); renderSaves(); show('title');
   requestAnimationFrame(loop);
