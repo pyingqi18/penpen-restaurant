@@ -22,10 +22,10 @@
     -webkit-user-select: none; user-select: none; }
   body { display: flex; align-items: center; justify-content: center;
     padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
-  #stage { position: fixed; inset: 0; }
+  #stage { position: fixed; inset: 0 auto auto 0; width: 100vw; height: 100vh; width: 100dvw; height: 100dvh; overflow: hidden; }
   #game { position: absolute; inset: 0; width: 100%; height: 100%; }
   #start-tip .tip-open { background: #b04a3c; color: #fff; border: 0; box-shadow: 0 5px 0 #7d2f25; font-size: 32px; padding: 14px 64px; border-radius: 20px; margin-top: 6px; } /* T-02：整张卡片都能点，按钮只是醒目 */
-  #ui { position: fixed; left: 0; top: 0; width: 1280px; height: 720px; transform-origin: 0 0; pointer-events: none; z-index: 2; } /* T-01：界面层铺满安全区，大小由 resize() 算 */
+  #ui { position: absolute; left: 0; top: 0; width: 1280px; height: 720px; transform-origin: 0 0; pointer-events: none; z-index: 2; } /* T-01：界面层铺满安全区，大小由 resize() 算 */
   #order { transform-origin: 50% 0; }
   .screen { position: absolute; inset: 0; display: none; }
   .screen.show { display: block; }
@@ -539,6 +539,7 @@
     <section id="pause" class="screen modal">
       <div class="card">
         <h2>暂停中</h2>
+        <p class="goal" id="play-build"></p>
         <button class="primary" id="p-resume">继续营业</button>
         <button id="p-dex">笔记</button>
         <button id="p-fullscreen">全屏</button>
@@ -2086,7 +2087,7 @@ const PENPEN_SUZHOU_PREVIEW = true;
   const PREVIEW_SEASON = SUZHOU_PREVIEW && new URLSearchParams(window.location.search).get('season');
   let gardenMode = false;
   let yardMode = false;
-  const SUZHOU_RELEASE = 'G070';
+  const SUZHOU_RELEASE = 'G071';
   const DAY_LEN = SUZHOU ? 230 : 150; // 每天营业秒数
   const cv = document.getElementById('game');
   let ctx = cv.getContext('2d');
@@ -2102,30 +2103,31 @@ const PENPEN_SUZHOU_PREVIEW = true;
   let uiScale = 1, UW = W, UH = H, OX = 0, OY = 0, SX = 0, SY = 0, viewTop = 0, viewBottom = H; // SX/SY：等比场景在画布里的居中偏移（CSS px）
   const toUI = (x, y) => ({ x: (OX + x * scale) / uiScale, y: (OY + y * scale) / uiScale }); // 场景坐标 → 界面坐标
   function resize() {
-    const port = window.visualViewport, cs = getComputedStyle(document.body);
-    const vw = Math.round(port?.width || window.innerWidth), vh = Math.round(port?.height || window.innerHeight);
+    const viewport = stage.getBoundingClientRect(), cs = getComputedStyle(document.body);
+    const vw = Math.max(1, Math.round(viewport.width)), vh = Math.max(1, Math.round(viewport.height));
     const pl = parseFloat(cs.paddingLeft) || 0, pr = parseFloat(cs.paddingRight) || 0, pt = parseFloat(cs.paddingTop) || 0, pb = parseFloat(cs.paddingBottom) || 0;
     const aw = Math.max(1, vw - pl - pr), ah = Math.max(1, vh - pt - pb);
 
     const stageHeight = gardenMode ? LAYOUT.scene.height : H;
-    const maxTrim = gardenMode ? 42 : yardMode ? 32 : 0;
+    const maxTrim = gardenMode ? 62 : yardMode ? 32 : 0;
     const trim = Math.min(maxTrim, Math.max(0, stageHeight - vh * W / vw));
     viewTop = Math.round(trim * 0.48); viewBottom = stageHeight - (trim - viewTop);
     const pictureH = viewBottom - viewTop;
     scale = Math.min(vw / W, vh / pictureH);
     SX = (vw - W * scale) / 2;
     SY = (vh - pictureH * scale) / 2 - viewTop * scale;
-    stage.style.width = vw + 'px';
-    stage.style.height = vh + 'px';
-    cv.width = Math.round(vw * dpr);
-    cv.height = Math.round(vh * dpr);
+    const bufferWidth = Math.round(viewport.width * dpr), bufferHeight = Math.round(viewport.height * dpr);
+    if (cv.width !== bufferWidth) cv.width = bufferWidth;
+    if (cv.height !== bufferHeight) cv.height = bufferHeight;
     uiScale = Math.max(scale, UI_MIN); UW = aw / uiScale; UH = ah / uiScale;
-    const sr = stage.getBoundingClientRect(); OX = sr.left - pl + SX; OY = sr.top - pt + SY;
+    OX = SX - pl; OY = SY - pt;
     Object.assign(ui.style, { left: pl + 'px', top: pt + 'px', width: UW + 'px', height: UH + 'px', transform: 'scale(' + uiScale + ')' });
+    $('#play-build').textContent = SUZHOU_RELEASE + ' · 画面 ' + vw + ' × ' + vh;
     placeTeaMenu(); fitPanels();
     document.getElementById('rotate').style.display = vh > vw ? 'flex' : 'none';
   }
   window.addEventListener('resize', resize);
+  if (typeof ResizeObserver === 'function') new ResizeObserver(resize).observe(stage);
   window.addEventListener('orientationchange', () => setTimeout(resize, 200));
   window.visualViewport?.addEventListener('resize', resize);
   document.addEventListener('fullscreenchange', resize);
@@ -4237,19 +4239,32 @@ const stations = {};
       const layer = surface.getContext('2d');
       layer.filter = yard ? 'saturate(0.81) contrast(0.93) brightness(1.03)' : 'saturate(0.73) contrast(0.93) brightness(1.035)';
       layer.drawImage(image, 0, 0);
-      if (/\b(?:spring|winter(?:_open)?)_g066\.jpg/.test(image.src)) alignDoorBase(layer, image);
+      const doorArt = image.src.match(/\b(spring|winter|winter_open)_g066\.jpg/);
+      if (doorArt) alignDoorBase(layer, image, doorArt[1]);
       SCENERY_TONES.set(image, surface);
     }
     return SCENERY_TONES.get(image);
   }
-  function alignDoorBase(layer, image) {
-    // 只重合成右门柱以外的墙脚与石板边，中间门扇和竖直门柱用原画。
-    const x0 = 1703, yTop = 505, yEnd = 743;
-    for (let x = x0; x < image.naturalWidth; x++) {
-      const dx = x - x0, oldBase = 601 + dx * 0.39;
-      const alignedBase = doorLine(x * W / image.naturalWidth) * image.naturalHeight / LAYOUT.scene.height;
-      layer.drawImage(image, x, yTop, 1, oldBase - yTop, x, yTop, 1, alignedBase - yTop);
-      layer.drawImage(image, x, oldBase, 1, yEnd - oldBase, x, alignedBase, 1, yEnd - alignedBase);
+  // 木材与石板交界的原图坐标。这条画线不参与人物寻路。
+  const DOOR_ART_FEET = {
+    spring: [[1438,478],[1470,495],[1510,517],[1550,537],[1590,559],[1627,578],[1640,579],[1655,583],[1670,593],[1685,602],[1703,608],[1740,620],[1780,634],[1813,648]],
+    winter: [[1438,480],[1470,496],[1510,515],[1550,535],[1590,556],[1627,576],[1655,588],[1685,603],[1703,606],[1740,618],[1780,632],[1813,643]],
+    winter_open: [[1438,478],[1470,495],[1510,517],[1550,538],[1590,559],[1627,579],[1655,592],[1685,601],[1703,603],[1740,617],[1780,632],[1813,644]],
+  };
+  function alignDoorBase(layer, image, state) {
+    const feet = DOOR_ART_FEET[state];
+    let segment = 0;
+    for (let x = feet[0][0]; x < image.naturalWidth; x++) {
+      while (x >= feet[segment + 1][0]) segment++;
+      const [[x0, y0], [x1, y1]] = [feet[segment], feet[segment + 1]];
+      const oldFoot = y0 + (y1 - y0) * (x - x0) / (x1 - x0);
+      const straight = 478 + (x - 1438) * (200 / 375);
+      const inlet = Math.min(1, (x - feet[0][0]) / 14);
+      const foot = oldFoot + (straight - oldFoot) * inlet;
+      const start = oldFoot - 85, end = oldFoot + 98;
+      // 只移动紧邻交界的像素。门柱的 X 坐标、上方木纹和远处石板保持原位。
+      layer.drawImage(image, x, start, 1, oldFoot - start, x, start, 1, foot - start);
+      layer.drawImage(image, x, oldFoot, 1, end - oldFoot, x, foot, 1, end - foot);
     }
   }
   function drawGardenRoom(decor = save.decor) {
@@ -6516,7 +6531,7 @@ const stations = {};
     if (document.fullscreenEnabled && document.documentElement.requestFullscreen) {
       try { await document.documentElement.requestFullscreen(); return; } catch {}
     }
-    toast('在 Safari 的分享菜单选「添加到主屏幕」，再从主屏幕打开。', 6500);
+    toast('在 iPhone 的 Safari 分享菜单选「添加到主屏幕」，打开「以网页 App 打开」。', 6500);
   });
   $('#p-resume').addEventListener('click', () => { G.paused = false; show('hud-screen'); });
   $('#p-look').style.display = 'none'; // 换样子改成在地图上照镜子
@@ -6915,7 +6930,7 @@ const stations = {};
     fold.onclick = () => setOpen(true); btn('收起 ◂', () => setOpen(false));
     document.body.append(p, fold); setOpen(window.innerHeight >= 500); setInterval(gbInfo, 1000);
   }
-  window.__penpen = { release: SUZHOU_RELEASE, hasWare, get season() { return CUR_SE; }, QSPOTS, DOOR, openMenuPick, catchFish, openMail, openMarket, openOrder, endDay, spawnCustomer, get ui() { return { scale, uiScale, UW, UH, SX, SY }; }, newDay: () => { newDay(); show('hud-screen'); showTip('day'); }, openDex, get G() { return G; }, get save() { return save; }, TABLES, PASS, SINK, WATER, DISH, findPath, YARD_PLACES, YARD_GRID, get LAYOUT() { return LAYOUT; }, GB, gbStart, gbPreset: gbStart, get SHOP_GRID() { return SHOP_GRID; }, enqueue, gbPlates, WMAP, openShop, dayTap, openRack, openOrder, startOrdering, CT, DBG, get hint() { const h = HINT; return h && { type: h.type, text: h.text, sel: h.sel ? true : false, el: h.sel || null, x: h.x, y: h.y, wx: h.wx, wy: h.wy }; } };
+  window.__penpen = { release: SUZHOU_RELEASE, hasWare, get season() { return CUR_SE; }, QSPOTS, DOOR, openMenuPick, catchFish, openMail, openMarket, openOrder, endDay, spawnCustomer, get ui() { return { scale, uiScale, UW, UH, SX, SY, viewTop, viewBottom }; }, newDay: () => { newDay(); show('hud-screen'); showTip('day'); }, openDex, get G() { return G; }, get save() { return save; }, TABLES, PASS, SINK, WATER, DISH, findPath, YARD_PLACES, YARD_GRID, get LAYOUT() { return LAYOUT; }, GB, gbStart, gbPreset: gbStart, get SHOP_GRID() { return SHOP_GRID; }, enqueue, gbPlates, WMAP, openShop, dayTap, openRack, openOrder, startOrdering, CT, DBG, get hint() { const h = HINT; return h && { type: h.type, text: h.text, sel: h.sel ? true : false, el: h.sel || null, x: h.x, y: h.y, wx: h.wx, wy: h.wy }; } };
 })();
 
 </script>

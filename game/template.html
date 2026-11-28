@@ -22,10 +22,10 @@
     -webkit-user-select: none; user-select: none; }
   body { display: flex; align-items: center; justify-content: center;
     padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
-  #stage { position: fixed; inset: 0; }
+  #stage { position: fixed; inset: 0 auto auto 0; width: 100vw; height: 100vh; width: 100dvw; height: 100dvh; overflow: hidden; }
   #game { position: absolute; inset: 0; width: 100%; height: 100%; }
   #start-tip .tip-open { background: #b04a3c; color: #fff; border: 0; box-shadow: 0 5px 0 #7d2f25; font-size: 32px; padding: 14px 64px; border-radius: 20px; margin-top: 6px; } /* T-02：整张卡片都能点，按钮只是醒目 */
-  #ui { position: fixed; left: 0; top: 0; width: 1280px; height: 720px; transform-origin: 0 0; pointer-events: none; z-index: 2; } /* T-01：界面层铺满安全区，大小由 resize() 算 */
+  #ui { position: absolute; left: 0; top: 0; width: 1280px; height: 720px; transform-origin: 0 0; pointer-events: none; z-index: 2; } /* T-01：界面层铺满安全区，大小由 resize() 算 */
   #order { transform-origin: 50% 0; }
   .screen { position: absolute; inset: 0; display: none; }
   .screen.show { display: block; }
@@ -539,6 +539,7 @@
     <section id="pause" class="screen modal">
       <div class="card">
         <h2>暂停中</h2>
+        <p class="goal" id="play-build"></p>
         <button class="primary" id="p-resume">继续营业</button>
         <button id="p-dex">笔记</button>
         <button id="p-fullscreen">全屏</button>
