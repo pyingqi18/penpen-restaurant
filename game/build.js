@@ -9,9 +9,11 @@ const tpl = fs.readFileSync(path.join(dir, 'template.html'), 'utf8');
 const adir = path.join(dir, 'assets');
 const man = fs.existsSync(path.join(adir, 'manifest.json')) ? fs.readFileSync(path.join(adir, 'manifest.json'), 'utf8') : '{}';
 const lay = fs.existsSync(path.join(dir, 'layout.json')) ? JSON.stringify(JSON.parse(fs.readFileSync(path.join(dir, 'layout.json'), 'utf8'))) : 'null';
+const brushFile = path.join(adir, 'suzhou', 'menu-brush.woff2');
+const brushFont = fs.existsSync(brushFile) ? fs.readFileSync(brushFile).toString('base64') : '';
 const gardenPath = path.join(dir, 'layout.suzhou.json');
 const garden = fs.existsSync(gardenPath) ? JSON.stringify(JSON.parse(fs.readFileSync(gardenPath, 'utf8'))) : null;
-const page = (grey, suzhou = false, preview = false) => tpl.replace('/*CATS_JS*/', () => 'const ART_MANIFEST = ' + man.replace(/\s+/g, '') + ';\n' + cats)
+const page = (grey, suzhou = false, preview = false) => tpl.replace('/*MENU_INK_FONT*/', suzhou && brushFont ? '@font-face{font-family:"Penpen Menu Ink";src:url(data:font/woff2;base64,' + brushFont + ') format("woff2");font-display:swap}' : '').replace('/*CATS_JS*/', () => 'const ART_MANIFEST = ' + man.replace(/\s+/g, '') + ';\n' + cats)
   .replace('/*GAME_JS*/', () => `const PENPEN_LAYOUT = ${suzhou ? garden : lay};\nconst PENPEN_GREYBOX = ${grey};\nconst PENPEN_SUZHOU = ${suzhou};\nconst PENPEN_SUZHOU_PREVIEW = ${preview};\n` + game);
 const out = page(false, Boolean(garden)), grey = page(true); // 正式版 index.html；灰盒单独入口 greybox.html
 fs.mkdirSync(path.join(dir, 'dist/assets'), { recursive: true });

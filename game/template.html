@@ -13,6 +13,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&display=swap" rel="stylesheet">
 <style>
+/*MENU_INK_FONT*/
+#rack-list .wall-menu-name { font-family: "Penpen Menu Ink", "Kaiti SC", KaiTi, serif; font-weight: normal; }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html, body { margin: 0; height: 100%; background: #e9dcc4; overflow: hidden; touch-action: manipulation;
     font-family: "PingFang SC", "Hiragino Sans GB", "Noto Sans SC", "Microsoft YaHei", sans-serif; color: #2c2420;
@@ -337,6 +339,29 @@
   .pmsg .invite { font-size: 20px; color: #3f6680; font-weight: 700; }
   .nt.farm small { font-size: 15px; color: #3f7a34; }
   .topt small .tno { display: inline-block; min-width: 22px; background: #8a5636; color: #fff6e0; border-radius: 5px; font-size: 16px; font-weight: 700; margin-right: 2px; }
+  #inv-target { font: inherit; color: #60483c; background: #fffaee; padding: 6px 10px; border: 1px solid #c5a589; border-radius: 6px; }
+  .trial { display: flex; align-items: center; gap: 20px; padding: 8px 12px; background: #f4e9d9; border-radius: 10px; }
+  .trial-actions p { margin: 0 0 5px; color: #665143; }
+  .trial-actions button { margin: 2px 4px 2px 0; }
+  .trial-food { display: grid; place-items: center; position: relative; width: 112px; height: 66px; flex: 0 0 112px; border: 3px solid #7a6150; background: #dbb798; border-radius: 50%; }
+  .trial-food img { position: relative; width: 50px; height: 50px; object-fit: contain; opacity: 0; }
+  .trial-food[data-step="1"] img, .trial-food[data-step="2"] img, .trial-food[data-step="3"] img { opacity: 1; animation: pop .28s both; }
+  .trial-food span { position: absolute; inset: 6px; border: 1px solid #fff5d8; border-radius: 50%; }
+  .trial-food.dumpling { border-color: #bc9e83; background: #ffedd7; }
+  .trial-food.dumpling i { opacity: 0; position: absolute; width: 9px; height: 22px; top: 7px; left: 26px; border-radius: 50%; border-left: 3px solid #c58a71; transform: rotate(-34deg); }
+  .trial-food.dumpling i:nth-of-type(2) { left: 46px; transform: rotate(8deg); }
+  .trial-food.dumpling[data-step="2"] i:first-of-type, .trial-food.dumpling[data-step="3"] i:nth-of-type(-n+2) { opacity: 1; }
+  #menu-plan { margin: 5px 0 8px; }
+  #menu-reserve:not([hidden]) { display: flex; align-items: center; gap: 10px; margin: 5px 0 12px; color: #685147; }
+  #menu-reserve select, #decor-body select { font: inherit; padding: 5px 7px; border: 1px solid #c7a78b; border-radius: 6px; background: #fff9ee; color: #624739; }
+  #decorate .card { width: 820px; }
+  #decor-body { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 8px 22px; }
+  #decor-body label { display: flex; align-items: center; justify-content: space-between; gap: 9px; padding: 6px 8px; background: #f1e6d6; border-radius: 8px; }
+  #decor-body .bench { justify-content: start; }
+  #decor-body input { width: 20px; height: 20px; accent-color: #8f634b; }
+  #decor-preview { display: flex; justify-content: center; gap: 26px; margin: 12px 0 0; }
+  #decor-preview figure { margin: 0; text-align: center; color: #6d5445; }
+  #decor-preview img { width: 90px; height: 70px; object-fit: contain; }
 </style>
 </head>
 <body>
@@ -378,6 +403,7 @@
         <button class="hb shop-only" id="b-dance">帅老头跳舞</button>
         <button class="hb day-only" id="b-menu">今日菜单</button>
         <button class="hb day-only" id="b-pantry">储藏室</button>
+        <button class="hb day-only" id="b-decor" style="display:none">装修</button>
         <button class="hb day-only" id="b-invent" style="display:none">试菜</button>
         <button class="hb day-only" id="b-dex">笔记</button>
         <button class="hb day-only primary" id="b-open">开店营业</button>
@@ -431,8 +457,20 @@
       <div class="card" style="width:1180px">
         <h2>今日菜单</h2>
         <p class="goal"><span id="menu-count"></span>　客人只会点菜单上的菜。食材少的菜在地图上会亮起来提醒你去补。</p>
+        <p class="goal" id="menu-plan" aria-live="polite"></p>
+        <label id="menu-reserve" hidden>熟客留桌 <select aria-label="四人桌安排"></select></label>
         <div id="menu-list"></div>
         <button class="primary" id="menu-ok">定好了</button>
+      </div>
+    </section>
+
+    <section id="decorate" class="screen modal">
+      <div class="card">
+        <h2>开店前布置</h2>
+        <div id="decor-body"></div>
+        <div id="decor-preview"></div>
+        <p class="goal" id="decor-info" aria-live="polite"></p>
+        <div class="inv-btns"><button class="primary" id="decor-apply">摆好了</button><button id="decor-close">取消</button></div>
       </div>
     </section>
 
@@ -454,6 +492,7 @@
     <section id="invent" class="screen modal">
       <div class="card" style="min-width:760px">
         <div id="inv-idea" class="inv-idea"></div>
+        <select id="inv-target" aria-label="请选择试做的菜" hidden></select>
         <h3>选一样食材</h3><div id="inv-ings" class="inv-row"></div>
         <h3>选一件炊具</h3><div id="inv-wares" class="inv-row"></div>
         <div id="inv-res"></div>

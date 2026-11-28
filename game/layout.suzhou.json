@@ -5,7 +5,7 @@
     "h": 720
   },
   "source": {
-    "image": "assets/09-母稿草稿/G-060/room_suzhou_counter_spring.png",
+    "image": "assets/09-母稿草稿/G-061/room_suzhou_menu_shell_spring.png",
     "w": 1813,
     "h": 868,
     "crop": {
@@ -109,7 +109,7 @@
       427
     ],
     "footClearance": 6,
-    "paintRevision": "g060"
+    "paintRevision": "g061"
   },
   "presets": {
     "two": [
@@ -774,15 +774,33 @@
       "id": "menurack",
       "kind": "menurack",
       "anchor": [
-        943,
-        178
+        137,
+        186
       ],
       "hit": {
-        "x": 911,
-        "y": 146,
-        "w": 64,
-        "h": 64
-      }
+        "x": 87,
+        "y": 78,
+        "w": 106,
+        "h": 199
+      },
+      "paper": [
+        [
+          93,
+          115
+        ],
+        [
+          183,
+          151
+        ],
+        [
+          93,
+          279
+        ],
+        [
+          183,
+          260
+        ]
+      ]
     },
     {
       "id": "tea",
