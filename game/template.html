@@ -485,6 +485,39 @@
   #dex-list .fish-count{grid-column:1/-1;margin:0 0 6px;color:#526b5d;font-weight:700;text-align:left}
   #dex-list .fish{object-fit:contain;width:106px;height:76px}
   #dex-list .dx.locked .ph{margin-top:8px}
+
+
+  .sold {text-decoration:line-through;text-decoration-color:#a64c3e;text-decoration-thickness:2px}
+  #order.garden-order .dlist{display:flex;flex-wrap:wrap;gap:8px;padding:5px 0;max-height:175px;overflow:auto}
+  #order.garden-order .dcard{min-width:154px;width:auto;display:grid;grid-template-columns:43px 1fr;column-gap:6px;text-align:left}
+  #order.garden-order .dcard .di{width:39px;height:38px;object-fit:contain;grid-row:span 2}
+  .order-tabs,.garden-request,.garden-tops,.garden-cups,.garden-actions{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin:8px 0}
+  .garden-request b{padding:5px 10px;border-radius:7px}.request-meal{color:#70442c;background:#f0debf}.request-no{color:#8a332d;background:#f7ddd2}.request-add{color:#36563b;background:#e2ead4}.request-drink{color:#2f5872;background:#dfebf0}
+  .garden-tops>div{display:flex;align-items:center;gap:5px}.garden-actions{justify-content:space-between}#order.garden-order .go{margin:0}
+  .activity-card{width:min(680px,90%)}.activity-options{display:flex;flex-wrap:wrap;gap:12px;margin:16px 0}.activity-options button{font-size:23px;border:1px solid #c9ab8b;padding:9px 16px;border-radius:9px;background:#fff6e5;color:#634631}.activity-options button[aria-pressed=true]{background:#dce5c9;border-color:#9aaf81}
+
+
+  #h-energy{cursor:pointer}.cottage-card{width:min(840px,93%)}#cottage-preview{position:relative;text-align:center;background:#e9d5b8;border-radius:12px;padding:8px}#cottage-wardrobe{border:0;padding:0;background:none}#cottage-wardrobe-img{display:block;width:min(610px,100%);height:350px;object-fit:contain}#cottage-preview span{display:block;max-width:240px;margin:-9px auto 0;position:relative;padding:9px;border-radius:55%;color:#3f5945;background:#c5d1a8;box-shadow:inset 0 0 0 3px #ffffff55}#cottage-preview[data-style=jute] span{background:#e6c795;color:#6c5437}#cottage-preview[data-style=plum] span{background:#dbadb0;color:#784655}
+
+  #title.garden-title.show{grid-template-columns:minmax(300px,.85fr) minmax(540px,1fr);align-content:center;background:linear-gradient(90deg,#4c3f32c9 0%,#5e563e81 32%,#fff0 68%),url("assets/suzhou/yard_spring.jpg") center / cover no-repeat;padding:36px 64px;gap:38px}
+  #title.garden-title .logo{position:relative;z-index:1;text-align:center;align-self:center;justify-self:center;max-height:100%;padding:14px 30px;border-radius:48% 51% 13px 13px;color:#fbefd1;background:#50443165}
+  #title.garden-title .logo h1{font-family:"Penpen Album Ink","Kaiti SC",KaiTi,serif;font-size:76px;line-height:1.05;text-shadow:0 2px 3px #4b372d}
+  #title.garden-title .logo p{color:#fff5d5}#title.garden-title .logo img{order:0;width:148px;height:155px;object-fit:contain;margin:0 auto;display:block;}
+  .title-actions{display:none}#title.garden-title .title-actions{display:grid;justify-items:stretch;gap:7px;max-width:242px;margin:10px auto;position:relative;z-index:2}
+  .title-actions button{background:#fbebd3;color:#5d3829;border:1px solid #be9873;border-radius:22px;font-size:25px;padding:6px 19px}
+  #title.garden-title .saves-wrap{display:none}#title.garden-title.show-saves .saves-wrap{display:block;background:#f9efdbe8;padding:14px;border:1px solid #b89b83;border-radius:15px;max-height:85vh;overflow:auto}
+  #title.garden-title:not(.has-saves) #title-start,#title.garden-title:not(.has-saves) #saves-toggle{display:none}
+  .reply-paper{display:flex;gap:12px;background:#f7eddb;padding:9px;margin:9px 0;align-items:center}.reply-paper img{width:145px;max-height:95px;object-fit:contain;border:5px solid #fffbed;box-shadow:1px 2px 3px #78574466}.reply-paper label{display:block;font-size:17px}.reply-paper select,.reply-paper button{font-size:16px;margin:2px}
+  #hud-screen.suzhou #b-letters{min-width:46px;font-size:24px;color:#77513b}#hud-screen.suzhou #b-letters[hidden]{display:none}
+
+  #order.garden-order{top:54px;max-width:810px;width:calc(100% - 36px);min-width:unset;max-height:calc(100% - 67px);overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin}
+  #order.garden-order .dlist{display:grid;grid-template-columns:repeat(auto-fit,minmax(158px,1fr));max-height:127px}
+  #order.garden-order .dcard .dt{display:flex}
+  #order.garden-order .garden-actions .go{width:auto;min-width:220px}#order.garden-order .garden-actions{position:sticky;bottom:-12px;background:#fbf6ec;margin-bottom:0;padding-bottom:8px}
+  .garden-tops .tp:not(.on){text-decoration:none;color:#684a38}.garden-tops .tp:not(.on)::before{content:none}
+  .garden-tops .tp{min-height:40px}.garden-actions{padding:2px 0 4px}
+  .mrow.out b{text-decoration:line-through;text-decoration-color:#9d5343;text-decoration-thickness:2px}.prow.zero{opacity:1}.prow.zero>:is(b,.cnt){text-decoration:line-through;text-decoration-color:#9d5343;text-decoration-thickness:2px}
+  #dex [hidden],#album-paper[hidden]{display:none!important}
 </style>
 </head>
 <body>
@@ -494,7 +527,7 @@
     <section id="title" class="screen">
       <div class="logo">
         <h1>盆盆餐厅</h1>
-        <p>猫猫开的小餐馆 · 试玩版</p>
+        <p>苏式首店</p><div class="title-actions"><button id="title-start">回到茶社</button><button id="title-new">新开茶社</button><button id="saves-toggle" aria-expanded="false">存档</button></div>
         <img id="logo-cat" alt="盆盆">
       </div>
       <div class="saves-wrap">
@@ -516,14 +549,14 @@
         <div class="chipbox shop-only" id="h-coin"></div>
         <div class="chipbox shop-only" id="h-rep"></div>
         <div class="chipbox shop-only" id="h-q"></div>
-        <div class="chipbox day-only" id="h-energy"></div>
+        <button type="button" class="chipbox day-only" id="h-energy" aria-label="查看体力规则"></button>
         <div class="chipbox day-only" id="h-save"></div>
       </div>
       <div class="hud r">
         <div id="h-timebox" class="shop-only" title="今天剩余营业时间"><div id="h-time"></div></div>
         <button class="hb shop-only" id="b-dex2">笔记</button>
         <button class="hb shop-only" id="b-dance">帅老头跳舞</button>
-        <button class="hb day-only" id="b-help">玩法</button>
+        <button class="hb day-only" id="b-help">玩法</button><button class="hb day-only" id="b-mimi" hidden>咪咪</button>
         <button class="hb day-only" id="b-yard-more" aria-expanded="false">备料</button>
         <div id="yard-more-menu">        <button class="hb day-only" id="b-staff">安排店员</button>
         <button class="hb day-only" id="b-menu">今日菜单</button>
@@ -533,7 +566,7 @@
         </div>
         <button class="hb day-only" id="b-dex">笔记</button>
         <button class="hb day-only primary" id="b-open">开店营业</button>
-        <button class="hb" id="b-pause" aria-label="暂停">暂停</button>
+        <button class="hb" id="b-letters" aria-label="书信与收藏" title="书信与收藏" hidden>✉</button><button class="hb" id="b-pause" aria-label="暂停">暂停</button>
       </div>
 
       <section id="yard-task" class="day-only" hidden>
@@ -602,6 +635,11 @@
       </div>
     </section>
 
+
+    <section id="mimi-chores" class="screen modal"><div class="card activity-card"><h2>田边的咪咪</h2><p id="mimi-state"></p><progress id="mimi-energy" aria-label="咪咪体力" max="4" value="4"></progress><p>选一件想做的事。每次用咪咪自己的 1 点体力，明早恢复。</p><div id="mimi-options" class="activity-options"></div><button id="mimi-close">回农场</button></div></section>
+    <section id="energy-guide" class="screen modal"><div class="card activity-card"><h2>清晨体力</h2><p id="energy-info"></p><p>教学领取的三格播种免体力。往后，播种、收一畦菜、采茶、收蛋或收一次鱼各用 1 点。逐格点种按格算，整畦播种按次算。走路、逛早市、装修和营业不用体力。</p><p>体力和钓鱼次数每天早上重置。咪咪有自己的 4 点体力，每天最多钓两次鱼。</p><button id="energy-close">明白了</button></div></section>
+    <section id="cottage-room" class="screen modal"><div class="card cottage-card"><h2>小屋</h2><div id="cottage-preview"><button id="cottage-wardrobe" aria-label="打开衣柜换装"><img id="cottage-wardrobe-img" alt="木衣柜"></button><span></span></div><p>点衣柜换装，也可以换一张地毯。</p><div id="cottage-styles" class="activity-options"><button data-style="bamboo">竹垫</button><button data-style="jute">编织毯</button><button data-style="plum">梅花毯</button></div><button id="cottage-close">回农场</button></div></section>
+    <section id="dance-steps" class="screen modal"><div class="card activity-card"><h2>帅老头揽客</h2><p id="dance-instruction"></p><div id="dance-options" class="activity-options"></div><button id="dance-close">稍后再跳</button></div></section>
     <section id="travel-album" class="screen modal" aria-label="旅行相簿">
       <div class="card travel-book">
         <header class="album-bar">
@@ -621,15 +659,15 @@
               <div id="album-date"></div><div id="album-sender"></div>
               <p id="album-message"></p>
             </div>
-            <div id="album-paper" aria-label="相簿留白">
+            <div id="album-paper" hidden>
               <div id="album-stickers"></div>
-              <span id="album-paper-hint" hidden>点一下这里贴上照片</span>
+              
             </div>
           </div>
         </div>
         <footer class="album-bar">
           <div class="album-pages"><button type="button" id="album-prev" aria-label="上一页">‹</button><span id="album-page-number"></span><button type="button" id="album-next" aria-label="下一页">›</button></div>
-          <select id="album-add-photo" aria-label="选择要贴的照片"></select>
+          
         </footer>
       </div>
     </section>
@@ -637,12 +675,12 @@
     <section id="collection" class="screen modal">
       <div class="card collection-card">
         <h2 id="collection-title"></h2>
-        <div id="collection-tabs" class="guide-tabs"><button data-c="art">艺术品</button><button data-c="post">明信片</button><button data-c="album">旅行相簿</button><button data-c="records">唱片</button></div>
+        <div id="collection-tabs" class="guide-tabs"><button data-c="art">艺术品</button><button data-c="post">来信</button><button data-c="album">旅行相簿</button><button data-c="records">唱片</button></div>
         <p id="collection-guide"></p>
         <p id="collection-empty" hidden>等呆猫送来下一封信吧。</p>
         <div class="collection-grid">
           <div id="collection-list"></div>
-          <div id="collection-detail"><img id="collection-art" alt=""><div><h3 id="collection-name"></h3><p id="collection-message"></p><button id="collection-decor">去装修</button><button class="primary" id="collection-play">选为营业音乐</button></div></div>
+          <div id="collection-detail"><img id="collection-art" alt=""><div><h3 id="collection-name"></h3><p id="collection-message"></p><div id="collection-replies" hidden></div><button id="collection-decor">去装修</button><button class="primary" id="collection-play">选为营业音乐</button></div></div>
         </div>
         <button class="primary" id="collection-close">关上</button>
       </div>
@@ -661,6 +699,7 @@
         <h2>今日菜单</h2>
         <p class="goal"><span id="menu-count"></span>　客人只会点菜单上的菜。食材少的菜在地图上会亮起来提醒你去补。</p>
         <p class="goal" id="menu-plan" aria-live="polite"></p>
+        <div id="menu-offers" class="garden-cups" hidden></div>
         <label id="menu-reserve" hidden>熟客留桌 <select aria-label="四人桌安排"></select></label>
         <div id="menu-list"></div>
         <button class="primary" id="menu-ok">定好了</button>
@@ -683,7 +722,7 @@
     <section id="mail" class="screen modal">
       <div class="card" style="width:1000px">
         <h2>呆猫来信啦</h2>
-        <div id="mail-body"></div>
+        <div id="mail-body"></div><div id="mail-reply" hidden></div>
         <button class="primary" id="mail-ok">收下</button>
       </div>
     </section>

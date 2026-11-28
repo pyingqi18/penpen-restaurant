@@ -20,3 +20,5 @@ https://creativecommons.org/licenses/by-sa/3.0/
 
 音频已转为单声道 MP3 并调整响度。鸟声、沸腾、煎炒及犬吠有节选；dog.mp3 按原 CC BY-SA 3.0 分发。
 https://creativecommons.org/publicdomain/zero/1.0/
+
+guzheng.mp3  桃窗小调 — 盆盆餐厅原创，程序合成古筝式弹拨，无外部采样。

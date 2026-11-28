@@ -485,6 +485,39 @@
   #dex-list .fish-count{grid-column:1/-1;margin:0 0 6px;color:#526b5d;font-weight:700;text-align:left}
   #dex-list .fish{object-fit:contain;width:106px;height:76px}
   #dex-list .dx.locked .ph{margin-top:8px}
+
+
+  .sold {text-decoration:line-through;text-decoration-color:#a64c3e;text-decoration-thickness:2px}
+  #order.garden-order .dlist{display:flex;flex-wrap:wrap;gap:8px;padding:5px 0;max-height:175px;overflow:auto}
+  #order.garden-order .dcard{min-width:154px;width:auto;display:grid;grid-template-columns:43px 1fr;column-gap:6px;text-align:left}
+  #order.garden-order .dcard .di{width:39px;height:38px;object-fit:contain;grid-row:span 2}
+  .order-tabs,.garden-request,.garden-tops,.garden-cups,.garden-actions{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin:8px 0}
+  .garden-request b{padding:5px 10px;border-radius:7px}.request-meal{color:#70442c;background:#f0debf}.request-no{color:#8a332d;background:#f7ddd2}.request-add{color:#36563b;background:#e2ead4}.request-drink{color:#2f5872;background:#dfebf0}
+  .garden-tops>div{display:flex;align-items:center;gap:5px}.garden-actions{justify-content:space-between}#order.garden-order .go{margin:0}
+  .activity-card{width:min(680px,90%)}.activity-options{display:flex;flex-wrap:wrap;gap:12px;margin:16px 0}.activity-options button{font-size:23px;border:1px solid #c9ab8b;padding:9px 16px;border-radius:9px;background:#fff6e5;color:#634631}.activity-options button[aria-pressed=true]{background:#dce5c9;border-color:#9aaf81}
+
+
+  #h-energy{cursor:pointer}.cottage-card{width:min(840px,93%)}#cottage-preview{position:relative;text-align:center;background:#e9d5b8;border-radius:12px;padding:8px}#cottage-wardrobe{border:0;padding:0;background:none}#cottage-wardrobe-img{display:block;width:min(610px,100%);height:350px;object-fit:contain}#cottage-preview span{display:block;max-width:240px;margin:-9px auto 0;position:relative;padding:9px;border-radius:55%;color:#3f5945;background:#c5d1a8;box-shadow:inset 0 0 0 3px #ffffff55}#cottage-preview[data-style=jute] span{background:#e6c795;color:#6c5437}#cottage-preview[data-style=plum] span{background:#dbadb0;color:#784655}
+
+  #title.garden-title.show{grid-template-columns:minmax(300px,.85fr) minmax(540px,1fr);align-content:center;background:linear-gradient(90deg,#4c3f32c9 0%,#5e563e81 32%,#fff0 68%),url("assets/suzhou/yard_spring.jpg") center / cover no-repeat;padding:36px 64px;gap:38px}
+  #title.garden-title .logo{position:relative;z-index:1;text-align:center;align-self:center;justify-self:center;max-height:100%;padding:14px 30px;border-radius:48% 51% 13px 13px;color:#fbefd1;background:#50443165}
+  #title.garden-title .logo h1{font-family:"Penpen Album Ink","Kaiti SC",KaiTi,serif;font-size:76px;line-height:1.05;text-shadow:0 2px 3px #4b372d}
+  #title.garden-title .logo p{color:#fff5d5}#title.garden-title .logo img{order:0;width:148px;height:155px;object-fit:contain;margin:0 auto;display:block;}
+  .title-actions{display:none}#title.garden-title .title-actions{display:grid;justify-items:stretch;gap:7px;max-width:242px;margin:10px auto;position:relative;z-index:2}
+  .title-actions button{background:#fbebd3;color:#5d3829;border:1px solid #be9873;border-radius:22px;font-size:25px;padding:6px 19px}
+  #title.garden-title .saves-wrap{display:none}#title.garden-title.show-saves .saves-wrap{display:block;background:#f9efdbe8;padding:14px;border:1px solid #b89b83;border-radius:15px;max-height:85vh;overflow:auto}
+  #title.garden-title:not(.has-saves) #title-start,#title.garden-title:not(.has-saves) #saves-toggle{display:none}
+  .reply-paper{display:flex;gap:12px;background:#f7eddb;padding:9px;margin:9px 0;align-items:center}.reply-paper img{width:145px;max-height:95px;object-fit:contain;border:5px solid #fffbed;box-shadow:1px 2px 3px #78574466}.reply-paper label{display:block;font-size:17px}.reply-paper select,.reply-paper button{font-size:16px;margin:2px}
+  #hud-screen.suzhou #b-letters{min-width:46px;font-size:24px;color:#77513b}#hud-screen.suzhou #b-letters[hidden]{display:none}
+
+  #order.garden-order{top:54px;max-width:810px;width:calc(100% - 36px);min-width:unset;max-height:calc(100% - 67px);overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin}
+  #order.garden-order .dlist{display:grid;grid-template-columns:repeat(auto-fit,minmax(158px,1fr));max-height:127px}
+  #order.garden-order .dcard .dt{display:flex}
+  #order.garden-order .garden-actions .go{width:auto;min-width:220px}#order.garden-order .garden-actions{position:sticky;bottom:-12px;background:#fbf6ec;margin-bottom:0;padding-bottom:8px}
+  .garden-tops .tp:not(.on){text-decoration:none;color:#684a38}.garden-tops .tp:not(.on)::before{content:none}
+  .garden-tops .tp{min-height:40px}.garden-actions{padding:2px 0 4px}
+  .mrow.out b{text-decoration:line-through;text-decoration-color:#9d5343;text-decoration-thickness:2px}.prow.zero{opacity:1}.prow.zero>:is(b,.cnt){text-decoration:line-through;text-decoration-color:#9d5343;text-decoration-thickness:2px}
+  #dex [hidden],#album-paper[hidden]{display:none!important}
 </style>
 </head>
 <body>
@@ -494,7 +527,7 @@
     <section id="title" class="screen">
       <div class="logo">
         <h1>盆盆餐厅</h1>
-        <p>猫猫开的小餐馆 · 试玩版</p>
+        <p>苏式首店</p><div class="title-actions"><button id="title-start">回到茶社</button><button id="title-new">新开茶社</button><button id="saves-toggle" aria-expanded="false">存档</button></div>
         <img id="logo-cat" alt="盆盆">
       </div>
       <div class="saves-wrap">
@@ -516,14 +549,14 @@
         <div class="chipbox shop-only" id="h-coin"></div>
         <div class="chipbox shop-only" id="h-rep"></div>
         <div class="chipbox shop-only" id="h-q"></div>
-        <div class="chipbox day-only" id="h-energy"></div>
+        <button type="button" class="chipbox day-only" id="h-energy" aria-label="查看体力规则"></button>
         <div class="chipbox day-only" id="h-save"></div>
       </div>
       <div class="hud r">
         <div id="h-timebox" class="shop-only" title="今天剩余营业时间"><div id="h-time"></div></div>
         <button class="hb shop-only" id="b-dex2">笔记</button>
         <button class="hb shop-only" id="b-dance">帅老头跳舞</button>
-        <button class="hb day-only" id="b-help">玩法</button>
+        <button class="hb day-only" id="b-help">玩法</button><button class="hb day-only" id="b-mimi" hidden>咪咪</button>
         <button class="hb day-only" id="b-yard-more" aria-expanded="false">备料</button>
         <div id="yard-more-menu">        <button class="hb day-only" id="b-staff">安排店员</button>
         <button class="hb day-only" id="b-menu">今日菜单</button>
@@ -533,7 +566,7 @@
         </div>
         <button class="hb day-only" id="b-dex">笔记</button>
         <button class="hb day-only primary" id="b-open">开店营业</button>
-        <button class="hb" id="b-pause" aria-label="暂停">暂停</button>
+        <button class="hb" id="b-letters" aria-label="书信与收藏" title="书信与收藏" hidden>✉</button><button class="hb" id="b-pause" aria-label="暂停">暂停</button>
       </div>
 
       <section id="yard-task" class="day-only" hidden>
@@ -602,6 +635,11 @@
       </div>
     </section>
 
+
+    <section id="mimi-chores" class="screen modal"><div class="card activity-card"><h2>田边的咪咪</h2><p id="mimi-state"></p><progress id="mimi-energy" aria-label="咪咪体力" max="4" value="4"></progress><p>选一件想做的事。每次用咪咪自己的 1 点体力，明早恢复。</p><div id="mimi-options" class="activity-options"></div><button id="mimi-close">回农场</button></div></section>
+    <section id="energy-guide" class="screen modal"><div class="card activity-card"><h2>清晨体力</h2><p id="energy-info"></p><p>教学领取的三格播种免体力。往后，播种、收一畦菜、采茶、收蛋或收一次鱼各用 1 点。逐格点种按格算，整畦播种按次算。走路、逛早市、装修和营业不用体力。</p><p>体力和钓鱼次数每天早上重置。咪咪有自己的 4 点体力，每天最多钓两次鱼。</p><button id="energy-close">明白了</button></div></section>
+    <section id="cottage-room" class="screen modal"><div class="card cottage-card"><h2>小屋</h2><div id="cottage-preview"><button id="cottage-wardrobe" aria-label="打开衣柜换装"><img id="cottage-wardrobe-img" alt="木衣柜"></button><span></span></div><p>点衣柜换装，也可以换一张地毯。</p><div id="cottage-styles" class="activity-options"><button data-style="bamboo">竹垫</button><button data-style="jute">编织毯</button><button data-style="plum">梅花毯</button></div><button id="cottage-close">回农场</button></div></section>
+    <section id="dance-steps" class="screen modal"><div class="card activity-card"><h2>帅老头揽客</h2><p id="dance-instruction"></p><div id="dance-options" class="activity-options"></div><button id="dance-close">稍后再跳</button></div></section>
     <section id="travel-album" class="screen modal" aria-label="旅行相簿">
       <div class="card travel-book">
         <header class="album-bar">
@@ -621,15 +659,15 @@
               <div id="album-date"></div><div id="album-sender"></div>
               <p id="album-message"></p>
             </div>
-            <div id="album-paper" aria-label="相簿留白">
+            <div id="album-paper" hidden>
               <div id="album-stickers"></div>
-              <span id="album-paper-hint" hidden>点一下这里贴上照片</span>
+              
             </div>
           </div>
         </div>
         <footer class="album-bar">
           <div class="album-pages"><button type="button" id="album-prev" aria-label="上一页">‹</button><span id="album-page-number"></span><button type="button" id="album-next" aria-label="下一页">›</button></div>
-          <select id="album-add-photo" aria-label="选择要贴的照片"></select>
+          
         </footer>
       </div>
     </section>
@@ -637,12 +675,12 @@
     <section id="collection" class="screen modal">
       <div class="card collection-card">
         <h2 id="collection-title"></h2>
-        <div id="collection-tabs" class="guide-tabs"><button data-c="art">艺术品</button><button data-c="post">明信片</button><button data-c="album">旅行相簿</button><button data-c="records">唱片</button></div>
+        <div id="collection-tabs" class="guide-tabs"><button data-c="art">艺术品</button><button data-c="post">来信</button><button data-c="album">旅行相簿</button><button data-c="records">唱片</button></div>
         <p id="collection-guide"></p>
         <p id="collection-empty" hidden>等呆猫送来下一封信吧。</p>
         <div class="collection-grid">
           <div id="collection-list"></div>
-          <div id="collection-detail"><img id="collection-art" alt=""><div><h3 id="collection-name"></h3><p id="collection-message"></p><button id="collection-decor">去装修</button><button class="primary" id="collection-play">选为营业音乐</button></div></div>
+          <div id="collection-detail"><img id="collection-art" alt=""><div><h3 id="collection-name"></h3><p id="collection-message"></p><div id="collection-replies" hidden></div><button id="collection-decor">去装修</button><button class="primary" id="collection-play">选为营业音乐</button></div></div>
         </div>
         <button class="primary" id="collection-close">关上</button>
       </div>
@@ -661,6 +699,7 @@
         <h2>今日菜单</h2>
         <p class="goal"><span id="menu-count"></span>　客人只会点菜单上的菜。食材少的菜在地图上会亮起来提醒你去补。</p>
         <p class="goal" id="menu-plan" aria-live="polite"></p>
+        <div id="menu-offers" class="garden-cups" hidden></div>
         <label id="menu-reserve" hidden>熟客留桌 <select aria-label="四人桌安排"></select></label>
         <div id="menu-list"></div>
         <button class="primary" id="menu-ok">定好了</button>
@@ -683,7 +722,7 @@
     <section id="mail" class="screen modal">
       <div class="card" style="width:1000px">
         <h2>呆猫来信啦</h2>
-        <div id="mail-body"></div>
+        <div id="mail-body"></div><div id="mail-reply" hidden></div>
         <button class="primary" id="mail-ok">收下</button>
       </div>
     </section>
@@ -1670,7 +1709,7 @@ const WORLD_LABELS = [
 ];
 // ---------- 呆猫寄回来的明信片（照着你拍的风景画）viewBox 300×200 ----------
 const POSTCARDS = [ // 呆猫的旅行路线：先走山河各处，寄回当地风景和食谱；再到樱花之国，最后邀请盆盆去开分店
-  { id: 'snowpeak', n: '雪山和牦牛', from: '雪山牧场', se: 'winter', recipes: ['dandan'], gift: { ing: 'beef', n: 3 }, msg: '雪山脚下的小馆子，一碗担担面辣得我直哈气。方子抄给老大了！' },
+  { id: 'snowpeak', n: '雪山和牦牛', from: '雪山牧场', se: 'winter', recipes: ['yakmian'], gift: { ing: 'yakbeef', n: 3 }, msg: '雪山脚下的小馆子煮了一锅红烧牦牛肉。我抄下汤头的做法，寄一点肉给老大试试。' },
   { id: 'karst', selfie: 'left', n: '竹筏和山峰', from: '烟雨山水', se: 'summer', recipes: ['guihua'], gift: { ing: 'rice', n: 4 }, msg: '山像竹笋站在雾里。街上的桂花糕又软又香，做法寄回来啦。' },
   { id: 'river', n: '早茶楼', from: '骑楼茶镇', se: 'summer', recipes: ['xiajiao', 'chashao'], gift: { ing: 'shrimp', n: 4 }, msg: '早茶一坐就是一上午！虾饺和叉烧饭的方子都要来了。' },
   { id: 'huizhou', selfie: 'right', n: '马头墙老宅', from: '白墙黛瓦镇', se: 'spring', recipes: [], gift: { calcium: true }, msg: '白墙黛瓦，墙上有蜂窝一样的花纹。寄一瓶钙片，盆盆跑堂别累着。' },
@@ -2089,7 +2128,7 @@ if (typeof module !== 'undefined') module.exports = { iconSVG, fishSVG, FISH };
 
 </script>
 <script>
-const PENPEN_LAYOUT = {"version":1,"space":{"w":1280,"h":720},"source":{"image":"assets/09-母稿草稿/G-061/room_suzhou_menu_shell_spring.png","w":1813,"h":868,"crop":{"x":0,"y":0,"w":1813,"h":868}},"scene":{"width":1280,"height":613,"window":[342,53,579,183],"doorPatch":[955,16,269,416],"threshold":[[1003,323],[1164,409]],"walkArea":[[0,528],[83,423],[106,382],[188,282],[917,282],[973,311],[995,299],[1008,246],[1017,225],[1039,226],[1050,244],[1070,264],[1106,284],[1143,294],[1161,321],[1202,410],[1280,452],[1280,613],[0,613]],"dance":[662,572],"windowSource":[480,67,830,266],"counterForeground":[16,427],"footClearance":6,"paintRevision":"g069","wallArt":{"left":{"x":100,"y":74,"w":71,"h":198},"right":{"x":1208,"y":117,"w":64,"h":77}},"kitchenArt":{"source":[0,354,701,478],"rear":[[[147,475],[177,440],[610,440],[612,518],[530,556],[148,556]],[[170,390],[220,390],[239,441],[234,470],[160,470]]],"front":[[[553,441],[610,441],[610,516],[504,767],[23,767],[23,654],[76,605],[458,605]]]},"courtyardOpening":[[1004,97],[1159,43],[1160,408],[1004,324]]},"presets":{"two":["table.1","table.3"],"five":["table.1","table.2","table.3","table.4","table.5"]},"notes":"G-057 三后两前的室内桌位。方桌巾透视沿椭圆桌边。座位、椅背遮挡与端菜靠逻辑坐标；墙、两排柜体与假门依原首店操作。","items":[{"id":"table.1","kind":"table","anchor":[563,459],"seats":2,"scale":0.96,"hit":{"x":507,"y":405,"w":112,"h":121},"stand":[[634,463]],"footprint":[[528.76,445],[597.24,445],[605.24,473],[605.24,504],[598.24,513],[527.76,513],[520.76,504],[520.76,473]],"seatPos":[[587,447.48],[536.12,490.68]],"chip":[614,417]},{"id":"table.2","kind":"table","anchor":[785,459],"seats":2,"scale":0.96,"hit":{"x":729,"y":405,"w":112,"h":121},"stand":[[852,470]],"footprint":[[750.76,445],[819.24,445],[827.24,473],[827.24,504],[820.24,513],[749.76,513],[742.76,504],[742.76,473]],"seatPos":[[761,447.48],[811.88,490.68]],"chip":[836,417]},{"id":"table.3","kind":"table","anchor":[855,314],"seats":4,"scale":0.92,"hit":{"x":773,"y":260,"w":164,"h":121},"stand":[[961,340]],"footprint":[[797.68,300],[912.32,300],[920.32,328],[920.32,359],[913.32,368],[796.68,368],[789.68,359],[789.68,328]],"seatPos":[[822.8,303.88],[887.2,303.88],[812.68,345.28],[897.32,345.28]],"chip":[922,272]},{"id":"table.4","kind":"table","anchor":[604,314],"seats":4,"scale":0.92,"hit":{"x":522,"y":260,"w":164,"h":121},"stand":[[713,340]],"footprint":[[546.68,300],[661.32,300],[669.32,328],[669.32,359],[662.32,368],[545.68,368],[538.68,359],[538.68,328]],"seatPos":[[571.8,303.88],[636.2,303.88],[561.68,345.28],[646.32,345.28]],"chip":[671,272]},{"id":"table.5","kind":"table","anchor":[1000,459],"seats":2,"scale":0.96,"hit":{"x":944,"y":405,"w":112,"h":121},"stand":[[1063,489]],"footprint":[[965.76,445],[1034.24,445],[1042.24,473],[1042.24,504],[1035.24,513],[964.76,513],[957.76,504],[957.76,473]],"seatPos":[[976,447.48],[1026.88,490.68]],"chip":[1051,417]},{"id":"queue.1","kind":"queue","anchor":[1210,513],"stand":[[1164,536]],"zone":"inside"},{"id":"queue.2","kind":"queue","anchor":[1157,471],"stand":[[1113,490]],"zone":"inside"},{"id":"queue.3","kind":"queue","anchor":[1104,429],"stand":[[1060,447]],"zone":"inside"},{"id":"queue.4","kind":"queue","anchor":[1051,387],"stand":[[1017,404]],"zone":"inside"},{"id":"queue.5","kind":"queue","anchor":[1049,286],"stand":[[1062,306]],"zone":"outside"},{"id":"queue.6","kind":"queue","anchor":[1027,245],"stand":[[1036,266]],"zone":"outside"},{"id":"door","kind":"door","anchor":[1082,330],"stand":[[1082,330]],"hit":{"x":972,"y":126,"w":223,"h":275}},{"id":"stove.wok","kind":"stove","anchor":[218,325],"hit":{"x":194,"y":299,"w":48,"h":42}},{"id":"stove.pot","kind":"stove","anchor":[282,325],"hit":{"x":258,"y":299,"w":48,"h":42}},{"id":"stove.steamer","kind":"stove","anchor":[345,325],"hit":{"x":321,"y":299,"w":48,"h":42}},{"id":"stove.clay","kind":"stove","anchor":[406,325],"hit":{"x":382,"y":299,"w":48,"h":42}},{"id":"chef","kind":"chef","anchor":[213,430],"stand":[[213,430]],"range":[[147,432],[320,432]],"wash":[150,430]},{"id":"pass","kind":"pass","anchor":[397,367],"stand":[[461,417]],"slots":[[397,333],[389,352],[380,372],[372,390],[363,408]],"hit":{"x":340,"y":312,"w":97,"h":119},"label":[421,320]},{"id":"sink","kind":"sink","anchor":[136,324],"stand":[[190,303]],"hit":{"x":104,"y":274,"w":78,"h":67}},{"id":"rail","kind":"rail","anchor":[357,431],"spike":[357,431],"hit":{"x":333,"y":405,"w":61,"h":58}},{"id":"menurack","kind":"menurack","anchor":[1241,300],"hit":{"x":1207,"y":237,"w":69,"h":135},"paper":[[1211,242],[1271,253],[1211,345],[1271,371]]},{"id":"tea","kind":"tea","anchor":[270,458],"stand":[[279,565]],"hit":{"x":234,"y":418,"w":94,"h":62}},{"id":"teacart","kind":"tea","anchor":[190,460],"stand":[[190,566]],"hit":{"x":112,"y":423,"w":121,"h":60},"needs":["tea","snack"]},{"id":"idle.penpen","kind":"idle","anchor":[681,393],"stand":[[681,393]]},{"id":"staff.laoer","kind":"staff","anchor":[717,513],"stand":[[717,513]],"rest":[702,570]},{"id":"staff.mimi","kind":"staff","anchor":[1110,569],"stand":[[1110,569]],"rest":[1090,585]},{"id":"wall.heater","kind":"wall","season":"winter","footprint":[[345,282],[404,282],[404,298],[345,298]]},{"id":"wall.kitchen","kind":"wall","footprint":[[103,321],[432,321],[432,369],[356,543],[17,543],[17,466],[54,424],[105,390]]}],"yard":{"source":[1672,941],"sites":[{"id":"door","name":"餐厅","hit":[652,178,185,168],"sign":[744,313],"stand":[742,363]},{"id":"market","name":"早市","hit":[153,350,382,193],"sign":[357,488],"stand":[390,552]},{"id":"plot","i":0,"name":"第 1 畦","hit":[939,465,280,91],"sign":[1081,553],"stand":[1093,578]},{"id":"plot","i":1,"name":"第 2 畦","hit":[1249,451,277,98],"sign":[1382,546],"stand":[1382,566]},{"id":"plot","i":2,"name":"第 3 畦","hit":[931,352,246,98],"sign":[1058,443],"stand":[1054,454]},{"id":"plot","i":3,"name":"第 4 畦","hit":[1219,334,256,107],"sign":[1347,431],"stand":[1337,444]},{"id":"pond","name":"钓台","hit":[942,645,702,156],"sign":[1038,693],"stand":[1016,720]},{"id":"mail","name":"邮筒","hit":[1035,234,60,91],"sign":[1066,274],"stand":[1065,332]},{"id":"cottage","name":"旅行小屋","hit":[1112,148,205,146],"sign":[1231,271],"stand":[1223,309]},{"id":"coop","name":"鸡舍","hit":[1420,199,215,114],"sign":[1518,280],"stand":[1494,325]},{"id":"plaza","name":"石桌小院","hit":[156,637,275,152],"sign":[315,722],"stand":[372,759]},{"id":"tea","name":"茶圃","hit":[478,562,153,78],"sign":[546,623],"stand":[589,591]},{"id":"mirror","name":"照镜子","hit":[523,241,112,90],"sign":[585,296],"stand":[577,348]}],"lanes":[{"width":40,"points":[[743,353],[741,382],[721,430],[703,486],[693,527],[671,576],[689,625],[680,684],[659,742],[636,812]]},{"width":32,"points":[[390,551],[440,552],[502,556],[555,561],[615,580],[675,577],[749,593],[824,612],[913,611],[1035,588],[1144,578],[1296,571],[1451,568],[1539,541]]},{"width":31,"points":[[575,345],[650,357],[743,353],[843,346],[963,337],[1064,328],[1167,320],[1240,307],[1324,292],[1399,266]]},{"width":23,"points":[[1398,267],[1481,299],[1534,342],[1572,393],[1590,467],[1579,518],[1539,541]]},{"width":18,"points":[[914,342],[898,399],[909,447],[918,493],[930,548],[936,600]]},{"width":12,"points":[[907,450],[983,454],[1054,453],[1137,451],[1205,450],[1270,448],[1337,444],[1422,439],[1483,439],[1556,442]]},{"width":15,"points":[[1208,320],[1200,360],[1205,414],[1215,450],[1234,490],[1244,537],[1260,571]]},{"width":15,"points":[[913,611],[897,640],[933,654],[954,670],[987,700],[1016,720]]},{"width":24,"points":[[656,735],[604,737],[549,738],[482,757],[434,768],[372,759],[324,762]]}],"beds":[[[967,476],[1183,471],[1200,538],[986,545]],[[1266,464],[1492,459],[1514,525],[1287,531]],[[943,363],[1158,358],[1168,426],[955,435]],[[1236,351],[1445,341],[1457,415],[1255,424]]],"bobber":[1206,708],"spawn":[740,388],"staff":[812,347],"helper":[937,575],"actorScale":0.65}};
+const PENPEN_LAYOUT = {"version":1,"space":{"w":1280,"h":720},"source":{"image":"assets/09-母稿草稿/G-061/room_suzhou_menu_shell_spring.png","w":1813,"h":868,"crop":{"x":0,"y":0,"w":1813,"h":868}},"scene":{"width":1280,"height":613,"window":[342,53,579,183],"doorPatch":[955,16,269,416],"threshold":[[1003,323],[1164,409]],"walkArea":[[0,528],[83,423],[106,382],[188,282],[917,282],[973,311],[995,299],[1008,246],[1017,225],[1039,226],[1050,244],[1070,264],[1106,284],[1143,294],[1161,321],[1202,410],[1280,452],[1280,613],[0,613]],"dance":[662,572],"windowSource":[480,67,830,266],"counterForeground":[16,427],"footClearance":6,"paintRevision":"g069","wallArt":{"left":{"x":100,"y":74,"w":71,"h":198},"right":{"x":1208,"y":117,"w":64,"h":77}},"kitchenArt":{"source":[0,354,701,478],"rear":[[[147,475],[177,440],[610,440],[612,518],[530,556],[148,556]],[[170,390],[220,390],[239,441],[234,470],[160,470]]],"front":[[[553,441],[610,441],[610,516],[504,767],[23,767],[23,654],[76,605],[458,605]]]},"courtyardOpening":[[1004,97],[1159,43],[1160,408],[1004,324]]},"presets":{"two":["table.1","table.3"],"five":["table.1","table.2","table.3","table.4","table.5"]},"notes":"G-057 三后两前的室内桌位。方桌巾透视沿椭圆桌边。座位、椅背遮挡与端菜靠逻辑坐标；墙、两排柜体与假门依原首店操作。","items":[{"id":"table.1","kind":"table","anchor":[563,459],"seats":2,"scale":0.96,"hit":{"x":507,"y":405,"w":112,"h":121},"stand":[[634,463]],"footprint":[[528.76,445],[597.24,445],[605.24,473],[605.24,504],[598.24,513],[527.76,513],[520.76,504],[520.76,473]],"seatPos":[[587,447.48],[536.12,490.68]],"chip":[614,417]},{"id":"table.2","kind":"table","anchor":[785,459],"seats":2,"scale":0.96,"hit":{"x":729,"y":405,"w":112,"h":121},"stand":[[852,470]],"footprint":[[750.76,445],[819.24,445],[827.24,473],[827.24,504],[820.24,513],[749.76,513],[742.76,504],[742.76,473]],"seatPos":[[761,447.48],[811.88,490.68]],"chip":[836,417]},{"id":"table.3","kind":"table","anchor":[855,314],"seats":4,"scale":0.92,"hit":{"x":773,"y":260,"w":164,"h":121},"stand":[[961,340]],"footprint":[[797.68,300],[912.32,300],[920.32,328],[920.32,359],[913.32,368],[796.68,368],[789.68,359],[789.68,328]],"seatPos":[[822.8,303.88],[887.2,303.88],[812.68,345.28],[897.32,345.28]],"chip":[922,272]},{"id":"table.4","kind":"table","anchor":[604,314],"seats":4,"scale":0.92,"hit":{"x":522,"y":260,"w":164,"h":121},"stand":[[713,340]],"footprint":[[546.68,300],[661.32,300],[669.32,328],[669.32,359],[662.32,368],[545.68,368],[538.68,359],[538.68,328]],"seatPos":[[571.8,303.88],[636.2,303.88],[561.68,345.28],[646.32,345.28]],"chip":[671,272]},{"id":"table.5","kind":"table","anchor":[1000,459],"seats":2,"scale":0.96,"hit":{"x":944,"y":405,"w":112,"h":121},"stand":[[1063,489]],"footprint":[[965.76,445],[1034.24,445],[1042.24,473],[1042.24,504],[1035.24,513],[964.76,513],[957.76,504],[957.76,473]],"seatPos":[[976,447.48],[1026.88,490.68]],"chip":[1051,417]},{"id":"queue.1","kind":"queue","anchor":[1210,513],"stand":[[1164,536]],"zone":"inside"},{"id":"queue.2","kind":"queue","anchor":[1157,471],"stand":[[1113,490]],"zone":"inside"},{"id":"queue.3","kind":"queue","anchor":[1104,429],"stand":[[1060,447]],"zone":"inside"},{"id":"queue.4","kind":"queue","anchor":[1051,387],"stand":[[1017,404]],"zone":"inside"},{"id":"queue.5","kind":"queue","anchor":[1049,286],"stand":[[1062,306]],"zone":"outside"},{"id":"queue.6","kind":"queue","anchor":[1027,245],"stand":[[1036,266]],"zone":"outside"},{"id":"door","kind":"door","anchor":[1082,330],"stand":[[1082,330]],"hit":{"x":972,"y":126,"w":223,"h":275}},{"id":"stove.wok","kind":"stove","anchor":[218,325],"hit":{"x":194,"y":299,"w":48,"h":42}},{"id":"stove.pot","kind":"stove","anchor":[282,325],"hit":{"x":258,"y":299,"w":48,"h":42}},{"id":"stove.steamer","kind":"stove","anchor":[345,325],"hit":{"x":321,"y":299,"w":48,"h":42}},{"id":"stove.clay","kind":"stove","anchor":[406,325],"hit":{"x":382,"y":299,"w":48,"h":42}},{"id":"chef","kind":"chef","anchor":[213,430],"stand":[[213,430]],"range":[[147,432],[320,432]],"wash":[150,430]},{"id":"pass","kind":"pass","anchor":[397,367],"stand":[[461,417]],"slots":[[397,333],[389,352],[380,372],[372,390],[363,408]],"hit":{"x":340,"y":312,"w":97,"h":119},"label":[421,320]},{"id":"sink","kind":"sink","anchor":[136,324],"stand":[[190,303]],"hit":{"x":104,"y":274,"w":78,"h":67}},{"id":"rail","kind":"rail","anchor":[357,431],"spike":[357,431],"hit":{"x":333,"y":405,"w":61,"h":58}},{"id":"menurack","kind":"menurack","anchor":[1241,300],"hit":{"x":1207,"y":237,"w":69,"h":135},"paper":[[1211,242],[1271,253],[1211,345],[1271,371]]},{"id":"tea","kind":"tea","anchor":[270,458],"stand":[[279,565]],"hit":{"x":234,"y":418,"w":94,"h":62}},{"id":"teacart","kind":"tea","anchor":[190,460],"stand":[[190,566]],"hit":{"x":112,"y":423,"w":121,"h":60},"needs":["tea","snack"]},{"id":"idle.penpen","kind":"idle","anchor":[681,393],"stand":[[681,393]]},{"id":"staff.laoer","kind":"staff","anchor":[717,513],"stand":[[717,513]],"rest":[702,570]},{"id":"staff.mimi","kind":"staff","anchor":[1110,569],"stand":[[1110,569]],"rest":[1090,585]},{"id":"wall.heater","kind":"wall","season":"winter","footprint":[[345,282],[404,282],[404,298],[345,298]]},{"id":"wall.kitchen","kind":"wall","footprint":[[103,321],[432,321],[432,369],[356,543],[17,543],[17,466],[54,424],[105,390]]}],"yard":{"source":[1672,941],"sites":[{"id":"door","name":"餐厅","hit":[652,178,185,168],"sign":[744,313],"stand":[742,363]},{"id":"market","name":"早市","hit":[153,350,382,193],"sign":[357,488],"stand":[390,552]},{"id":"plot","i":0,"name":"第 1 畦","hit":[939,465,280,91],"sign":[1081,553],"stand":[1093,578]},{"id":"plot","i":1,"name":"第 2 畦","hit":[1249,451,277,98],"sign":[1382,546],"stand":[1382,566]},{"id":"plot","i":2,"name":"第 3 畦","hit":[931,352,246,98],"sign":[1058,443],"stand":[1054,454]},{"id":"plot","i":3,"name":"第 4 畦","hit":[1219,334,256,107],"sign":[1347,431],"stand":[1337,444]},{"id":"pond","name":"钓台","hit":[942,645,702,156],"sign":[1038,693],"stand":[1016,720]},{"id":"mail","name":"邮筒","hit":[1035,234,60,91],"sign":[1066,274],"stand":[1065,332]},{"id":"cottage","name":"小屋","hit":[1112,148,205,146],"sign":[1231,271],"stand":[1223,309]},{"id":"coop","name":"鸡舍","hit":[1420,199,215,114],"sign":[1518,280],"stand":[1494,325]},{"id":"plaza","name":"石桌小院","hit":[156,637,275,152],"sign":[315,722],"stand":[372,759]},{"id":"tea","name":"茶圃","hit":[478,562,153,78],"sign":[546,623],"stand":[589,591]},{"id":"mirror","name":"照镜子","hit":[523,241,112,90],"sign":[585,296],"stand":[577,348]}],"lanes":[{"width":40,"points":[[743,353],[741,382],[721,430],[703,486],[693,527],[671,576],[689,625],[680,684],[659,742],[636,812]]},{"width":32,"points":[[390,551],[440,552],[502,556],[555,561],[615,580],[675,577],[749,593],[824,612],[913,611],[1035,588],[1144,578],[1296,571],[1451,568],[1539,541]]},{"width":31,"points":[[575,345],[650,357],[743,353],[843,346],[963,337],[1064,328],[1167,320],[1240,307],[1324,292],[1399,266]]},{"width":23,"points":[[1398,267],[1481,299],[1534,342],[1572,393],[1590,467],[1579,518],[1539,541]]},{"width":18,"points":[[914,342],[898,399],[909,447],[918,493],[930,548],[936,600]]},{"width":12,"points":[[907,450],[983,454],[1054,453],[1137,451],[1205,450],[1270,448],[1337,444],[1422,439],[1483,439],[1556,442]]},{"width":15,"points":[[1208,320],[1200,360],[1205,414],[1215,450],[1234,490],[1244,537],[1260,571]]},{"width":15,"points":[[913,611],[897,640],[933,654],[954,670],[987,700],[1016,720]]},{"width":24,"points":[[656,735],[604,737],[549,738],[482,757],[434,768],[372,759],[324,762]]}],"beds":[[[967,476],[1183,471],[1200,538],[986,545]],[[1266,464],[1492,459],[1514,525],[1287,531]],[[943,363],[1158,358],[1168,426],[955,435]],[[1236,351],[1445,341],[1457,415],[1255,424]]],"bobber":[1206,708],"spawn":[740,388],"staff":[812,347],"helper":[937,575],"actorScale":0.65}};
 const PENPEN_GREYBOX = false;
 const PENPEN_SUZHOU = true;
 const PENPEN_SUZHOU_PREVIEW = true;
@@ -2103,7 +2142,7 @@ const PENPEN_SUZHOU_PREVIEW = true;
   const PREVIEW_SEASON = SUZHOU_PREVIEW && new URLSearchParams(window.location.search).get('season');
   let gardenMode = false;
   let yardMode = false;
-  const SUZHOU_RELEASE = 'G072';
+  const SUZHOU_RELEASE = 'G073';
   const DAY_LEN = SUZHOU ? 230 : 150; // 每天营业秒数
   const cv = document.getElementById('game');
   let ctx = cv.getContext('2d');
@@ -2165,7 +2204,9 @@ const PENPEN_SUZHOU_PREVIEW = true;
     } catch (e) { /* 没声音也不影响 */ }
   }
   const sfx = {
-    tap: () => beep(720, 0.05),
+    tap: () => beep(570,.045,'sine',.022),
+    bell: () => {beep(1175,.23,'sine',.04);setTimeout(()=>beep(1760,.26,'sine',.025),110);},
+    crew: id => {const base={penpen:510,laoda:360,laoer:430,mimi:655,shuai:392}[id]||500;beep(base,.07,'sine',.03);setTimeout(()=>beep(base*1.33,.11,'sine',.029),70);},
     coin: () => { beep(988, 0.07, 'triangle'); setTimeout(() => beep(1319, 0.1, 'triangle'), 70); },
     bad: () => beep(220, 0.18, 'sawtooth', 0.04),
     ding: () => beep(1175, 0.12, 'triangle'),
@@ -2175,10 +2216,12 @@ const PENPEN_SUZHOU_PREVIEW = true;
   const SOUND_LOOPS = new Map(), SOUND_FILES = new Map();
   let soundReady=false, lastAnimalSound=-Infinity;
   const RECORDS = {
-    restaurant: { id:'restaurant', title:'茶社午后', msg:'开店就能播放。钢琴曲《Forget Me Not》，Kistol。' },
+    guzheng:{id:'guzheng',title:'桃窗小调',msg:'首店原创古筝式弹拨曲。'},
+    farm:{id:'farm',title:'田畦微风',msg:'农场开张时可播。Cal McEachern 的《A Small Fire Will Do》。'},
+    restaurant: { id:'restaurant', title:'茶社午后', msg:'随雪山唱片解锁。钢琴曲《Forget Me Not》，Kistol。' },
     record: { id:'record', title:'雪山来信', msg:'呆猫从雪山牧场寄来的唱片。钢琴曲《A Simple Trifle》，jestar。' },
   };
-  const recordEntries = () => [RECORDS.restaurant, ...((save.records || []).includes('record') || (save.cards || []).includes('snowpeak') ? [RECORDS.record] : [])];
+  const recordEntries = () => [RECORDS.guzheng, RECORDS.farm, ...((save.records || []).includes('record') || (save.cards || []).includes('snowpeak') ? [RECORDS.record,RECORDS.restaurant] : [])];
   function sound(name, level) {
     if (!SOUND_FILES.has(name)) {
       const media=new Audio('assets/audio/'+name+'.mp3?v='+SUZHOU_RELEASE);
@@ -2210,8 +2253,9 @@ const PENPEN_SUZHOU_PREVIEW = true;
     const running = Boolean(G && !document.hidden && !$('#pause').classList.contains('show') && !$('#audio-panel').classList.contains('show'));
     const shop = running && G.mode==='shop', farm=running && G.mode==='day' && save.day>=2;
     const busy = shop && !G.paused && !G.over && G.mischief?.who!=='laoda';
-    const record = shop && recordEntries().some(r=>r.id===save.record) ? save.record : 'restaurant';
-    setSoundLoop('music',audioPreferences.music ? farm?'farm':shop?record:null : null,0.73);
+    const record = shop && recordEntries().some(r=>r.id===save.record) ? save.record : 'guzheng';
+    const farmRecord = farm && recordEntries().some(r=>r.id===save.farmRecord) ? save.farmRecord : 'guzheng';
+    setSoundLoop('music',audioPreferences.music ? farm?farmRecord:shop?record:null : null,0.65);
     setSoundLoop('outdoors',audioPreferences.effects && farm && !G.paused ? 'birds':null,0.58);
     setSoundLoop('simmer',audioPreferences.effects && busy && (G.kitchen.wares.pot?.cur || G.kitchen.wares.steamer?.cur) ? 'simmer':null,0.76);
     setSoundLoop('wok',audioPreferences.effects && busy && G.kitchen.wares.wok?.cur ? 'wok':null,0.79);
@@ -2243,6 +2287,7 @@ const PENPEN_SUZHOU_PREVIEW = true;
       el.checked=audioPreferences[key];
       el.onchange=()=> { audioPreferences[key]=el.checked; try { localStorage.setItem('penpen.sound.v1',JSON.stringify(audioPreferences)); } catch {} syncSound(); if (key==='effects'&&el.checked)sfx.tap(); };
     }
+    $('#sound-records').textContent=G?.mode==='day'?'选择农场音乐':'选择营业音乐';
     show('audio-panel');
   }
   $('#p-audio').onclick=openSoundPanel;
@@ -2277,6 +2322,8 @@ const PENPEN_SUZHOU_PREVIEW = true;
   const DISH_IMG = {};
   for (const k of ['mapo', 'mian', 'chashao', 'xiajiao', 'gongbao', 'dandan', 'baozai', 'shuizhu', 'qingzheng', 'dirty', 'tea', 'snack', 'water']) DISH_IMG[k] = SUZHOU ? paintImage(k==='water'?'prop':'dish',k==='snack'?'guihua':k) : svgImg(dishSVG(k));
   DISH_IMG.guihua = DISH_IMG.snack;
+  DISH_IMG.yakmian = new Image();
+  DISH_IMG.yakmian.src = 'assets/suzhou/dish_yakmian_g073.webp';
   const WARE_IMG = {}; for (const k of ['wok', 'pot', 'steamer', 'clay']) WARE_IMG[k] = svgImg(cookwareSVG(k));
   const ING_IMG = {}; for (const k of ['tofu', 'beef', 'pork', 'chili', 'peanut', 'shrimp', 'egg', 'fish', 'rice', 'tealeaf']) ING_IMG[k] = SUZHOU ? paintImage('ing',k) : svgImg(ingSVG(k));
   const ICON_IMG = {}; const icon = (k) => ICON_IMG[k] || (ICON_IMG[k] = svgImg(iconSVG(k)));
@@ -2369,6 +2416,7 @@ const PENPEN_SUZHOU_PREVIEW = true;
     steamer: { n: '蒸笼', x: 254, y: 388, up: 'steamer' }, clay: { n: '砂锅', x: 332, y: 388, up: 'clay' },
   };
   const ING = {
+    yakbeef:{n:'牦牛肉',src:'雪山牧场',price:19},
     tofu: { n: '豆腐', src: '早市', price: 4 }, beef: { n: '牛肉', src: '早市', price: 6 }, pork: { n: '叉烧肉', src: '早市', price: 6 },
     chili: { n: '辣椒', src: '菜地', price: 5 }, peanut: { n: '花生', src: '菜地', price: 4 },
     shrimp: { n: '鲜虾', src: '池塘', price: 7 }, fish: { n: '鲜鱼', src: '池塘', price: 8 }, egg: { n: '鸡蛋', src: '鸡舍', price: 4 },
@@ -2379,6 +2427,7 @@ const PENPEN_SUZHOU_PREVIEW = true;
     mapo: { n: '麻婆豆腐', tags: ['麻', '辣', '肉'], price: 30, cook: 6, ware: 'wok', ing: 'tofu', tops: [['花椒', 1], ['葱花', 1]] },
     gongbao: { n: '宫保鸡丁', tags: ['辣', '甜', '肉', '花生'], price: 34, cook: 7, ware: 'wok', ing: 'chili', tops: [['花生', 1], ['干辣椒', 1]] },
     mian: { n: '清汤牛肉面', tags: ['面', '肉', '香菜'], price: 28, cook: 6, ware: 'pot', ing: 'beef', tops: [['香菜', 1], ['辣油', 0]] },
+    yakmian: { n: '雪山牦牛红烧面', tags: ['面', '肉'], price: 39, cook: 9, ware: 'pot', ing: 'yakbeef', tops: [['葱花', 1], ['辣油', 0]] },
     dandan: { n: '担担面', tags: ['麻', '辣', '面', '花生'], price: 24, cook: 5, ware: 'pot', ing: 'peanut', tops: [['花生碎', 1], ['辣油', 1]] },
     xiajiao: { n: '虾饺', tags: ['海鲜', '清淡'], price: 26, cook: 5, ware: 'steamer', ing: 'shrimp', tops: [['醋', 0], ['辣油', 0]] },
     chashao: { n: '叉烧饭', tags: ['米饭', '肉', '甜'], price: 32, cook: 7, ware: 'clay', ing: 'pork', tops: [['青菜', 1], ['煎蛋', 0]] },
@@ -2389,12 +2438,12 @@ const PENPEN_SUZHOU_PREVIEW = true;
   };
   // ---------- 第一周成长节奏：每天只开放一点新东西（之后沿用第 7 天） ----------
   const PROG_ADD = {
-    1: { title: '开张啦', tables: [1, 3], dishes: ['mapo', 'mian'], slots: 2, ings: ['tofu', 'beef'] },
-    2: { title: '种菜', tables: [2], map: ['market', 'plot', 'mirror'], plots: 1, seeds: ['chili'], water: true },
+    1: { title: '开张啦', tables: [1, 3], dishes: ['mapo', SUZHOU ? 'dandan' : 'mian'], slots: 2, ings: ['tofu', SUZHOU ? 'peanut' : 'beef'] },
+    2: { title: '种菜', tables: [2], map: ['market', 'plot', SUZHOU?'cottage':'mirror'], plots: 1, seeds: ['chili'], water: true },
     3: { title: '收菜 · 钓鱼', tables: [4], map: ['pond', 'mail'], plots: 2, seeds: ['peanut'], ings: ['chili', 'peanut'], dishes: ['gongbao'], slots: 3, staff: ['laoer'], dance: true },
     4: { title: '喝茶', plots: 3, map: ['tea'], ings: ['tealeaf'], drinks: ['jasmine'] },
     5: { title: '点心', tables: [5], map: ['coop'], wares: ['steamer'], drinks: ['plum', 'soy'], slots: 4, ings: ['rice', ...(SUZHOU ? ['shrimp'] : [])], dishes: SUZHOU ? ['xiajiao'] : [] },
-    6: { title: '咪咪管外面', plots: 4, staff: ['mimi'], drinks: ['puer'], ings: ['pork'] },
+    6: { title: '田边的咪咪', plots: 4, staff: ['mimi'], drinks: ['puer'], ings: ['pork'] },
     7: { title: '猫猫日报', slots: 5, news: true },
   };
   const TABLE_NUMBERS = Object.values(PROG_ADD).flatMap((entry) => entry.tables || []);
@@ -2427,12 +2476,13 @@ const PENPEN_SUZHOU_PREVIEW = true;
   const onMenu = (k) => knownDish(k) && hasWare(DISH[k].ware);
   const canCook = (k) => onMenu(k) && stockOf(DISH[k].ing) > 0;
   const dessertsNow = () => Object.keys(DISH).filter((k) => DISH[k].dessert && onMenu(k));
-  const menuSlots = () => SUZHOU ? Math.min(prog().slots, 4 - dessertsNow().length) : prog().slots;
+  const menuSlots = () => SUZHOU ? Math.min(prog().slots, 4 - (save.offerDesserts===false ? 0 : dessertsNow().length)) : prog().slots;
   const mains = (list) => list.filter((k) => !DISH[k].dessert);
+  const marketIngs=()=>prog().ings.concat(knownDish('yakmian')?['yakbeef']:[]);
   const menuNow = () => {
     const eligible = (k) => DISH[k] && !DISH[k].dessert && onMenu(k);
     const selected = [...new Set(((save && save.menu) || []).filter(eligible))];
-    return (selected.length ? selected : Object.keys(DISH).filter(eligible)).slice(0, menuSlots()).concat(dessertsNow());
+    return (selected.length ? selected : Object.keys(DISH).filter(eligible)).slice(0, menuSlots()).concat(SUZHOU && save.offerDesserts===false ? [] : dessertsNow());
   };
   const useStock = (k, n = 1) => { save.stock[DISH[k].ing] = Math.max(0, stockOf(DISH[k].ing) - n); };
 
@@ -2482,7 +2532,7 @@ const PENPEN_SUZHOU_PREVIEW = true;
     plum: { n: '酸梅汤', s: '酸梅', price: 10, sweet: true, col: '#8a2f2a', cup: 'glass', brew: 1.5, verb: '舀', x: 86, y: 586 },
     soy: { n: '豆浆', s: '豆浆', price: 6, sweet: true, col: '#f3eee0', cup: 'bowl', brew: 1.5, verb: '盛', x: 118, y: 588 },
   };
-  const drinkList = () => (prog().water ? ['water'] : []).concat(prog().drinks);
+  const drinkList = () => (prog().water ? ['water'] : []).concat(SUZHOU && save.drinkMenu ? prog().drinks.filter(k=>save.drinkMenu.includes(k)) : prog().drinks);
   function pickDrink(c) {
     if (c.script) return null; // 白水和饮品合在一起：一位客人最多要一杯
     const can = prog().drinks.filter((k) => !DRINKS[k].leaf || stockOf('tealeaf') > 0); // 没茶叶就不卖茶
@@ -2497,6 +2547,7 @@ const PENPEN_SUZHOU_PREVIEW = true;
   }
   // 给一伙客人里的一位生成点单
   function makeOrder(c) {
+    if (SUZHOU) return makeGardenOrder(c);
     const t = c.type, plan = c.script && c.script[c.members.length];
     if (plan && plan.dish) {
       const k = plan.dish; useStock(k);
@@ -2532,7 +2583,7 @@ const PENPEN_SUZHOU_PREVIEW = true;
     const dr = pickDrink(c);
     return { kind: 'omakase', dish: null, want, st: 'none', drink: dr, dst: dr ? 'none' : null };
   }
-  const orderLine = (m) => (m.kind === 'menu' ? `${DISH[m.dish].n}${m.req ? `，${m.req.t === 'no' ? '不要' : '多加'}${m.req.top}！` : '。'}` : `${TAG_WORD[m.want] || '想吃点' + m.want + '的'}。`)
+  const orderLine = (m) => (m.kind === 'menu' ? `${DISH[m.requested || m.dish]?.n || '任选一道'}${m.req ? `，${m.req.t === 'no' ? '不要' : '多加'}${m.req.top}！` : '。'}` : `${TAG_WORD[m.want] || '想吃点' + m.want + '的'}。`)
     + (m.drink ? `再来一杯${DRINKS[m.drink].n}。` : '');
 
   // ---------- 场景布局：坐标来自 layout.json（构建时内联为 PENPEN_LAYOUT），缺了就用下面的老数值 ----------
@@ -2575,6 +2626,7 @@ const PENPEN_SUZHOU_PREVIEW = true;
   const TICKET_POINT = SPIKE ? { x: SPIKE.x, y: SPIKE.y - (SUZHOU ? 4 : 30) } : PASS_POINT;
   const SINK = { ...(LA('sink') || { x: 410, y: 370 }), spot: LP('sink') || { x: 414, y: 428 } }; // 洗碗池：左上角，紧挨厨房
   const DOOR = LP('door') || LA('door') || { x: 1162, y: 396 }; // 客人进出走门槛内侧的站位（G-003）
+  const ENTRY_STAIRS = {x:1029,y:240};
   const QSPOTS = SUZHOU
     ? LAYOUT.items.filter((it) => it.kind === 'queue').map((it) => ({ x: it.anchor[0], y: it.anchor[1], approach: LP(it.id), zone: it.zone }))
     : [1, 2, 3, 4].map((i, j) => LA('queue.' + i) || [{ x: 1192, y: 662 }, { x: 1240, y: 606 }, { x: 1192, y: 550 }, { x: 1240, y: 502 }][j]); // 先来的排在最下面，左右错开
@@ -2601,7 +2653,7 @@ const PENPEN_SUZHOU_PREVIEW = true;
     { id: 'clay', n: '砂锅', desc: '新炊具：能做叉烧饭、煲仔饭（要叉烧肉、鸡蛋）', day: 6, cost: 160 },
   ];
   const has = (k) => !!(save && save.upgrades && save.upgrades[k]);
-  const staffIds = () => prog().staff.slice();
+  const staffIds = () => prog().staff.filter(id=>!SUZHOU||id!=='mimi');
   const jobsOf = (id) => { let j = save && save.jobs && save.jobs[id]; if (typeof j === 'string') j = [j]; if (j) j = [...new Set(j.map((x) => (x === 'water' ? 'drink' : x)))]; return j && j.length ? j : DEFAULT_JOBS[id]; };
   const resting = (id) => jobsOf(id)[0] === 'rest';
   const skipping = (id) => !!(save && save.skipDay === save.day && (save.skip || []).includes(id)); // D-001：欠薪的伙计这一天不来上班，在院子里晒太阳
@@ -2726,6 +2778,16 @@ const PENPEN_SUZHOU_PREVIEW = true;
   const START_STOCK = { tofu: 8, beef: 8, pork: 0, chili: 0, peanut: 0, shrimp: 0, fish: 0, egg: 0, rice: 0 };
   function fixSave(s) { // 老存档补字段
     s.stock = { ...START_STOCK, ...(s.stock || {}) };
+    if (SUZHOU && !s.gardenMenuV2) {
+      if(s.cards?.includes('snowpeak'))s.stock.yakbeef=Math.max(s.stock.yakbeef||0,3);
+      if (s.day <= 3) s.stock.peanut=Math.max(s.stock.peanut,6);
+      if (s.menu) s.menu=[...new Set(s.menu.map(key=>key==='mian'?'dandan':key))];
+      if (s.ck?.menu) s.ck.menu=[...new Set(s.ck.menu.map(key=>key==='mian'?'dandan':key))];
+      if (s.ck?.stock && s.day <= 3) s.ck.stock.peanut=Math.max(s.ck.stock.peanut||0,6);
+      if (s.recipes) s.recipes=[...new Set(s.recipes.map(key=>key==='mian'?'yakmian':key).concat(s.cards?.includes('snowpeak')?['yakmian']:[]))];
+      if(s.record==='restaurant')delete s.record;
+      s.gardenMenuV2=true;
+    }
     // 菜地：每块 3×3 九格，每格种一颗种子（老存档：原来种着的算前三格）
     s.farm = (s.farm || []).concat([{}, {}, {}, {}]).slice(0, 4).map((f) => (f.cells ? f : { cells: Array.from({ length: 9 }, (_, j) => ((f.st === 'grow' || (!f.st && f.crop)) && j < 3 ? { k: f.crop, ready: f.ready || 1 } : null)) }));
     s.seeds = s.seeds || {}; s.did = s.did || {}; s.recipes = s.recipes || []; s.recipeDay = s.recipeDay || {}; s.history = s.history || [];
@@ -2747,14 +2809,14 @@ const PENPEN_SUZHOU_PREVIEW = true;
 
   // ---------- 游戏状态 ----------
   let G = null, TEA_IMG = null;
-  const ENERGY = 10;
+  const ENERGY = SUZHOU ? 8 : 10;
 
   const BRIEFS = [
-    { tag: '面', text: '沿河散步的客人想吃碗面。备些清汤牛肉面，留意牛肉存量。' },
+    { tag: '面', text: '沿河散步的客人想吃碗面。备些担担面，留意花生存量。' },
     { tag: '辣', text: '集日爱吃辣的客人多。留意麻婆豆腐和炒锅是否忙得过来。' },
     { tag: '海鲜', text: '江边游人想吃鲜味。鱼塘有鱼的话，可以留给蒸笼。' },
   ];
-  const REGULAR_DISH = 'mian';
+  const REGULAR_DISH = SUZHOU ? 'dandan' : 'mian';
   const regularDue = () => SUZHOU && save.regular && !save.regular.flower && save.day >= save.regular.due;
   function briefNow() {
     if (!SUZHOU || save.day <= 1) return null;
@@ -2768,13 +2830,22 @@ const PENPEN_SUZHOU_PREVIEW = true;
   function dailyNote() {
     const brief = briefNow(), lines = [];
     if (brief) lines.push(brief.text);
-    if (regularDue()) lines.push('狸猫阿姨带姐妹来，共四位，想点两份清汤面。');
+    if (regularDue()) lines.push('狸猫阿姨带姐妹来，共四位，想点两份担担面。');
     return lines.join(' ');
   }
+  const SEAT_UPGRADE_PRICE=55;
   function tableSetup(decor = save.decor) {
     return TABLES.filter((t) => prog().tables.includes(t.id)).map((t) => {
       const state = { ...t, cust: null, dirty: false, reserved: null, busClaim: null };
-      if (!SUZHOU || t.size !== 4 || decor.tables[t.id] !== 2) return state;
+      const size=decor.tables[t.id]||t.size;
+      if(!SUZHOU||size===t.size)return state;
+      if(size===4){
+        const back=t.seats.find(o=>!o.front), front=t.seats.find(o=>o.front);
+        const seats=[back,front].flatMap(seat=>[-1,1].map(side=>({x:t.cx+side*39*t.k,y:seat.y,front:seat.front})));
+        const spread=(x)=>t.cx+(x-t.cx)*1.23;
+        return {...state,size,seats,rx:TW[4]*t.k/2+22,
+          foot:t.foot.map(([x,y])=>[spread(x),y]),hit:{...t.hit,x:spread(t.hit.x),w:t.hit.w*1.23}};
+      }
       const center = (p) => t.cx + (p - t.cx) * 0.7;
       return { ...state, size: 2, rx: TW[2] * t.k / 2 + 22,
         seats: SEATS[2].map(([dx, dy, front], i) => ({ x: t.cx + (i ? -27 : 26) * t.k, y: t.cy + dy * t.k * 0.62, front: !!front })),
@@ -2783,8 +2854,9 @@ const PENPEN_SUZHOU_PREVIEW = true;
       };
     });
   }
-  const startingPlates = (tables) => 4 + tables.reduce((n, t) => n + t.size, 0) + (has('plates') ? 4 : 0);
+  const startingPlates = (tables) => (SUZHOU ? Math.max(4,Math.ceil(tables.reduce((n,t)=>n+t.size,0)*.54)) : 4+tables.reduce((n,t)=>n+t.size,0)) + (has('plates') ? 4 : 0);
   function newDay() {
+    if(SUZHOU)yardDaily();
     const tables = tableSetup();
     G = {
       mode: 'day', t: 0, spawnT: 2, paused: false, over: false, soldOut: false,
@@ -2795,7 +2867,7 @@ const PENPEN_SUZHOU_PREVIEW = true;
       waiter: { x: IDLE.x, y: IDLE.y, path: [], hands: [], queue: [], tickets: [], face: 1, back: false, blinkT: 2 },
       staff: staffIds().filter((id) => !jobsOf(id).includes('farm') && !skipping(id)).map((id) => ({ id, x: STAFF_DEF[id].home.x, y: STAFF_DEF[id].home.y, path: [], hands: [], task: null, face: 1, back: false })),
       danceCD: 0, selected: null, orderOpen: null, dancer: null, greeter: { x:985, y:373, path:[], face:1 },
-      D: { ...(YARD ? yardPoint(YARD.spawn) : { x: WMAP.shop.door.x, y: WMAP.shop.door.y + 30 }), path: [], face: 1, back: false, task: null, energy: save.energyDay === save.day && save.energy != null ? save.energy : ENERGY, fish: 0, cam: { x: 360, y: 300 }, manual: false },
+      D: { ...(YARD ? yardPoint(YARD.spawn) : { x: WMAP.shop.door.x, y: WMAP.shop.door.y + 30 }), path: [], face: 1, back: false, task: null, energy: save.energyDay === save.day && save.energy != null ? Math.min(ENERGY,save.energy) : ENERGY, fish: 0, cam: { x: 360, y: 300 }, manual: false },
     };
     if (SUZHOU) {
       for (const id of Object.keys(IDLE_BEATS)) gardenArt('s_' + id + '_idle');
@@ -2843,13 +2915,14 @@ const PENPEN_SUZHOU_PREVIEW = true;
   function openShop() {
     if (!G || G.mode !== 'day') return;
     if (YARD && teachingFarm() && save.ck?.day !== save.day) { toast(teachingFarm().msg, 2900); return; }
-    if (save.day === 1) { save.menu = ['mapo', 'mian']; save.menuDay = 1; }
-    if (save.menuDay !== save.day && !G.menuAsked) { G.menuAsked = true; openMenuPick(true); return; }
+    if (save.day === 1 && (!SUZHOU || save.menuDay !== 1)) { save.menu = ['mapo', REGULAR_DISH]; save.menuDay = 1; }
+    if (save.menuDay !== save.day) { openMenuPick(true); return; }
+    if(G.D.mimiTask){toast('咪咪正在收最后一篮，稍等一下。');return;}
     if (staffIds().length && G.staffDay !== save.day) { G.staffDay = save.day; openStaff(true); return; } // 开店前先安排店员
-    if (!(save.ck && save.ck.day === save.day)) save.ck = JSON.parse(JSON.stringify({ day: save.day, stock: save.stock, seeds: save.seeds, coins: save.coins, menu: save.menu, menuDay: save.menuDay, farm: save.farm, energy: G.D.energy })); // T-03：开店那一刻的存档点
+    if (!(save.ck && save.ck.day === save.day)) save.ck = JSON.parse(JSON.stringify({ day: save.day, stock: save.stock, seeds: save.seeds, coins: save.coins, menu: save.menu, menuDay: save.menuDay, drinkMenu:save.drinkMenu, offerDesserts:save.offerDesserts, farm: save.farm, energy: G.D.energy })); // T-03：开店那一刻的存档点
     G.brief = briefNow();
     if (SUZHOU) G.mischiefPlan = { prefer: save.day === 1 || Math.random() < 0.5 ? 'laoda' : 'laoer', earliest: save.day === 1 ? 48 : 32, deadline: save.day === 1 ? 77 : 67, idle: rand(4, 7) };
-    if (regularDue()) G.visit = { look: save.regular.look, table: save.prep?.day === save.day ? save.prep.table : null };
+    if (regularDue() && G.tables.some(t=>t.size===4)) G.visit = { look: save.regular.look, table: save.prep?.day === save.day ? save.prep.table : null };
     buildShopGrid(G.tables); setMode('shop'); G.t = 0; G.spawnT = 3; G.script = save.day === 1 ? DAY1.map((x) => ({ ...x })) : null; G.omaAt = save.day <= 3 ? rand(50, 90) : null; persist(); did('open');
   }
 
@@ -2900,7 +2973,7 @@ const PENPEN_SUZHOU_PREVIEW = true;
     return got;
   }
   const seedBuyable = () => prog().seeds.find((k) => mktLeft(k + '_seed') >= 3 && save.coins >= SEED_PRICE[k] * 3);
-  const spotOpen = (id) => ['door', 'plaza', 'onsen'].includes(id) || (id === 'cottage' ? prog().map.includes('mail') : prog().map.includes(id));
+  const spotOpen = (id) => ['door', 'plaza', 'onsen'].includes(id) || (prog().map.includes(id));
   const did = (k) => { save.did[k] = (save.did[k] || 0) + 1; };
 
 
@@ -2935,10 +3008,16 @@ const PENPEN_SUZHOU_PREVIEW = true;
     const phase = farmPhase(), step = teachingFarm();
     if (step) return { ...step, key: phase, place: step.site ? yardPlace(step.site) : null };
     if (phase === 'wait') return { key: phase, title: '播种完成', msg: '辣椒明早成熟。今天可以先装修，再开门营业。', place: yardPlace('door') };
+    if (save.day>=2){
+      const tutorials=[['cottage','cottage','小屋','到小屋打开衣柜换装，也能换一张地毯。'],['tea','tea','第一杯茶','先到茶铺采茶叶，开业时选择出售的茶。'],['coop','egg','鸡舍开张','去鸡舍收当天的蛋，煲仔饭能用上。']];
+      const next=tutorials.find(([id,flag])=>spotOpen(id)&&!save.did[flag]);
+      if(next)return {key:next[0]+'-guide',title:next[2],msg:next[3],place:yardPlace(next[0])};
+    }
     if (save.day >= 2) return { key: 'free', title: '今日备料', msg: '点菜畦收种、去鱼塘钓鱼，或查菜单与库存再去早市。', place: yardPlace('door') };
     return null;
   }
   function dayTap(p) {
+    if (YARD && !teachingFarm() && !G.D.fishing && tapCrew(p,'day')) return;
     const D = G.D;
     const h = YARD_PLACES.find((h) => inRect(p.x, p.y, h.r));
     if (D.fish > 0) return;
@@ -2965,14 +3044,70 @@ const PENPEN_SUZHOU_PREVIEW = true;
   }
   const spend = () => { if (G.D.energy <= 0) { toast('今天累了，没体力了；去开店吧'); return false; } G.D.energy--; save.energy = G.D.energy; save.energyDay = save.day; return true; }; // T-03：体力记进存档，重开不回满
   function gain(ing, n, x, y) { save.stock[ing] = stockOf(ing) + n; float(x, y, `${ING[ing].n} +${n}`, '#3f7a34'); sfx.ding(); }
+
+  const MIMI_ENERGY = 4;
+  const FISH_LIMIT = 4;
+  const mimiOpen = () => SUZHOU && prog().staff.includes('mimi');
+  function yardDaily() {
+    if(save.yardDaily?.day!==save.day) save.yardDaily={day:save.day,fish:0,mimi:4,mimiFish:0};
+    return save.yardDaily;
+  }
+  function openMimi(){
+    if(!mimiOpen()||G.mode!=='day')return;
+    G.paused=true; show('mimi-chores');did('mimiGuide');persist();
+    const daily=yardDaily(), i=save.farm.findIndex((f,index)=>plotOpen(index)&&f.cells.some(cellRipe));
+    const plant=save.farm.findIndex((f,index)=>plotOpen(index)&&f.cells.includes(null));
+    const seed=prog().seeds.find(key=>save.seeds[key]>0);
+    $('#mimi-energy').value=daily.mimi;
+    $('#mimi-state').textContent='咪咪体力 '+daily.mimi+' / '+MIMI_ENERGY+' · 垂钓 '+daily.mimiFish+' / 2';
+    $('#mimi-close').onclick=closeActivity;
+    const tasks=[['🌱','种植',plant<0||!seed,()=>{const cells=save.farm[plant].cells;let n=0;for(let j=0;j<cells.length&&n<3&&save.seeds[seed]>0;j++)if(!cells[j]){cells[j]={k:seed,ready:save.day+1};save.seeds[seed]--;n++;}toast('咪咪种好了 '+n+' 格'+ING[seed].n);},'plot',plant],
+      ['🧺','收成',i<0,()=>{const got=harvestPlot(i);toast('咪咪收到了 '+Object.entries(got).map(([key,n])=>ING[key].n+' × '+n).join('、'));},'plot',i],
+      ['🎣','垂钓',!spotOpen('pond')||daily.mimiFish>=2,()=>{daily.mimiFish++;const got=catchFish();toast('咪咪钓到了'+got.species.n);},'pond']];
+    $('#mimi-options').replaceChildren(...tasks.map(([icon,label,locked,deliver,place,n])=>{
+      const b=document.createElement('button');b.textContent=icon+' '+label;b.disabled=locked||!daily.mimi||Boolean(G.D.mimiTask);
+      b.onclick=()=>{
+        const at=yardPlace(place,n||0)?.spot();
+        const actor=G.D.companions?.mimi;
+        const path=actor&&at?findPath(actor,at,YARD_GRID):null;
+        const complete=()=>{daily.mimi--;deliver();persist();};
+        if(path?.length){leaveStroll(actor);actor.path=path;G.D.mimiTask=complete;}
+        else complete();
+        closeActivity();sfx.crew('mimi');
+      };return b;
+    }));
+  }
+  function closeActivity(){ G.paused=false;show('hud-screen'); }
+  function openCottage(){
+    if(G?.mode!=='day')return;
+    G.paused=true;show('cottage-room');did('cottage');persist();
+    const room = save.cottage ||= {};
+    $('#cottage-wardrobe-img').src=gardenArt('cottage_wardrobe','webp').src;
+    $('#cottage-preview').dataset.style=room.style||'bamboo';
+    $('#cottage-preview').querySelector('span').textContent=({bamboo:'竹垫',jute:'编织毯',plum:'梅花毯'})[room.style]||'竹垫';
+    $('#cottage-wardrobe').onclick=()=>openCreator(save,false,true);
+    $('#cottage-close').onclick=closeActivity;
+    $('#cottage-styles').querySelectorAll('[data-style]').forEach(b=>{
+      b.setAttribute('aria-pressed',String((room.style||'bamboo')===b.dataset.style));
+      b.onclick=()=>{room.style=b.dataset.style;sfx.tap();openCottage();};
+    });
+  }
+  function openEnergy(){
+    if(!G||G.mode!=='day')return;
+    G.paused=true;show('energy-guide');did('energy');
+    const day=yardDaily();
+    $('#energy-info').textContent='盆盆体力 '+G.D.energy+' / '+ENERGY+' · 今早垂钓 '+day.fish+' / '+FISH_LIMIT+(mimiOpen()?' · 咪咪体力 '+day.mimi+' / '+MIMI_ENERGY:'');
+    $('#energy-close').onclick=closeActivity;
+  }
   function dayArrive(h) {
     const D = G.D;
     if (h.id === 'door') { ask(`收拾好了，开门营业吗？${D.energy ? `（体力还剩 ${D.energy}）` : ''}`, '开店').then((ok) => ok && openShop()); return; }
     if (h.id === 'market') { openMarket(); did('market'); return; }
-    if (h.id === 'cottage') { openCollection('art','hud-screen'); return; }
+    if (h.id === 'cottage') { openCottage(); return; }
     if (h.id === 'tea') {
       if (save.teaDay === save.day) { float(h.sign?.x ?? 1170, h.sign?.y ?? 900, '明天再来摘', '#8a6a50'); return; }
       if (!spend()) return;
+      if (SUZHOU && !save.did.tea) toast('新采的茶叶可在今日菜单勾选茶饮，开店后去茶水台冲泡。',3800);
       save.teaDay = save.day; gain('tealeaf', 4, h.sign?.x ?? 1170, h.sign?.y ?? 940); did('tea'); persist(); return;
     }
     if (h.id === 'mirror') { G.paused = true; openCreator(save, false); did('mirror'); return; }
@@ -2983,6 +3118,7 @@ const PENPEN_SUZHOU_PREVIEW = true;
     if (h.id === 'coop') {
       if (save.coopDay === save.day) { float(h.sign?.x ?? 2160, h.sign?.y ?? 400, '明天再来', '#8a6a50'); return; }
       if (!spend()) return;
+      if (SUZHOU && !save.did.egg) toast('鸡蛋收在储藏室。解锁砂锅后可以试做煲仔饭。',3800);
       save.coopDay = save.day; gain('egg', 3, h.sign?.x ?? 2160, h.sign?.y ?? 420); did('egg'); persist(); return;
     }
     if (h.id === 'pond') {
@@ -3007,8 +3143,11 @@ const PENPEN_SUZHOU_PREVIEW = true;
     if (YARD) {
       D.companions ||= {};
       for (const [id, park, stops] of [['laoer',YARD.staff,['door','market']],['mimi',YARD.helper,['plot','pond']]]) {
-        if (!staffIds().includes(id)) continue;
+        if (id==='mimi'?!mimiOpen():!staffIds().includes(id)) continue;
         const actor = D.companions[id] ||= { ...yardPoint(park), path:[], face:1 };
+        if (id==='mimi'&&D.mimiTask){
+          actor.roaming=true;if(moveAlong(actor,120,dt)){const task=D.mimiTask;D.mimiTask=null;actor.roaming=false;task();}continue;
+        }
         const points = [yardPoint(park),...stops.map(key=>yardPlace(key).spot())].map(p=>[p.x,p.y]);
         stroll(actor,points,dt,62,YARD_GRID);
       }
@@ -3033,7 +3172,7 @@ const PENPEN_SUZHOU_PREVIEW = true;
       if (!save.snapGift || save.snapGift.k !== save.mail) { const r = Math.random(); save.snapGift = { k: save.mail, msg: SNAP_MSG[Math.floor(Math.random() * SNAP_MSG.length)], coins: r < 0.25 ? 5 + Math.floor(Math.random() * 4) * 5 : 0, ing: r >= 0.25 && r < 0.4 && pc.gift.ing ? pc.gift.ing : null }; }
       const g = save.snapGift; G.paused = true;
       $('#mail-body').innerHTML = `<img class="pcard snap" alt="${pc.n}" src="${pcURL(sn.id, sn.v)}"><div class="pmsg"><b>呆猫寄来一张照片 · ${pc.from}</b><p>「${g.msg}」</p>${g.coins ? `<p class="gift">还夹着：存款 +¥${g.coins}</p>` : g.ing ? `<p class="gift">还夹着：${ING[g.ing].n} +2</p>` : ''}</div>`;
-      show('mail'); return;
+      show('mail'); if(SUZHOU)renderReply('snap:'+sn.id+':'+sn.v); return;
     }
     const pc = POSTCARDS.find((p) => p.id === save.mail); if (!pc) return;
     G.paused = true;
@@ -3041,7 +3180,7 @@ const PENPEN_SUZHOU_PREVIEW = true;
     const wallGift = pc.id === 'huizhou' ? '<p class="gift">随信附画《白墙黛瓦》，收进艺术品仓库。</p>' : pc.id === 'snowpeak' && SUZHOU ? '<p class="gift">随信还寄来唱片《雪山来信》和一张旅行照片。</p>' : '';
     const rec = (pc.recipes || []).map((k) => `<div class="prec"><img alt="" src="${dishURL(k)}"><b>${DISH[k].n}</b><small>新食谱</small></div>`).join('');
     $('#mail-body').innerHTML = `<img class="pcard" alt="${pc.n}" src="${pcURL(pc.id)}"><div class="pmsg">${ajuURL(pc.id) && !(ART['pc_' + pc.id] && !GREY) ? `<img class="aju" alt="呆猫" src="${ajuURL(pc.id)}">` : ''}<b>呆猫从「${pc.from}」寄来：${pc.n}</b><p>「${pc.msg}」</p>${rec ? `<div class="precs">${rec}</div>` : ''}<p class="gift">还寄来：${gift}</p>${wallGift}${pc.invite ? '<p class="invite">✈ 呆猫邀请盆盆去樱花之国开分店！（下一版开放）</p>' : ''}</div>`;
-    show('mail');
+    show('mail'); if(SUZHOU)renderReply('card:'+pc.id);
   }
   $('#mail-ok').addEventListener('click', () => {
     const sn = snapOf(save.mail);
@@ -3089,6 +3228,7 @@ const PENPEN_SUZHOU_PREVIEW = true;
     const fish = G?.D.fishing;
     if (!fish || G.mode !== 'day' || G.paused) return;
     if (fish.stage === 'ready') {
+      if (SUZHOU && yardDaily().fish>=FISH_LIMIT) {toast('盆盆今天已钓了四次');return;}
       if (G.D.energy <= 0 && farmPhase() !== 'fish') { toast('今天的体力用完了，明早再来。'); return; }
       fish.stage = 'cast'; fish.t = 0; fish.wait = rand(1.45, 2.5); sfx.tap(); syncFishingPanel(); return;
     }
@@ -3096,6 +3236,7 @@ const PENPEN_SUZHOU_PREVIEW = true;
     const lesson = farmPhase() === 'fish';
     if ((G.D.energy > 0 || !lesson) && !spend()) return;
     G.D.fishing = null;
+    if(SUZHOU)yardDaily().fish++;
     const caught = catchFish(lesson);
     if (lesson) setFarmPhase('plan');
     G.D.catchNote = {f:caught.species,cm:caught.cm,until:G.ambientTime + 9};
@@ -3108,6 +3249,9 @@ const PENPEN_SUZHOU_PREVIEW = true;
     G.D.fishing = null; syncFishingPanel();
   };
   function catchFish(lesson = false) {
+    if(SUZHOU&&!lesson&&save.day>=6&&!save.pondToken&&(yardDaily().fish+yardDaily().mimiFish>=4||Math.random()<.13)){
+      save.pondToken={day:save.day};toast('鱼钩带起一块系着旧结绳的木牌。收进了艺术品仓库。',4800);
+    }
     const se = CUR_SE, pool = FISH.filter((f) => f.se.includes(se));
     const f = (lesson && pool.find((f) => f.ing === 'fish')) || pickW(pool), cm = Math.round(rand(f.size[0], f.size[1]));
     const rec = (save.fishDex[f.id] = save.fishDex[f.id] || { n: 0, max: 0 }), first = !rec.n;
@@ -3129,7 +3273,7 @@ const PENPEN_SUZHOU_PREVIEW = true;
     const needed = {};
     for (const k of menuNow()) {
       const ing = DISH[k].ing;
-      if (prog().ings.includes(ing)) needed[ing] = (needed[ing] || 0) + 3;
+      if (marketIngs().includes(ing)) needed[ing] = (needed[ing] || 0) + 3;
     }
     return Object.fromEntries(Object.entries(needed).filter(([k, n]) => stockOf(k) < n)
       .map(([k, n]) => [k, n - stockOf(k)]));
@@ -3149,10 +3293,20 @@ const PENPEN_SUZHOU_PREVIEW = true;
     else if (regularDue() && sizes.length > 1) selector.value = sizes[sizes.length - 1].id;
     for (const k of dishList()) if (isNewDish(k) && pick.size < menuSlots() && onMenu(k) && !DISH[k].dessert) pick.add(k); // 新菜先帮你放上
     const box = $('#menu-list');
+    const drinkPick=new Set(save.drinkMenu??prog().drinks); let offer=save.offerDesserts!==false;
+    const maxMains=()=>SUZHOU ? Math.min(prog().slots,4-(offer?dessertsNow().length:0)) : menuSlots();
     const render = () => {
+      const offers=$('#menu-offers');
+      offers.hidden=!SUZHOU||!prog().water&&!dessertsNow().length;
+      offers.replaceChildren();
+      const chip=(label,name,active,fn)=>{const b=document.createElement('button');b.type='button';b.className='pill '+(active?'on':'');b.textContent=label;b.dataset.offer=name;b.onclick=()=>{fn();render();};offers.append(b);return b;};
+      if(!offers.hidden){const header=document.createElement('b');header.textContent='茶饮与点心';offers.append(header);}
+      if(!offers.hidden&&prog().water)chip('白水 · 免费','water',true,()=>{}).disabled=true;
+      if(!offers.hidden)for(const key of prog().drinks){const d=DRINKS[key],sold=d.leaf&&!stockOf('tealeaf');const b=chip(d.n+' · ¥'+d.price,key,drinkPick.has(key),()=>drinkPick.has(key)?drinkPick.delete(key):drinkPick.add(key));if(sold)b.classList.add('sold');}
+      if(!offers.hidden&&dessertsNow().length){const key=dessertsNow()[0],b=chip(DISH[key].n+' · ¥'+DISH[key].price,key,offer,()=>{offer=!offer;while(pick.size>maxMains())pick.delete([...pick].at(-1));});if(!stockOf(DISH[key].ing))b.classList.add('sold');}
       box.innerHTML = dishList().filter((k) => !DISH[k].dessert).map((k) => {
         const d = DISH[k], ok = onMenu(k), st = stockOf(d.ing), nw = isNewDish(k), tr = trendOf(k);
-        return `<button class="mcard ${pick.has(k) ? 'on' : ''}" data-k="${k}" ${ok ? '' : 'disabled'}>${nw ? '<i class="newb">新</i>' : ''}${tr ? `<i class="trb ${tr}">${tr === 'hot' ? '流行' : '冷门'}</i>` : ''}${d.dessert ? '<i class="desb">甜品</i>' : ''}<img alt="" src="${dishURL(k)}"><b>${d.n}</b><span class="dt">${d.tags.map((t) => tagTiny(t)).join('')}</span>
+        return `<button class="mcard ${pick.has(k) ? 'on' : ''}" data-k="${k}" ${ok ? '' : 'disabled'}>${nw ? '<i class="newb">新</i>' : ''}${tr ? `<i class="trb ${tr}">${tr === 'hot' ? '流行' : '冷门'}</i>` : ''}${d.dessert ? '<i class="desb">甜品</i>' : ''}<img alt="" src="${dishURL(k)}"><b class="${SUZHOU&&!st?'sold':''}">${d.n}</b><span class="dt">${d.tags.map((t) => tagTiny(t)).join('')}</span>
           <span class="need ${st < 3 ? 'low' : ''}"><img alt="" src="${ingURL(d.ing)}">${ING[d.ing].n} × ${st}</span><small>${ok ? `${WARES[d.ware].n} · ¥${d.price}` : `要先买${WARES[d.ware].n}`}</small></button>`;
       }).join('');
 const stations = {};
@@ -3167,18 +3321,20 @@ const stations = {};
       $('#menu-plan').textContent = [dailyNote(), lines.length && '分工 ' + lines.join(' · '),
         Object.entries(stations).some(([, n]) => n > 1) && '同一炊具一次做一道。',
         low.length && '需补 ' + low.join('、'),
-        regularDue() && !pick.has(REGULAR_DISH) && '菜单上还没有清汤面。'].filter(Boolean).join(' ');
-      $('#menu-count').textContent = `已选 ${pick.size} / ${menuSlots()} 道`;
+        regularDue() && !pick.has(REGULAR_DISH) && '菜单上还没有担担面。'].filter(Boolean).join(' ');
+      $('#menu-count').textContent = `已选 ${pick.size} / ${maxMains()} 道`;
       box.querySelectorAll('.mcard').forEach((b) => b.addEventListener('click', () => {
         const k = b.dataset.k;
-        if (pick.has(k)) pick.delete(k); else if (pick.size < menuSlots()) pick.add(k); else { toast(`今天最多上 ${menuSlots()} 道菜`); return; }
+        if (pick.has(k)) pick.delete(k); else if (pick.size < maxMains()) pick.add(k); else { toast(`今天最多上 ${maxMains()} 道菜`); return; }
         sfx.tap(); render();
       }));
     };
     render();
     $('#menu-ok').onclick = () => {
       if (!mains([...pick]).length) { toast('至少选一道主菜'); return; }
+      if (SUZHOU && ![...pick].some(canCook)) { toast('至少备好一道主菜的食材'); return; }
       save.menu = [...pick]; save.menuDay = save.day;
+      if(SUZHOU){save.offerDesserts=offer;save.drinkMenu=[...drinkPick];}
       save.prep = { day: save.day, table: res.hidden ? null : Number(selector.value) || null };
       if (farmPhase() === 'plan') { setFarmPhase('buy'); updateFarmLesson(); }
       persist();
@@ -3199,10 +3355,10 @@ const stations = {};
     save.trend = { day: save.day, hot, cold: rest[(save.day * 3) % rest.length] };
   }
   const trendOf = (k) => { const tr = save && save.trend; if (!tr || tr.day !== save.day || !DISH[k]) return null; return DISH[k].tags.includes(tr.hot) ? 'hot' : DISH[k].tags.includes(tr.cold) ? 'cold' : null; };
-  const special = () => { const ks = prog().ings; return ks[(save.day * 7 + 3) % ks.length]; };
+  const special = () => { const ks = marketIngs(); return ks[(save.day * 7 + 3) % ks.length]; };
   const dayHash = (k) => { let x = save.day * 131 + [...k].reduce((a, c) => a * 31 + c.charCodeAt(0), 7); x = Math.imul(x ^ (x >>> 13), 1274126177); return Math.abs(x ^ (x >>> 16)) % 1000; };
   const priceRate = (k) => [0.8, 0.9, 1, 1, 1.1, 1.3][dayHash(k) % 6]; // 每天价钱有涨有跌
-  const priceOf = (k) => (k === special() ? Math.ceil(ING[k].price / 2) : Math.max(1, Math.round(ING[k].price * priceRate(k))));
+  const priceOf = (k) => (k === special() ? Math.ceil(ING[k].price / 2) : Math.max(1, Math.round(ING[k].price * priceRate(k)*(SUZHOU?1.5:1))));
   function mktLeft(k) { // 每样今天只有这么多
     if (!save.mkt || save.mkt.day !== save.day) save.mkt = { day: save.day, left: {} };
     if (save.mkt.left[k] == null) save.mkt.left[k] = k.endsWith('_seed') ? 12 + dayHash(k) % 10 : 8 + dayHash(k) % 9;
@@ -3221,7 +3377,7 @@ const stations = {};
       if (phase === 'seed') return '<div class="mrow seed"><img alt="" src="' + ingURL(k) + '"><div><b>' + ING[k].n + '种子</b><small>种下后，下一天收成</small></div><button class="buy1" data-k="' + k + '" data-seed="1" data-n="3">领 3 颗</button></div>';
       return `<div class="mrow seed"><img alt="" src="${ingURL(k)}"><div><b>${ING[k].n}种子</b>${nw ? '<span class="tag-new">新</span>' : ''}<small>一颗种一格，明天收　·　有 ${save.seeds[k] || 0} 颗　·　<em class="left">今天还剩 ${left}</em></small></div>
         <span class="mp">¥${p}</span><button class="buy1" data-k="${k}" data-seed="1" data-n="3" ${save.coins >= p * 3 && left >= 3 ? '' : 'disabled'}>买 3</button><button class="buy1" data-k="${k}" data-seed="1" data-n="9" ${save.coins >= p * 9 && left >= 9 ? '' : 'disabled'}>买 9</button></div>`; }).join('')
-    + (canBuy ? prog().ings.filter((k) => phase !== 'buy' || shortages[k]) : []).map((k) => {
+    + (canBuy ? marketIngs().filter((k) => phase !== 'buy' || shortages[k]) : []).map((k) => {
       const p = priceOf(k), pending = Math.min(shortages[k] || 0, Math.floor(save.coins / priceOf(k)), mktLeft(k)), uses = Object.keys(DISH).filter((d) => DISH[d].ing === k && knownDish(d)).map((d) => DISH[d].n).join('、') || '泡茶';
       const nd = phase === 'buy' ? shortages[k] : needIngs()[k];
       const left = mktLeft(k), r = priceRate(k), trend = k === sp ? '' : r < 1 ? '<span class="tag-dn">今天便宜</span>' : r > 1 ? '<span class="tag-up">今天贵</span>' : '';
@@ -3258,8 +3414,8 @@ const stations = {};
   // 首日保留四组教学客人。苏州使用营业时刻安排到店，空桌只影响入座。
   const DAY1 = [
     { type: 'shiba', size: 1, plan: [{ dish: 'mapo' }], when: 'start', arrival: 2.5 },
-    { type: 'raccoon', size: 2, plan: [{ dish: 'mian', req: { t: 'no', top: '香菜' } }, { dish: 'mapo' }], when: 'prevFed', arrival: 23 },
-    { type: 'bunny', size: 1, plan: [{ dish: 'mian' }], when: 'prevFed', arrival: 47 },
+    { type: 'raccoon', size: 2, plan: [{ dish: REGULAR_DISH, req: { t: 'no', top: SUZHOU ? '辣油' : '香菜' } }, { dish: 'mapo' }], when: 'prevFed', arrival: 23 },
+    { type: 'bunny', size: 1, plan: [{dish:REGULAR_DISH,...(SUZHOU?{req:{t:'no',top:'辣油'}}:{})}], when: 'prevFed', arrival: 47 },
     { type: 'panda', size: 1, plan: [{ want: '面' }], when: 'empty', arrival: 75 },
   ];
   function scriptSpawn() {
@@ -3287,8 +3443,11 @@ const stations = {};
     if (G.customers.filter(inLine).length >= QSPOTS.length) return null;
     const type = sc ? CT.find((t) => t.id === sc.type) : chooseType();
     let size = sc ? sc.size : pick(type.sizes); if (!sc && save.day <= 3) size = Math.min(size, 2);
-    const c = { id: G.nextId++, type, size, state: 'enter', x: DOOR.x, y: DOOR.y, path: [], hearts: 5, timer: 0, table: null, script: sc ? sc.plan : null,
-      members: [], say: '', sayT: 0, bob: Math.random() * 6, upset: false, watered: false, wantsWater: false,
+    if(!sc&&SUZHOU)size=Math.min(size,Math.max(...G.tables.map(t=>t.size)));
+    const start=SUZHOU?ENTRY_STAIRS:DOOR;
+    const budgets=Array.from({length:size},()=>sc?44:Math.round(rand(...GUEST_BUDGETS[type.id])));
+    const c = { id: G.nextId++, type, size, state: 'enter', x: start.x, y: start.y, path: [], hearts: 5, timer: 0, table: null, script: sc ? sc.plan : null,
+      budget:Math.min(...budgets),budgets,members: [], say: '', sayT: 0, bob: Math.random() * 6, upset: false, watered: false, wantsWater: false,
       looks: Array.from({ length: size }, () => { const n = (GUEST_ART[type.id] || CUSTOMER_VARIANTS[type.id] || [0]).length; return n > 1 ? `${type.id}#${Math.floor(Math.random() * n)}` : type.id; }) };
     if (sc?.regular) { c.regular = true; c.looks[0] = G.visit.look || c.looks[0]; }
     if (SUZHOU) c.looks.forEach(guestFrames);
@@ -3297,16 +3456,16 @@ const stations = {};
     if (SUZHOU && prog().dance && G.t >= (G.greetAgain || 0)) {
       G.greetSince = G.t; G.greetAgain = G.t + 9;
       if (wouldEat(c)) c.welcomeUntil = G.t + 7;
-      playAnimalCall('shuai');
+
     }
-    if (!wouldEat(c)) { c.state = 'browse'; c.timer = 2.4; return c; } // 主人 11/25：不想吃的，在门口看完菜单就走，不进来排队
-    layoutQueue(); sfx.tap();
-    if (SUZHOU && !prog().dance) playAnimalCall(type.id);
+    if (!wouldEat(c)) { c.state = 'browse'; c.timer = 3.2; if(SUZHOU) sayGuest(c, mains(menuNow()).some(key=>canCook(key)&&DISH[key].price>c.budget)?'今天超出预算了。':'今天没有想点的。','talk',3); return c; } // 主人 11/25：不想吃的，在门口看完菜单就走，不进来排队
+    layoutQueue();
     if (c.regular) { c.say = '我带姐妹来啦。'; c.sayT = 4; }
     return c;
   }
   function wouldEat(c) { // 今天的菜单里有没有这桌能吃的（只看，不占食材）
     if (c.script) return true;
+    if (SUZHOU) return gardenChoices(c).length > 0;
     const ok = mains(menuNow()).filter(canCook);
     return c.type.kind === 'menu' ? ok.length > 0 : ok.some((k) => !DISH[k].tags.some((x) => c.type.hates.includes(x)));
   }
@@ -3325,7 +3484,7 @@ const stations = {};
     // 还没下单就走：预留的食材退回库存
     for (const m of c.members) if (m.reserved && m.st === 'none') save.stock[DISH[m.dish].ing] = stockOf(DISH[m.dish].ing) + 1;
     if (c.table) { // 桌上吃过的盘子都留下，等着收（包括生气走掉的、加过甜品的）
-      const t = c.table, used = c.members.filter((m) => m.st === 'served').length + (c.extraPlates || 0);
+      const t = c.table, used = c.members.filter((m) => m.st === 'served' && !m.noPlate).length + (c.extraPlates || 0);
       if (t.cust === c) t.cust = null; c.table = null; if (used) t.dirty = (+t.dirty || 0) + used;
     }
     const k = G.kitchen;
@@ -3340,7 +3499,7 @@ const stations = {};
     for (const t of G.tables) if (t.reserved === c) t.reserved = null;
     if (w.busyAct && w.busyAct.cust === c) { w.busyAct = null; w.path = []; }
     w.queue = w.queue.filter((a) => a.cust !== c);
-    c.state = 'leaving'; c.path = viaTable(c, fromT, DOOR, false);
+    c.state = 'leaving'; c.path = viaTable(c, fromT, SUZHOU?ENTRY_STAIRS:DOOR, false);
     if (angry) { G.angry++; G.rep--; speak(c, 'angry'); sfx.bad(); }
     layoutQueue();
   }
@@ -3495,6 +3654,7 @@ const stations = {};
           }
           return;
         }
+        if (SUZHOU && c.state==='bill') { pay(c); return; }
         if (SUZHOU && w.hands.some((h) => h.kind === 'dish')) {
           if (c.state === 'waitFood' && serveWrongTable(c,w)) return;
           toast('这桌还没有要上的菜。托盘上的桌号是原订单。'); return;
@@ -3555,7 +3715,8 @@ const stations = {};
       m.unpaid = true;
       c.hearts = Math.max(0.6, c.hearts - 2); c.upset = true; G.rep--; G.wrong++;
     };
-    if (m.dessert) { m.good = true; float(a.x, a.y - 20, '甜甜的～', '#c0506a', 'heart', 1.6); }
+    if (SUZHOU) { if (!serveGardenTaste(c,m,o)) return; }
+    else if (m.dessert) { m.good = true; float(a.x, a.y - 20, '甜甜的～', '#c0506a', 'heart', 1.6); }
     else if (m.kind === 'menu') {
       if (m.req && m.req.t === 'no' && o.tops[m.req.top]) { // 放了不要的配料：老大马上重做一份
         refuse(`说了不要${m.req.top}！`);
@@ -3595,13 +3756,16 @@ const stations = {};
   }
   function serveDrink(c, o) {
     const m = c.members[o.mi]; if (!m || m.dst !== 'make' || c.state === 'leaving') return;
-    m.dst = 'served'; addHeart(c, 0.5);
+    m.dst = 'served';
+    if (SUZHOU && m.wishDrink !== o.drink) { m.freeDrink = true; float(anchor(c).x, anchor(c).y-26, '这杯和点的不一样', '#9b473c', 'cross'); }
+    else addHeart(c,0.5);
+    did('drink');
     const a = anchor(c); float(a.x, a.y - 20, DRINKS[o.drink].n, '#4a7fb5', 'water', 1.4); sfx.ding();
   }
   function pay(c) {
     let price = 0, bonus = 0, allGood = true;
     for (const m of c.members) {
-      if (m.dst === 'served') price += DRINKS[m.drink].price;
+      if (m.dst === 'served' && !m.freeDrink) price += DRINKS[m.drink].price;
       const p = DISH[m.dish]?.price || 0;
       price += (m.unpaid || m.st !== 'served' ? 0 : p) + (m.prevPaid || 0);
       if (!m.good || m.unpaid) { allGood = false; continue; }
@@ -3611,12 +3775,14 @@ const stations = {};
     let tip = base, gift = null, candy = false;
     if (c.type.tip === 'fixed') tip = c.upset ? 0 : 3 * c.members.length * (c.hearts >= 4 ? 2 : 1);
     else if (c.type.tip === 'candy') { tip = 0; candy = happy; }
-    else if (c.type.tip === 'goods') { tip = Math.round(base / 2); const pool = prog().ings.filter((k) => k !== 'tealeaf'); if (happy && pool.length) { gift = pick(pool); save.stock[gift] = stockOf(gift) + c.members.length; } }
+    else if (c.type.tip === 'goods') { tip = Math.round(base / 2); const pool = marketIngs().filter((k) => k !== 'tealeaf'); if (happy && pool.length) { gift = pick(pool); save.stock[gift] = stockOf(gift) + c.members.length; } }
     else if (c.type.tip === 'fishy') { if (happy && Math.random() < 0.5) { gift = 'fish'; save.stock.fish = stockOf('fish') + 1; } }
     else if (c.type.tip === 'generous') tip = happy ? Math.round(base * 1.5) : base;
     else if (c.type.tip === 'perfect') tip = allGood && !c.upset ? Math.round(base * 2.5) : 0;
+    if (SUZHOU) tip = Math.min(8,Math.round(tip * .3));
     if (candy) G.rep++;
     const hotN = c.members.filter((m) => m.hot).length; if (hotN) tip += Math.round(tip * hotN / c.members.length); // 流行菜小费翻倍
+    if (SUZHOU) tip=Math.min(tip,10);
     if (allGood && !c.upset) G.rep++;
     G.coins += price + tip; G.tips += tip; G.served += c.members.length;
     const a = anchor(c);
@@ -3631,7 +3797,7 @@ const stations = {};
     if (SUZHOU && c.regular) {
       const favorites = c.members.filter((m) => m.dish === REGULAR_DISH && m.good).length;
       G.visit.gift = happy && favorites >= 2;
-      c.say = G.visit.gift ? '姐妹们也爱这碗面。\n这盆花送你！' : '下次再来喝碗清汤。';
+      c.say = G.visit.gift ? '姐妹们也爱这碗面。\n这盆花送你！' : '下次再来吃碗面。';
       c.sayT = 5.2; c.state = 'linger'; c.timer = 5.2; return;
     }
     if (SUZHOU && !save.regular && !G.invitedRegular && c.type.id === 'raccoon' && happy && allGood) {
@@ -3647,13 +3813,150 @@ const stations = {};
   const dataURL = (svg) => 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
   const URLS = {};
   const dishURL = (k) => SUZHOU && DISH_IMG[k] ? DISH_IMG[k].src : URLS['d' + k] || (URLS['d' + k] = dataURL(dishSVG(k === 'guihua' ? 'snack' : k)));
-  const ingURL = (k) => SUZHOU && ING_IMG[k] ? ING_IMG[k].src : URLS['i' + k] || (URLS['i' + k] = dataURL(ingSVG(k)));
+  const ingURL = (k) => k==='yakbeef'?ingURL('beef'):SUZHOU && ING_IMG[k] ? ING_IMG[k].src : URLS['i' + k] || (URLS['i' + k] = dataURL(ingSVG(k)));
   const iconURL = (k) => URLS['ic' + k] || (URLS['ic' + k] = dataURL(iconSVG(k)));
   const tagChip = (t, cls = '') => `<span class="chip ${cls}"><img alt="" src="${iconURL(t)}">${t}</span>`;
   const tagTiny = (t, cls = '') => `<span class="tg ${cls}"><img alt="" src="${iconURL(t)}">${t}</span>`;
   const custURL = (id) => SUZHOU && guestNativeName(id,'stand') ? guestFrames(id).stand.src : URLS['c' + id] || (URLS['c' + id] = dataURL(catSVG(id, 'front', { w: 120, h: 132 })));
+
+  const GUEST_BUDGETS = { shiba: [28, 43], bunny: [22, 29], raccoon: [24, 38], neko: [29, 46], panda: [27, 43], fox: [40, 60] };
+  const GUEST_TASTES={shiba:{likes:['辣','肉'],dislikes:['香菜']},bunny:{likes:['甜','面','蛋'],dislikes:['辣','麻']},raccoon:{likes:['蛋','米饭','面'],dislikes:['香菜']},neko:{likes:['海鲜','肉','清淡'],dislikes:['麻','香菜']}};
+  const gardenTaste=type=>GUEST_TASTES[type.id]||type;
+  const gardenTags = (key, tops) => DISH[key].tags.filter(t => key !== 'dandan' || (t === '辣' || t === '麻' ? tops['辣油'] : t === '花生' ? tops['花生碎'] : true));
+  const gardenChoices = (c, dessert = false, budget=c.budget) => menuNow().filter(key => Boolean(DISH[key].dessert) === dessert && canCook(key)
+    && DISH[key].price <= (budget ?? Infinity)
+    && !gardenTags(key, {}).some(tag => c.type.hates?.includes(tag)));
+  function makeGardenOrder(c) {
+    const type=c.type, taste=gardenTaste(type), index=c.members.length, plan=c.script?.[index];
+    const allowance=c.budgets?.[index]??c.budget, choices=gardenChoices(c,false,allowance);
+    const preferred=choices.filter(key=>DISH[key].tags.some(tag=>taste.likes?.includes(tag)));
+    if (!plan && !choices.length) return null;
+    const requested = plan?.dish || (!plan && type.kind === 'menu' ? (c.regular && choices.includes(REGULAR_DISH) ? REGULAR_DISH : pick(preferred.length?preferred:choices)) : null);
+    const opt = requested && DISH[requested].tops.find(([name,on]) => on ? type.no?.includes(name) : type.add?.includes(name));
+    const req = plan?.req || (!plan && opt && Math.random() < type.picky ? {t:opt[1] ? 'no' : 'add',top:opt[0]} : null);
+    const want = plan?.want || (requested ? null : type.id === 'panda' && choices.some(key=>DISH[key].tags.includes('面')) ? '面'
+      : shuffle(type.likes || []).find(tag => choices.some(key => DISH[key].tags.includes(tag))) || DISH[choices[0]].tags[0]);
+    if (req) {
+      const notes = dexOf(type.id).reqs, line = (req.t === 'no' ? '不要' : '加') + req.top;
+      if (!notes.includes(line)) { notes.push(line); markNote(type.id); }
+    }
+    if (want) learn(c, 'likes', [want]);
+    if (type.id === 'panda') learn(c, 'hates', ['辣']);
+    const remaining = allowance - (requested ? DISH[requested].price : Math.min(...choices.map(key => DISH[key].price)));
+    const cups = drinkList().filter(key => key !== 'water' && DRINKS[key].price <= remaining && (!DRINKS[key].leaf || stockOf('tealeaf') > 0));
+    const wishDrink = plan ? null : cups.length && Math.random() < .46 ? pick(cups)
+      : prog().water && (save.day === 2 && !save.did.drink || Math.random() < type.water) ? 'water' : null;
+    return {budget:allowance,kind:requested?'menu':'omakase',requested,want,req,wishDrink,dish:null,drink:null,st:'none',dst:null,tops:{}};
+  }
+  function gardenFollowup(c) {
+    c.dessertDone = true;
+    G.followups ||= 0;
+    if (G.followups >= 4 || G.followups > 0 && Math.random() > .36) return false;
+    const m = c.members.find(item => item.st === 'served' && !item.unpaid && item.dst !== 'make');
+    if (!m) return false;
+    const budget=m.budget??c.budget,desserts=gardenChoices(c,true,budget),choices=desserts.length?desserts:gardenChoices(c,false,budget);
+    if (!choices.length) return false;
+    m.prevPaid = (m.prevPaid || 0) + DISH[m.dish].price + (m.dst === 'served' && !m.freeDrink ? DRINKS[m.drink].price : 0);
+    c.extraPlates = (c.extraPlates || 0) + 1;
+    const want = desserts.length ? '甜' : (choices.some(key=>DISH[key].tags.includes('面')) ? '面' : DISH[choices[0]].tags[0]);
+    Object.assign(m,{dish:null,requested:null,want,req:null,tops:{},drink:null,wishDrink:null,dst:null,st:'none',kind:'omakase',
+      reserved:false,dessert:Boolean(desserts.length),unpaid:false,freeDrink:false,dClaim:null,servedDish:null,good:false});
+    G.followups++; c.state='ordering'; c.followup=true;
+    sayGuest(c, desserts.length ? '再来一点甜的吧。' : '还能再来一点吗？' + (TAG_WORD[want] || ''),'followup',3.4);
+    sfx.ding();
+    return true;
+  }
+  function serveGardenTaste(c, m, o) {
+    const at=anchor(c),tags=gardenTags(o.dish,o.tops),taste=gardenTaste(c.type);
+    const hates=tags.filter(tag=>taste.hates?.includes(tag)),likes=tags.filter(tag=>taste.likes?.includes(tag)),dislikes=tags.filter(tag=>taste.dislikes?.includes(tag));
+    learn(c,'hates',hates); learn(c,'likes',likes); learn(c,'dislikes',dislikes);
+    const failedTop = m.req && (m.req.t === 'add') !== Boolean(o.tops[m.req.top]);
+    if (hates.length || m.requested && m.requested !== o.dish || failedTop) {
+      const retry = gardenChoices(c,Boolean(m.dessert),m.budget??c.budget).some(key => !m.requested || key === m.requested);
+      c.upset = true; c.hearts = Math.max(1,c.hearts - 1.4); G.rep--; G.wrong++;
+      m.good = false; m.hadUnpaid = true;
+      sayGuest(c, hates.length ? '这个口味我吃不了。' : failedTop ? (m.req.t==='no'?'说了不要':'少了')+m.req.top+'。' : '这道菜和我点的不一样。','bad',3.5);
+      float(at.x,at.y-22,'错菜免单','#a23e35','cross',2.2);sfx.bad();
+      if (retry) {
+        G.plates.dirty++; c.recovery = true;
+        Object.assign(m,{st:'none',dish:null,tops:{},unpaid:false});
+        c.state = 'ordering';
+        return false;
+      }
+      m.unpaid = true;
+      return true;
+    }
+    m.likeN = likes.length; m.disN = dislikes.length;
+    m.good = c.type.id !== 'panda' || o.dish !== 'dandan';
+    if (m.want && !tags.includes(m.want) || dislikes.length || !m.good) {
+      m.good = false;
+      c.hearts=Math.max(.6,c.hearts-.45);
+      sayGuest(c,'这道也可以。','talk',2.4);
+      float(at.x,at.y-24,'普通','#8d6836',null,1.7);
+    } else {
+      float(at.x,at.y-22,likes.length >= 2?'很满意':'合口味','#ad505f','heart',1.7);
+      addHeart(c, likes.length >= 2 ? .6 : .25);
+    }
+    return true;
+  }
+  function openGardenOrder(c) {
+    const panel = $('#order'), pend = c.members.map((m,i)=>[m,i]).filter(([m])=>m.st==='none');
+    if (!pend.length) { G.orderOpen=null; c.state='waitFood'; return; }
+    const selections = new Map(), drafts = Array.from({length:c.members.length},()=>null);
+    for (const [m,i] of pend) drafts[i] = {dish:null,tops:{},drink:m.dst==='served'||m.dst==='make'?m.drink:undefined};
+    let focus = pend[0][1];
+    const available = key => stockOf(key) - [...selections].filter(([i,d])=>i!==focus && DISH[d].ing===key).length;
+    const renderOrder = () => {
+      const m=c.members[focus],draft=drafts[focus],d=DISH[draft.dish],budget=m.budget??c.budget;
+      const request = m.requested ? DISH[m.requested].n : TAG_WORD[m.want] || '想吃点'+m.want+'的';
+      const teaCount = drafts.filter((drink,i)=>i!==focus&&drink&&DRINKS[drink.drink]?.leaf&&c.members[i].dst!=='make'&&c.members[i].dst!=='served').length;
+      const preserveDrink = m.dst === 'served' || m.dst === 'make';
+      const eligible = key => available(DISH[key].ing)>0 && DISH[key].price <= budget && (!preserveDrink || DISH[key].price + DRINKS[draft.drink].price <= budget);
+      const choices = menuNow().filter(key=>Boolean(DISH[key].dessert)===Boolean(m.dessert));
+      const cupChoices = [...new Set([null,...drinkList(),...(m.wishDrink?[m.wishDrink]:[])])];
+      const mark = dexOf(c.type.id), badges = [...mark.likes.map(tag=>tagTiny(tag,'good')),...mark.hates.map(tag=>tagTiny(tag,'bad'))].join('');
+      const ready = ([member,i])=>drafts[i].dish && drafts[i].drink!==undefined && DISH[drafts[i].dish].tops.every(([name])=>drafts[i].tops[name]!==undefined);
+      panel.style.setProperty('--n',1);
+      panel.classList.add('garden-order','show');
+      panel.innerHTML = `<button class="oclose" aria-label="稍后点单">✕</button><div class="ohead"><b>${tableNumber(c.table.id)} 号桌 · ${c.followup ? '续单' : c.recovery ? '补单' : '点单'}</b><span>${c.type.n} · 此客最多 ¥${budget}</span></div>
+        <div class="order-tabs">${pend.map((item)=>`<button data-person="${item[1]}" class="pill ${item[1]===focus?'on':''}">第 ${item[1]+1} 位${ready(item)?' ✓':''}</button>`).join('')}</div>
+        <div class="garden-request"><b class="request-meal">${request}</b>${m.req?`<b class="request-${m.req.t}">${m.req.t==='no'?'不放':'加'}${m.req.top}</b>`:''}
+        <b class="request-drink">${m.wishDrink?DRINKS[m.wishDrink].n:'不用饮品'}</b>${badges}</div>
+        <div class="dlist">${choices.map(key=>`<button class="dcard ${draft.dish===key?'on':''}" data-dish="${key}" ${eligible(key)?'':'disabled'}><img class="di" alt="" src="${dishURL(key)}"><span class="dn ${available(DISH[key].ing)<=0?'sold':''}">${DISH[key].n} · ¥${DISH[key].price}</span><span class="dt">${DISH[key].tags.map(t=>tagTiny(t)).join('')}</span></button>`).join('')||'<span>今天没准备这类菜。</span>'}</div>
+        ${d?.tops.length?`<div class="garden-tops">${d.tops.map(([top])=>`<div><b>${top}</b> ${[true,false].map(on=>`<button class="tp ${draft.tops[top]===on?'on':''}" data-top="${top}" data-add="${+on}">${on?'放':'不放'}</button>`).join('')}</div>`).join('')}</div>`:''}
+        <div class="garden-cups">${preserveDrink?'<span>饮品已交给茶水台</span>':cupChoices.map(key=>`<button class="pill ${draft.drink===key?'on':''}" data-cup="${key||'none'}" ${key&&(DRINKS[key].leaf&&stockOf('tealeaf')<=teaCount||d&&d.price+DRINKS[key].price>budget)?'disabled':''}>${key?DRINKS[key].n+' · ¥'+DRINKS[key].price:'不点饮品'}</button>`).join('')}</div>
+        <div class="garden-actions"><button class="pill order-abandon">${c.recovery||c.followup?'结束加单':'无法接单'}</button><button class="go" ${pend.every(ready)?'':'disabled'}>送出本桌点单</button></div>`;
+      const close = () => { G.orderOpen=null; panel.classList.remove('show','garden-order'); };
+      panel.querySelector('.oclose').onclick=()=>{close();c.state='ordering';sfx.tap();};
+      panel.querySelectorAll('[data-person]').forEach(b=>b.onclick=()=>{focus=Number(b.dataset.person);sfx.tap();renderOrder();});
+      panel.querySelectorAll('[data-dish]').forEach(b=>b.onclick=()=>{draft.dish=b.dataset.dish;draft.tops={};selections.set(focus,draft.dish);
+        if (!preserveDrink && draft.drink && DISH[draft.dish].price+DRINKS[draft.drink].price>budget) draft.drink=undefined;
+        sfx.tap();renderOrder();});
+      panel.querySelectorAll('[data-top]').forEach(b=>b.onclick=()=>{draft.tops[b.dataset.top]=b.dataset.add==='1';sfx.tap();renderOrder();});
+      panel.querySelectorAll('[data-cup]').forEach(b=>b.onclick=()=>{draft.drink=b.dataset.cup==='none'?null:b.dataset.cup;sfx.tap();renderOrder();});
+      panel.querySelector('.order-abandon').onclick=()=>{
+        close();
+        if (!c.members.some(member=>member.st!=='none'||member.prevPaid)) { sayGuest(c,'那我改天再来。','talk',2.3); leave(c,false); return; }
+        for (const [member] of pend) Object.assign(member,{st:'served',unpaid:true,noPlate:true});
+        c.state=c.members.every(member=>member.st==='served')?'bill':'waitFood';
+      };
+      panel.querySelector('.go').onclick=()=>{
+        if (!pend.every(ready)) return;
+        for (const [member,i] of pend) {
+          const next=drafts[i], ordered=member.dst==='served'||member.dst==='make';
+          useStock(next.dish);
+          if (!ordered && DRINKS[next.drink]?.leaf) save.stock.tealeaf=stockOf('tealeaf')-1;
+          Object.assign(member,next,{dst:ordered?member.dst:next.drink?'none':null});
+        }
+        sendTicket(c,pend);did('go');if(pend.some(([item])=>item.req))did('req');if(pend.some(([item])=>item.kind==='omakase'))did('oma');
+        close();c.recovery=false;
+      };
+    };
+    renderOrder();
+  }
   function openOrder(c) {
     G.orderOpen = c; c.state = 'ordering-open';
+    if (SUZHOU) { openGardenOrder(c); return; }
     const panel = $('#order');
     const pend = c.members.map((m, i) => [m, i]).filter(([m]) => m.st === 'none');
     const dx = dexOf(c.type.id);
@@ -3708,7 +4011,7 @@ const stations = {};
   function sendTicket(c, pend) {
     const ticket = { c, items: [], drinks: [] };
     for (const [m, i] of pend) {
-      if (m.kind === 'omakase' && !m.dessert) { useStock(m.dish); m.tops = {}; DISH[m.dish].tops.forEach(([n, d]) => { m.tops[n] = !!d; }); }
+      if (!SUZHOU && m.kind === 'omakase' && !m.dessert) { useStock(m.dish); m.tops = {}; DISH[m.dish].tops.forEach(([n, d]) => { m.tops[n] = !!d; }); }
       m.st = 'cook'; m.reserved = false;
       ticket.items.push({ table: c.table.id, dish: m.dish, tops: { ...m.tops }, cust: c, mi: i, cook: DISH[m.dish].cook });
       if (m.drink && m.dst === 'none') { m.dst = 'make'; ticket.drinks.push({ table: c.table.id, drink: m.drink, cust: c, mi: i }); }
@@ -3719,6 +4022,7 @@ const stations = {};
   // 吃完有的客人再加一份甜品（第 5 天解锁桂花糕）
   function dessertAsk(c) {
     if (c.dessertDone || c.script || c.upset || c.hearts < 3.45 || save.day < 3 || G.t > DAY_LEN - 35) return false;
+    if (SUZHOU) return gardenFollowup(c);
     c.dessertDone = true;
     G.followups ||= 0;
     const dislikes=c.type.hates||[], likes=c.type.likes||[];
@@ -3798,14 +4102,29 @@ const stations = {};
     box.classList.add('show'); G.teaOpen = true; sfx.tap();
   }
   function closeTea() { $('#teamenu').classList.remove('show'); if (G) G.teaOpen = false; }
+  function tapCrew(p,mode) {
+    const list=mode==='shop'?[['penpen',G.waiter],...G.staff.map(a=>[a.id,a]),['laoda',{x:G.gardenChefX??LA('chef').x,y:LA('chef').y}],...(prog().dance?[['shuai',G.greeter]]:[])]:[['penpen',G.D],...Object.entries(G.D.companions||{})];
+    const hit=list.find(([,a])=>Math.abs(p.x-a.x)<24 && a.y-p.y>24 && a.y-p.y<93);
+    if(!hit)return false;
+    const [id,a]=hit; G.crewTaps ||= {};G.crewTaps[id]=(G.ambientTime||0)+1.55;
+    float(a.x,a.y-100,'♪','#b27251','heart',1.0);sfx.crew(id);
+    if(id==='shuai'&&G.danceCD<=0)$('#b-dance').click();
+    if(id==='mimi'&&mode==='day')openMimi();
+    return true;
+  }
   function shopTap(p) {
     const w = G.waiter;
+    if (w.manualPath?.length) {
+      w.manualPath=null;
+      if(w.busyAct)w.path=findPath(w,targetSpot(w.busyAct))||w.path;
+    }
     const prank = G.mischief;
     if (prank && !prank.caught && inRect(p.x, p.y, mischiefHit(prank))) {
       prank.caught = G.t;
       G.selected = null; sfx.ding();
       return;
     }
+    if (SUZHOU && !G.selected && tapCrew(p,G.mode)) return;
     if (SUZHOU && !G.selected) {
       const side = ['left', 'right'].find((key) => inRect(p.x, p.y, LAYOUT.scene.wallArt[key]));
       if (side) {
@@ -3848,7 +4167,7 @@ const stations = {};
           G.selected = null; c.state = 'called'; c.calledAt = G.t; t.reserved = c; c.say = '来啦～'; c.sayT = 1.5;
           return;
         }
-        enqueue({ kind: 'table', table: t }); return;
+        if(!SUZHOU || !w.queue.some(a=>a.kind==='table'&&a.table===t))enqueue({kind:'table',table:t});return;
       }
     }
     const teaDist = Math.hypot(p.x - TEA_POINT.x, p.y - TEA_POINT.y);
@@ -3889,9 +4208,7 @@ const stations = {};
     if (SUZHOU && p.x > 14 && p.x < W-14 && p.y > 294 && p.y < LAYOUT.scene.height-16 && !SHOP_GRID.blocked(p.x,p.y)) {
       const path = findPath(w,p);
       if (!path) return;
-      if (w.busyAct?.kind === 'walk' && w.queue.length === 1) { w.busyAct.to=p;w.path=path; }
-      else if (w.queue.at(-1)?.kind === 'walk' && w.queue.at(-1)!==w.busyAct) w.queue.at(-1).to=p;
-      else enqueue({kind:'walk',to:p});
+      leaveStroll(w); w.manualPath=path; w.walkCue={...p,at:G.t}; sfx.tap();
     }
   }
 
@@ -4030,7 +4347,7 @@ const stations = {};
     else { e.x += (dx / d) * step; e.y += (dy / d) * step; if (Math.abs(dx) > 2) e.face = dx > 0 ? 1 : -1; e.back = dy < -Math.abs(dx) * 0.6; }
     return !e.path.length;
   }
-  const anyCookable = () => menuNow().some(canCook);
+  const anyCookable = () => (SUZHOU?mains(menuNow()):menuNow()).some(canCook);
   const NONWORKING = new Set(['enter','queue','called','leaving','linger','browse']);
   const CHEF_NAP = { x: 267, y: 415 };
   const SNACK_SPOT = { x: 195, y: 560 };
@@ -4078,12 +4395,15 @@ const stations = {};
       G.spawnT -= dt;
       if (G.script) G.spawnT = 99;
       if (G.spawnT <= 0) {
-        if (!anyCookable()) { G.soldOut = true; toast('食材用完了，招待完这几桌就打烊'); }
+        if (!anyCookable()) { G.soldOut = true; toast('主菜售罄，招待完这几桌就打烊'); }
         else {
           const visit = G.visit && !G.visit.spawned && G.t >= 15;
           const customer = spawnCustomer(visit ? { type: 'raccoon', size: 4, regular: true } : undefined);
           if (visit && customer) G.visit.spawned = customer;
-          G.spawnT = SUZHOU ? (customer ? rand(26, 35) - Math.min(3, G.t / 65) : 4) : rand(18, 25) - Math.min(4, G.t / 40);
+          if (SUZHOU && G.burstGuests>0) {
+            if(customer)G.burstGuests--;
+            G.spawnT=G.burstGuests>0?rand(3.6,5.1):rand(13,19);
+          } else G.spawnT = SUZHOU ? (customer ? Math.max(9,rand(25,31)-Math.min(9,(save.day-2)*1.9)-G.t/39) : 4) : rand(18, 25) - Math.min(4, G.t / 40);
         }
       }
     }
@@ -4127,13 +4447,18 @@ const stations = {};
     const k = G.kitchen;
     const kitchenIdle = !Object.values(k.wares).some((ws) => ws.cur || ws.q.length);
     if (SUZHOU) updateMischief(dt, kitchenIdle);
+    const waiting = SUZHOU ? [...new Set(Object.values(k.wares).flatMap(ws=>[...(ws.cur?[ws.cur]:[]),...ws.q]).map(o=>o.cust))] : [];
+    waiting.sort((a,b)=>Number(!k.pass.some(o=>o.cust===a))-Number(!k.pass.some(o=>o.cust===b)) || a.id-b.id);
+    const primary=waiting[0];
     for (const ws of Object.values(k.wares)) {
       if (G.mischief?.who === 'laoda') break;
       if (!ws.cur && ws.q.length) {
-        const order = ws.q.shift();
+        const n=SUZHOU?ws.q.findIndex(o=>o.cust===primary):0;
+        if(n<0)continue;
+        const [order]=ws.q.splice(n,1);
         ws.cur = { ...order, t: 0, cook: SUZHOU ? Math.round(order.cook * 1.6) : order.cook };
       }
-      if (ws.cur) { ws.cur.t += dt; if (ws.cur.t >= ws.cur.cook && (SUZHOU || k.pass.length < PASS_MAX) && G.plates.clean > 0) { G.plates.clean--; k.pass.push(ws.cur); ws.cur = null; sfx.ding(); } }
+      if (ws.cur) { ws.cur.t += dt; if (ws.cur.t >= ws.cur.cook && (!SUZHOU || ws.cur.cust===primary) && (SUZHOU || k.pass.length < PASS_MAX) && G.plates.clean > 0) { G.plates.clean--; k.pass.push(ws.cur); ws.cur = null; if(!SUZHOU||primary&&!Object.values(k.wares).some(v=>v.cur?.cust===primary||v.q.some(o=>o.cust===primary)))sfx.bell(); } }
     }
     // 老大没菜做的时候，顺手去洗碗（慢一点）
     const pl = G.plates, chefFree = !Object.values(k.wares).some((ws) => ws.cur || ws.q.length);
@@ -4153,6 +4478,10 @@ const stations = {};
     if (w.sinkDrop !== undefined) {
       w.sinkDrop += dt;
       if (w.sinkDrop >= SINK_DROP_TIME) { delete w.sinkDrop; doAction({ kind: 'sink' }); }
+    } else if (w.manualPath?.length && !w.wash && !w.brew) {
+      const pending=w.path; w.path=w.manualPath;
+      const done=moveAlong(w,285*SPD(),dt); w.manualPath=done?null:w.path;
+      w.path=done&&w.busyAct?findPath(w,targetSpot(w.busyAct))||pending:pending;
     } else if (w.wash) { /* 洗碗中，站着不动 */ } else if (w.brew) {
       w.brew.t += dt;
       if (w.brew.t >= w.brew.need) { const o = w.brew.o; w.brew = null; if (o.cust.state !== 'leaving' && !full()) { w.hands.push(o); did('drink'); sfx.tap(); } else o.cust.members[o.mi].dClaim = null; }
@@ -4530,12 +4859,14 @@ const stations = {};
     for (const [i, key] of menuNow().entries()) {
       const dish = DISH[key], art = DISH_IMG[key];
       ctx.save(); row(0.308 + i * 0.174);
-      if (stockOf(dish.ing) <= 0) ctx.globalAlpha = 0.47;
+      const soldOut = stockOf(dish.ing)<=0;
       if (ok(art)) ctx.drawImage(art, 4, -7, 18, 15);
       ctx.font = '15px ' + MENU_INK; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
       const ink = ctx.createLinearGradient(39, -7, width - 5, 8);
       ink.addColorStop(0, '#51382a'); ink.addColorStop(0.52, '#82654f'); ink.addColorStop(1, '#4b352b');
-      ctx.fillStyle = ink; ctx.fillText(dish.n, 24, 0, width - 27); ctx.restore();
+      ctx.fillStyle=ink;ctx.fillText(dish.n,24,0,width-27);
+      if(soldOut){ctx.strokeStyle='#a45649';ctx.lineWidth=1.6;ctx.beginPath();ctx.moveTo(23,1);ctx.lineTo(25+Math.min(ctx.measureText(dish.n).width,width-27),0);ctx.stroke();}
+      ctx.restore();
     }
     ctx.restore();
   }
@@ -4586,6 +4917,7 @@ const stations = {};
   function plantCell(j) {
     const f = save.farm[PLOT.i], k = PLOT.seed;
     if (f.cells[j] || !k || !(save.seeds[k] > 0)) return false;
+    if(SUZHOU&&!PLOT.bulk&&farmPhase()!=='plant'&&!spend())return false;
     save.seeds[k]--; f.cells[j] = { k, ready: save.day + 1 }; did('plant');
     if (farmPhase() === 'plant') {
       save.farmLessonSown = (save.farmLessonSown || 0) + 1;
@@ -4609,7 +4941,7 @@ const stations = {};
     $('#plot-tip').textContent = farmPhase() === 'plant' ? '辣椒已种 ' + (save.farmLessonSown || 0) + ' / 3，明早一起收。' : PLOT.msg || (ripeN ? '熟了！点「收菜」一起收' : emptyN && PLOT.seed ? '先选种子，再点空地种下' : emptyN ? '没有种子了，去早市买' : '都种上了，明天来收');
     $('#plot-grid').querySelectorAll('.pc').forEach((b) => { b.onclick = () => {
       const c = f.cells[+b.dataset.j]; PLOT.msg = '';
-      if (!c) { if (plantCell(+b.dataset.j)) sfx.tap(); else PLOT.msg = '没有种子了，去早市买'; }
+      if (!c) { if (plantCell(+b.dataset.j)) sfx.tap(); else PLOT.msg = G.D.energy?'没有种子了，去早市买':'今天的体力用完了'; }
       else if (cellRipe(c)) return plotHarvest();
       else PLOT.msg = `${ING[c.k].n}明天才熟`;
       renderPlot();
@@ -4625,7 +4957,8 @@ const stations = {};
     sfx.ding(); did('harvest'); updateFarmLesson(); persist(); renderPlot();
   }
   $('#plot-harvest').addEventListener('click', plotHarvest);
-  $('#plot-fill').addEventListener('click', () => { let n = 0; const limit = farmPhase() === 'plant' ? 3 - (save.farmLessonSown || 0) : Infinity; save.farm[PLOT.i].cells.forEach((c, j) => { if (n < limit && plantCell(j)) n++; }); PLOT.msg = n ? `种下 ${n} 格` : ''; if (n) sfx.ding(); renderPlot(); });
+  $('#plot-fill').addEventListener('click', () => { let n = 0; const teaching=farmPhase()==='plant',limit=teaching ? 3-(save.farmLessonSown||0):Infinity;
+  if(SUZHOU&&!teaching&&!spend())return;PLOT.bulk=true;save.farm[PLOT.i].cells.forEach((c,j)=>{if(n<limit&&plantCell(j))n++;});PLOT.bulk=false; PLOT.msg = n ? `种下 ${n} 格` : ''; if (n) sfx.ding(); renderPlot(); });
   $('#plot-ok').addEventListener('click', () => { $('#plot').classList.remove('show'); did('plotok'); persist(); if (G) G.paused = false; });
   // 多个按钮的选择框（比如种什么）
   function choose(title, opts) {
@@ -4699,6 +5032,8 @@ const stations = {};
   function crewIdle(id, active, gesture = active) {
     if (!SUZHOU) return null;
     const beats = G.crewIdleSince || (G.crewIdleSince = {});
+    const tap=G.crewTaps?.[id]-(G.ambientTime||0);
+    if(tap>0)return {pose:true,lean:Math.sin(tap*12)*.08,stretch:1+Math.sin(tap*12)*.04};
     if (!active) { delete beats[id]; return null; }
     const clock = G.ambientTime || 0, spec = IDLE_BEATS[id];
     beats[id] ??= clock;
@@ -4762,7 +5097,6 @@ const stations = {};
     const bob = busy.length ? Math.sin(t / (SUZHOU ? 410 : 120)) * 3 : 0;
     const art = ART_ROOM();
     if (SUZHOU) {
-      drawCookware(k, t);
       const [lo, hi] = LI.chef.range.map(([x]) => x);
       const quietTarget = save.day >= 2 && !busy.length && !G.chefWash ? [128,221,291,181][Math.floor((G.ambientTime || 0) / 9) % 4] : cx - 22;
       const target = G.chefWash && !busy.length ? LI.chef.wash[0] : Math.max(lo, Math.min(hi, quietTarget));
@@ -4780,6 +5114,7 @@ const stations = {};
         G.gardenChefX = CHEF_NAP.x;
       }
       if (!acted) drawCat(P('s_laoda') || SPR.chef, G.gardenChefX, LA('chef').y + bob * 0.18, G.chefFace || 1, moving, 1.14, 'laoda', G.chefWalk, idle);
+      drawCookware(k,t);
       drawKitchenPlane('front');
     } else if (ART_B()) { // 主人 11/26：老大待在两条木台围出来的厨房圈里，站在灶台前左右走；洗碗时走到洗碗池旁
       const ch = LI.chef || {}, [lo, hi] = ch.range ? [ch.range[0][0], ch.range[1][0]] : [-60, 110], cy = ch.anchor ? ch.anchor[1] : 548;
@@ -5125,8 +5460,8 @@ const stations = {};
     const surface = gardenTableSurface(t), k = t.k;
     const c = t.cust && seated(t.cust) && (t.cust.state !== 'toSeat' || t.cust.seatEase != null) ? t.cust : null;
     const selected = G.selected?.state === 'queue' && !t.cust && !t.reserved && !t.dirty;
-    const selectable = selected && t.size >= G.selected.size && (!tableHeld(t) || G.selected.regular);
-    const spare = selected && !selectable;
+    const selectable = selected && (!SUZHOU || save.day === 1) && t.size >= G.selected.size && (!tableHeld(t) || G.selected.regular);
+    const spare = selected && (!SUZHOU || save.day === 1) && !selectable;
     if (selectable) {
       ctx.save();
       ctx.strokeStyle = '#e79439';
@@ -5160,7 +5495,7 @@ const stations = {};
         const seat = t.seats[i], px = surface.x + (seat.x - surface.x) * 0.70;
         const py = t.topY[Number(seat.front)] + 7 * k;
         if (c.state === 'linger') drawPlate(px, py, null, 0.49 * k);
-        else if (m.st === 'served' && c.state !== 'bill') drawPlate(px, py, { dish: m.servedDish || m.dish }, 0.75 * k);
+        else if (m.st === 'served' && !m.noPlate && c.state !== 'bill') drawPlate(px, py, { dish: m.servedDish || m.dish }, 0.75 * k);
         if (m.dst === 'served' && c.state !== 'bill') {
           const side = Math.sign(seat.x - surface.x) || 1;
           drawCup(px + (t.size === 4 ? side : -side) * 24 * k, py + 3 * k, m.drink, 0.78 * k);
@@ -5614,7 +5949,7 @@ const stations = {};
     });
   }
   function drawWaiter() {
-    const w = G.waiter, walking = w.roaming || (!!w.busyAct && w.path.length);
+    const w = G.waiter, walking = w.roaming || w.manualPath?.length || (!!w.busyAct && w.path.length);
     const k = K(w.y);
     const frame = walking && SPR.pWalk && SPR.pWalk[w.back ? 1 : 0][Math.floor((w.walkDistance || 0) / 22) % 4];
     const idle = crewIdle('penpen', !walking && !w.busyAct && !w.wash && !w.brew && w.sinkDrop === undefined);
@@ -5766,7 +6101,7 @@ const stations = {};
     }
     ctx.restore();
   }
-  function drawYard() {
+  function drawYard(showUI=true) {
     const art = gardenArt('yard_' + CUR_SE, 'jpg');
     if (!ok(art)) return;
     ctx.drawImage(sceneryTone(art, true), 0, 0, W, H);
@@ -5787,13 +6122,13 @@ const stations = {};
       if (!lesson || target === site) {
         const ripe = save.farm[i].cells.filter(cellRipe).length;
         const growing = save.farm[i].cells.filter(Boolean).length - ripe;
-        const text = ripe ? site.name + ' · 熟了 ' + ripe + ' 格' : growing ? site.name + ' · 明早收' : site.name;
+        const text = ripe ? '🧺 '+ripe : growing ? '🌱 '+growing : '🌱 '+(i+1);
         nodes.push(() => yardTag(site.sign.x, site.sign.y - 4, text, target === site));
       }
     }
     yardWater();
     for (const [id, park, size] of [['laoer',YARD.staff,0.57],['mimi',YARD.helper,0.5]]) {
-      if (!staffIds().includes(id)) continue;
+      if (id==='mimi'?!mimiOpen():!staffIds().includes(id)) continue;
       const actor=D.companions?.[id]||yardPoint(park);
       drawCat(staffImg(id),actor.x,actor.y,actor.face||1,Boolean(actor.roaming),size,id,actor.walkDistance,crewIdle(id,!actor.roaming));
     }
@@ -5804,9 +6139,10 @@ const stations = {};
       if (h.id === 'plot' || !spotOpen(h.id)) continue;
       if (lesson && target !== h) continue;
       if (!['door', 'market', 'pond', 'mail', 'coop', 'cottage', 'tea'].includes(h.id)) continue;
-      const name = h.id === 'mail' && save.mail ? '邮筒 · 有信' : h.name;
+      const name = ({mail:save.mail?'✉ ●':'✉',pond:'🎣',coop:'🥚 鸡舍',tea:'🍵 茶铺',cottage:'⌂ 小屋'})[h.id]||h.name;
       nodes.push(() => yardTag(h.sign.x, h.sign.y, name, target === h || (h.id === 'mail' && Boolean(save.mail))));
     }
+    if(!showUI)return;
     for (const node of nodes) node();
     if (target && lesson.key !== 'free') {
       const p = target.spot(), traveling = D.task === target;
@@ -5828,7 +6164,7 @@ const stations = {};
     if(!catchPanel.hidden)$('#yard-catch-name').textContent=caught.f.n+' · '+caught.cm+' cm';
     const meter = { seed:'第 2 天 · 1 / 2', plant:'第 2 天 · 2 / 2', harvest:'第 3 天 · 1 / 4', fish:'第 3 天 · 2 / 4', plan:'第 3 天 · 3 / 4', buy:'第 3 天 · 4 / 4' };
     box.hidden = !goal || Boolean(G.D.fishing);
-    $('#yard-decor-intro').hidden = box.hidden || goal.key !== 'wait' || Boolean(save.decorTaught);
+    $('#yard-decor-intro').hidden = box.hidden || !['wait','cottage-guide','free'].includes(goal.key) || Boolean(save.decorTaught);
     if (box.hidden) return;
     const button = $('#yard-task-go');
     const travel = goal.place && G.D.task === goal.place && G.D.path.length > 0;
@@ -5934,7 +6270,7 @@ const stations = {};
     ctx.restore();
   }
   function drawGardenBench() {
-    ctx.save(); ctx.translate(1247, 450);
+    ctx.save(); ctx.translate(1240, 481);
     ctx.fillStyle = '#6750432a'; ctx.beginPath(); ctx.ellipse(0, 5, 29, 7, -0.16, 0, Math.PI * 2); ctx.fill();
     ctx.strokeStyle = '#865838'; ctx.lineWidth = 4; ctx.lineCap = 'round';
     ctx.beginPath(); ctx.moveTo(-21,-1); ctx.lineTo(-21,8); ctx.moveTo(21,-9); ctx.lineTo(21,0); ctx.stroke();
@@ -5987,9 +6323,28 @@ const stations = {};
     ctx.drawImage(kitchenSurface(sceneryTone(art)), left, top, w, h);
     ctx.restore();
   }
+  function drawEvening(){
+    const time=G.t/(save.day===1?155:DAY_LEN);
+    const dusk=Math.min(1,Math.max(0,(time-.43)/.27));
+    const night=Math.min(1,Math.max(0,(time-.69)/.30));
+    if(!dusk)return;
+    ctx.fillStyle='rgba(212,124,65,'+(dusk*.15*(1-night))+')';ctx.fillRect(0,0,W,LAYOUT.scene.height);
+    if(!night)return;
+    ctx.save();ctx.beginPath();ctx.rect(...LAYOUT.scene.window);
+    LAYOUT.scene.courtyardOpening.forEach(([x,y],i)=>i?ctx.lineTo(x,y):ctx.moveTo(x,y));ctx.closePath();ctx.clip();
+    ctx.fillStyle='rgba(25,37,80,'+(night*.48)+')';ctx.fillRect(0,0,W,LAYOUT.scene.height);ctx.restore();
+    ctx.fillStyle='rgba(32,46,84,'+(night*.32)+')';ctx.fillRect(0,0,W,LAYOUT.scene.height);
+    for(const [x,y] of [[319,123],[930,119]]){
+      const glow=ctx.createRadialGradient(x,y,7,x,y,116);glow.addColorStop(0,'rgba(255,207,120,'+(night*.38)+')');glow.addColorStop(1,'rgba(255,207,120,0)');ctx.fillStyle=glow;ctx.fillRect(x-116,y-116,232,232);
+    }
+  }
   function drawShopScene() {
     if (GREY) drawGreyBase(); else { drawRoom(); if (!SUZHOU && !ART_B()) sideFill(); } // B 背景自带两侧延伸；旧图才镜像
 
+    if (SUZHOU && G.waiter.walkCue && G.t-G.waiter.walkCue.at<.55) {
+      const {x,y,at}=G.waiter.walkCue,age=(G.t-at)/.55;
+      ctx.save();ctx.globalAlpha=1-age;ctx.lineWidth=2;ctx.strokeStyle='#b47b40';ctx.beginPath();ctx.ellipse(x,y,7+age*10,4+age*3,0,0,Math.PI*2);ctx.stroke();ctx.restore();
+    }
     const behind = (a) => SUZHOU && a.y < 320 && a.x < 474;
     const backActors = [G.waiter, ...G.staff].filter(behind).sort((a, b) => a.y - b.y);
     for (const a of backActors) a === G.waiter ? drawWaiter() : drawStaff(a);
@@ -6046,6 +6401,7 @@ const stations = {};
     if (G.dancer) items.push({ y: DANCE_SPOT.y, d: () => { drawDancer(DANCE_SPOT.x, DANCE_SPOT.y, Math.min(1, (4 - G.dancer.t) * 3, G.dancer.t * 3)); label('帅老头', DANCE_SPOT.x, DANCE_SPOT.y + 16, 18, '#fbf3e2', '#b04a3c'); } });
     items.sort((a, b) => a.y - b.y).forEach((i) => i.d());
     if (GREY || SUZHOU) { /* 苏式前台遮挡已随厨房绘制 */ } else if (ART_B()) drawLayer('room_b_fgd'); else if (ART_ROOM()) { const f = A('room_fg'); if (ok(f)) ctx.drawImage(f, 0, 0, W, H); } else if (ROOM_FG.complete) ctx.drawImage(ROOM_FG, 0, 0, W, H);
+    if (SUZHOU) drawEvening();
     G.tables.forEach((t) => { if (t.sizeAt) label(`${t.size}人`, t.sizeAt.x, t.sizeAt.y, 15, '#fbf3e2', '#7a4d30'); });
     G.customers.forEach(drawPartyUI);
     if (G.mischief) {
@@ -6081,11 +6437,16 @@ const stations = {};
     $('#h-day').textContent = `${save.name} · ${SEASONS[SUZHOU ? CUR_SE : seasonOf(save.day)].n} · 第 ${save.day} 天`;
     for (const b of ['#b-dex', '#b-dex2']) $(b).classList.toggle('newdot', !!save.noteNew);
     $('#b-decor').style.display = SUZHOU && G.mode === 'day' && save.day >= 2 ? '' : 'none';
+    document.querySelectorAll('#dex .tabs .suzhou-tab,#dex .tabs [data-tab=card]').forEach(b=>{if(SUZHOU)b.hidden=true;});
+    $('#b-letters').hidden=!SUZHOU||save.day<3;
+    $('#b-letters').classList.toggle('newdot',Boolean(save.mail));
     $('#b-staff').style.display = staffIds().length ? '' : 'none'; $('#b-invent').style.display = G.mode === 'day' && (ideaNow() || practiceDishes().length) ? '' : 'none'; $('#b-invent').classList.toggle('newdot', !!ideaNow()); $('#b-menu').classList.toggle('newdot', !!save.menuNew && G.mode === 'day'); $('#b-dance').style.display = prog().dance ? '' : 'none';
 
     if (G.mode === 'day') {
       if (YARD) refreshYardTask();
-      $('#h-energy').textContent = `体力 ${G.D.energy}/${ENERGY}`;
+      $('#h-energy').textContent = `⚡ 盆盆 ${G.D.energy}/${ENERGY}`;
+      $('#b-mimi').hidden=!mimiOpen();
+      if(mimiOpen())$('#b-mimi').textContent='咪咪 ⚡ '+yardDaily().mimi;
       $('#h-save').textContent = `存款 ¥ ${save.coins}`;
       return;
     }
@@ -6105,6 +6466,12 @@ const stations = {};
 
   function renderSaves() {
     const list = loadSaves();
+    $('#title').classList.toggle('garden-title',SUZHOU);
+    $('#title').classList.toggle('has-saves',list.length>0);
+    $('#title').classList.remove('show-saves');
+    $('#saves-toggle').hidden=!SUZHOU||!list.length;
+    $('#saves-toggle').textContent='存档';
+    $('#saves-toggle').onclick=()=>{const open=$('#title').classList.toggle('show-saves');$('#saves-toggle').setAttribute('aria-expanded',String(open));};
     const box = $('#save-list');
     box.innerHTML = list.length ? '' : '<p class="empty">还没有存档，先新建一个吧。</p>';
     list.sort((a, b) => b.updated - a.updated).forEach((s) => {
@@ -6126,6 +6493,8 @@ const stations = {};
     });
   }
   function escapeHTML(s) { return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+  $('#title-new').onclick=()=>{const title=$('#title');title.classList.add('show-saves');$('#new-name').focus();};
+  $('#title-start').onclick=()=>{const latest=loadSaves().sort((a,b)=>b.updated-a.updated)[0];if(latest)startSave(latest.id);else $('#title-new').click();};
   $('#new-save').addEventListener('submit', (e) => {
     e.preventDefault();
     const name = $('#new-name').value.trim() || '盆盆';
@@ -6140,7 +6509,7 @@ const stations = {};
     travel.page = 0;
     buildPlayerSprites(save.look || CATS.penpen.look);
     const ck = save.ck && save.ck.day === save.day ? save.ck : null;
-    if (ck) Object.assign(save, { stock: ck.stock, seeds: ck.seeds, coins: ck.coins, menu: ck.menu, menuDay: ck.menuDay, farm: ck.farm, energy: ck.energy, energyDay: save.day }); // 营业中退出：回到开店那一刻
+    if (ck) Object.assign(save, { stock: ck.stock, seeds: ck.seeds, coins: ck.coins, menu: ck.menu, menuDay: ck.menuDay, drinkMenu:ck.drinkMenu, offerDesserts:ck.offerDesserts, farm: ck.farm, energy: ck.energy, energyDay: save.day }); // 营业中退出：回到开店那一刻
     newDay(); show('hud-screen');
     if (ck) { G.staffDay = save.day; openShop(); G.paused = true; save.lastSeen = Date.now(); persist(); ask('上次营业到一半就离开了，这一班从开店那一刻重新开始。', '好的', true).then(() => { G.paused = false; }); sfx.tap(); return; }
     if (!showAway()) showTip('day');
@@ -6221,18 +6590,21 @@ const stations = {};
     for (const k of add.seeds || []) it.push(tile(ingURL(k), ING[k].n + '种子'));
     for (const k of add.staff || []) it.push(tile(charURL(k), STAFF_DEF[k].name));
     if ((add.map || []).includes('mirror')) it.push(tile(MIRROR_IMG.src, '镜子'));
-    const MAPN = { tea: ['茶园', 'tealeaf'], market: ['早市', 'tofu'], plot: ['菜地', 'chili'], pond: ['池塘', 'fish'], coop: ['鸡舍', 'egg'], mail: ['邮筒', null] };
+    if(SUZHOU&&save.day===2)it.push(tile(gardenArt('cottage_wardrobe','webp').src,'小屋'));
+    if(SUZHOU&&save.day===6)it.push('<div class="nt farm"><b>田边的咪咪</b><small>去农场点咪咪，给它选种植、收成或垂钓。</small></div>');
+    const MAPN = { tea: ['茶铺', 'tealeaf'], market: ['早市', 'tofu'], plot: ['菜地', 'chili'], pond: ['池塘', 'fish'], coop: ['鸡舍', 'egg'], mail: ['邮筒', null] };
     for (const k of add.map || []) if (MAPN[k]) it.push(tile(MAPN[k][1] ? ingURL(MAPN[k][1]) : iconURL('order'), MAPN[k][0]));
     if (add.plots && !(add.map || []).includes('plot')) it.push(tile(ingURL('chili'), `第 ${add.plots} 块地`));
     if (add.water) it.push(tile(cupURL('water'), '倒水'));
     for (const id of staffIds()) if (skipping(id)) it.push(`<div class="nt farm"><img alt="" src="${charURL(id)}"><b>${STAFF_DEF[id].name} · 休工</b><small>工钱未结清，在院子里晒太阳</small></div>`); // D-001
-    for (const f of save.farmLog || []) it.push(`<div class="nt farm"><img alt="" src="${charURL(f.id)}"><b>${STAFF_DEF[f.id].name}干农活</b><small>${f.got.join(' ')}</small></div>`);
+    for (const f of (save.farmLog||[]).filter(o=>!SUZHOU||o.id!=='mimi')) it.push(`<div class="nt farm"><img alt="" src="${charURL(f.id)}"><b>${STAFF_DEF[f.id].name}干农活</b><small>${f.got.join(' ')}</small></div>`);
     if (save.invite && !save.inviteShown) { save.inviteShown = true; it.push(tile(pcURL('hotspring'), '樱花之国的邀请')); }
     for (const id of add.tables || []) if (save.day > 1) it.push(tile(`assets/${TABLES.find((t) => t.id === id).size === 4 ? 'table_m' : 'table_s'}.webp`, TABLES.find((t) => t.id === id).size === 4 ? '四人桌' : '两人桌'));
     const tr = save.trend && save.trend.day === save.day ? save.trend : null;
     const note = dailyNote();
     if (teachingFarm()) it.unshift('<div class="nt farm"><b>今天的备料</b><small>' + teachingFarm().msg + '</small></div>');
     if (SUZHOU && save.day === 2 && !save.decorTaught) it.push('<div class="nt farm"><b>可以装修了</b><small>种完地，试着给餐厅换块桌布。</small></div>');
+    if(SUZHOU&&save.pondToken?.day===save.day-1)it.push('<div class="nt farm"><b>木牌上的手印</b><small>帅老头看了一眼，说下个集日也许有人认得这块木牌。</small></div>');
     if (note) it.unshift('<div class="nt farm"><b>街坊消息</b><small>' + note + '</small></div>');
     const paper = tr ? `<div class="paper"><div class="mast">猫猫日报 <small>第 ${save.day} 天</small></div><div class="hl"><img alt="" src="${iconURL(tr.hot)}"><b>今天流行「${tr.hot}」</b></div><div class="cold"><img alt="" src="${iconURL(tr.cold)}">「${tr.cold}」没人点</div></div>` : '';
     $('#tip-close').innerHTML = save.day === 1 ? '<button type="button" class="primary tip-open">开始营业</button>' : SUZHOU ? '<button type="button" class="tip-go">开始备料</button>' : '点这里关闭'; // T-02：第一天一个大按钮
@@ -6254,7 +6626,7 @@ const stations = {};
   const isUnlocked = (o, s) => !o.unlock || (o.unlock.day && s.day >= o.unlock.day) || (o.unlock.stars && totalStars(s) >= o.unlock.stars);
   const lockText = (o) => (o.unlock.day ? `第 ${o.unlock.day} 天解锁` : `${o.unlock.stars} 颗星解锁`);
   let creatorFor = null, creatorThen = null;
-  function openCreator(s, thenStart) {
+  function openCreator(s, thenStart, fromCottage=false) {
     creatorFor = s; creatorThen = thenStart;
     const look = { eye2: 'same', tuft: 'none', pupil: 'normal', ...CATS.penpen.look, ...(s.look || {}) };
     const box = $('#creator');
@@ -6298,6 +6670,7 @@ const stations = {};
       if (t) { t.look = look; t.updated = Date.now(); storeSaves(list); }
       if (save && save.id === creatorFor.id) { save.look = look; buildPlayerSprites(look); }
       if (creatorThen) startSave(creatorFor.id);
+      else if(fromCottage && G) openCottage();
       else if (G && save && save.id === creatorFor.id) { G.paused = false; show('hud-screen'); }
       else { renderSaves(); show('title'); }
     });
@@ -6374,8 +6747,7 @@ const stations = {};
   };
   const DECOR_SEASONS = ['', 'spring', 'summer', 'autumn', 'winter'];
 
-  function drawDecorPreview(draft) {
-    const frame = $('#decor-room');
+  function drawDecorPreview(draft,frame=$('#decor-room')) {
     const drawing = frame.getContext('2d'), previous = ctx;
     ctx = drawing;
     try {
@@ -6393,8 +6765,10 @@ const stations = {};
     const clone = () => ({ ...save.decor, tables: { ...save.decor.tables } });
     let draft = clone(), slot = typeof startSlot === 'string' ? startSlot : 'linen';
     let refreshPreview;
-    const large = TABLES.filter((t) => t.size === 4 && prog().tables.includes(t.id));
-    const wallItems = [...artEntries(), ...photoEntries(), ...postEntries()];
+    const large = TABLES.filter(t=>prog().tables.includes(t.id));
+    const priceFor=id=>large.find(t=>t.id===id)?.size===4||save.tableSeatsPaid?.[id]?0:SEAT_UPGRADE_PRICE;
+    const expense=()=>Object.entries(draft.tables).reduce((sum,[id,size])=>sum+(size===4?priceFor(+id):0),0);
+    const wallItems = [...artEntries().filter(o=>o.id!=='pond-token'), ...photoEntries(), ...postEntries().filter(o=>o.kind==='明信片')];
     const palette = { linen: ['#eac7af','#d9a994','#527187','#ad775d','#8cabc2'], flowers: ['🌿','🌸','🪷','🌾','🌼'], curtain: ['#b6a0b5','#a69bb6','#527665','#aa6856','#545c94'] };
     const text = { linen: '桌布', flowers: '插花', curtain: '门帘', wallLeft: '左墙挂画', wallRight: '右墙挂画', bench: '候位凳' };
     const description = {
@@ -6407,16 +6781,15 @@ const stations = {};
     };
     const slots = [
       ...Object.keys(DECOR_OPTIONS).map(key => ({ key, n:text[key], options:DECOR_OPTIONS[key].map((n,i)=>({ id:DECOR_SEASONS[i],n, swatch:palette[key][i] })) })),
-      ...large.map(t=>({ key:'table'+t.id, n:tableNumber(t.id)+'号桌', tid:t.id, options:[{ id:4,n:'四人桌',swatch:'4' },{ id:2,n:'两人桌',swatch:'2' }] })),
+      ...large.map(t=>({ key:'table'+t.id, n:tableNumber(t.id)+'号桌', tid:t.id, options:[{ id:4,n:'四人桌'+(priceFor(t.id)?' · ¥'+priceFor(t.id):''),swatch:'4' },{ id:2,n:'两人桌',swatch:'2' }] })),
       ...['wallLeft','wallRight'].map(key=>({ key,n:text[key], options:[{ id:'',n:'留空' },...wallItems.map(o=>({ id:o.id,n:o.title,src:o.src }))] })),
       { key:'bench',n:text.bench,options:[{ id:false,n:'留空' },{ id:true,n:'摆候位凳',swatch:'凳' }] },
     ];
     if (save.regular?.flower) slots.find(o=>o.key==='flowers').options.push({ id:'gift',n:'狸猫阿姨的候位花',swatch:'🌷' });
     if (!slots.some(o=>o.key===slot)) slot='linen';
-    function selected(value) { return value.tid ? draft.tables[value.tid] || 4 : draft[value.key]; }
+    function selected(value) { return value.tid ? draft.tables[value.tid] || large.find(t=>t.id===value.tid).size : draft[value.key]; }
     function setChoice(field, id) {
       if (field.tid) {
-        if (id === 2 && !large.some(t=>t.id !== field.tid && (draft.tables[t.id] || 4) === 4)) return;
         draft.tables[field.tid]=id;
       } else draft[field.key]=id;
       render();
@@ -6426,20 +6799,21 @@ const stations = {};
       clearTimeout(refreshPreview);
       refreshPreview=setTimeout(()=>{if ($('#decorate').classList.contains('show')) drawDecorPreview(draft);},300);
       const seats=tableSetup(draft).reduce((n,t)=>n+t.size,0);
-      $('#decor-info').textContent=seats+' 个座位'+(draft.bench?' · 已摆候位凳':'');
+      $('#decor-info').textContent=seats+' 个座位'+(draft.bench?' · 已摆候位凳':'')+(expense()?' · 扩座 ¥'+expense():'');
+      $('#decor-apply').disabled=expense()>save.coins;
     }
     function render() {
       const make=(title,click)=>{const el=document.createElement('button');el.type='button';el.textContent=title;el.onclick=click;return el;};
       const current=slots.find(f=>f.key===slot);
       const tabs=$('#decor-slots');
       tabs.replaceChildren(...slots.map(f=>{const el=make(f.n,()=>{slot=f.key;render();});el.dataset.slot=f.key;el.setAttribute('aria-pressed',String(f.key===slot));return el;}));
-      $('#decor-guide').textContent = !save.decorTaught && slot === 'linen' ? '先点一块桌布试摆，喜欢就保存。其他位置也可以试。' : description[slot] || '选择桌子的容量。店里要留一张四人桌。';
+      $('#decor-guide').textContent = !save.decorTaught && slot === 'linen' ? '先点一块桌布试摆，喜欢就保存。其他位置也可以试。' : description[slot] || '选择两座或四座。新扩座要付费，保存后生效。';
       $('#decor-choices').replaceChildren(...current.options.map(o=>{
         const card=make(o.n,()=>setChoice(current,o.id));
         card.dataset.choice=String(o.id);card.setAttribute('aria-pressed',String(selected(current)===o.id));
         if(o.src){const img=document.createElement('img');img.src=o.src;img.alt='';card.prepend(img);}
         else if(o.swatch){const sample=document.createElement('span');sample.className='decor-swatch';if(o.swatch.startsWith('#'))sample.style.background=o.swatch;else sample.textContent=o.swatch;card.prepend(sample);}
-        if(current.tid && o.id===2 && !large.some(t=>t.id!==current.tid && (draft.tables[t.id]||4)===4)){card.disabled=true;card.title='店内至少保留一张四人桌';}
+        if(current.tid&&o.id===4&&priceFor(current.tid)>save.coins){card.disabled=true;card.title='存款不足';}
         return card;
       }));
       preview();
@@ -6448,6 +6822,9 @@ const stations = {};
     $('#decor-close').onclick=close;
     $('#decor-reset').onclick=()=>{draft=clone();render();};
     $('#decor-apply').onclick=()=>{
+      const cost=expense(); if(cost>save.coins)return;
+      save.coins-=cost;save.tableSeatsPaid ||= {};
+      for(const [id,size] of Object.entries(draft.tables))if(size===4)save.tableSeatsPaid[id]=true;
       save.decor=draft; save.decorTaught=true;
       if(save.prep?.day===save.day&&draft.tables[save.prep.table]===2)save.prep.table=null;
       G.tables=tableSetup();G.plates.clean=startingPlates(G.tables);
@@ -6455,10 +6832,12 @@ const stations = {};
     };
     show('decorate');render();fitPanels();
   }
+  $('#b-mimi').onclick=openMimi;$('#h-energy').onclick=openEnergy;
   $('#b-decor').addEventListener('click', openDecor);
   $('#yard-decor-intro').addEventListener('click', openDecor);
   $('#b-open').addEventListener('click', () => { if (G && G.mode === 'day') ask(`开门营业吗？${G.D.energy ? `（体力还剩 ${G.D.energy}）` : ''}`, '开店').then((ok) => ok && openShop()); });
   $('#b-pantry').addEventListener('click', openPantry);
+  $('#b-letters').onclick=()=>{if(!G||G.paused)return;if(G.mode==='day'&&save.mail){const mail=yardPlace('mail');if(mail){walkToYard(mail);return;}}openCollection('post','hud-screen');};
   $('#b-dex').addEventListener('click', () => openDex('cust'));
   $('#p-dex').addEventListener('click', () => openDex('cust'));
   $('#b-dex2').addEventListener('click', () => openDex('cust'));
@@ -6486,10 +6865,11 @@ const stations = {};
   }
   function postEntries() {
     const notes = save.album.notes;
-    return (save.cards || []).flatMap((id) => {
+    const letters=(save.cards || []).flatMap((id) => {
       const p = POSTCARDS.find((entry) => entry.id === id);
       return p ? [{ id: 'card:' + id, title: p.n, from: p.from, msg: p.msg, src: pcURL(id), date: notes['card:' + id], kind: '明信片' }] : [];
     });
+    return letters.concat(photoEntries().map(o=>({...o,title:o.from+'随手拍',kind:'来信'})));
   }
   function photoEntries() {
     const notes = save.album.notes;
@@ -6503,6 +6883,7 @@ const stations = {};
     const paintings = Object.entries(TRAVEL_PAINTINGS).map(([id, p]) => ({ ...p, id, kind: '挂画', date: notes[id] }));
     if ((save.cards || []).includes('huizhou')) paintings.push({ id: 'paint:huizhou', title: '白墙黛瓦', from: POSTCARDS.find((p) => p.id === 'huizhou').from,
       msg: '桥那头的青瓦在雨里特别好看。想把这一抹墨色也寄给你们。', src: 'assets/suzhou/wall_huizhou.jpg', date: notes['card:huizhou'], kind: '挂画' });
+    if(save.pondToken)paintings.push({id:'pond-token',title:'系着旧结绳的木牌',from:'鱼塘',msg:'木牌泡旧了。正面有个像人的手印，背面还有一条划痕。',src:gardenArt('story_pond_tag_g073','webp').src});
     if (save.day >= 6 && save.history.some((h) => h.day >= 5)) paintings.push({ id: 'family', title: '首店全家福', from: '苏式首店',
       msg: '灶边忙完，大家难得都在。', src: 'assets/suzhou/family_photo.jpg', kind: '相片' });
     return paintings;
@@ -6512,7 +6893,7 @@ const stations = {};
     notes[id] ||= { day: save.day, at: new Date().toISOString(), ...(msg ? { msg } : {}) };
     if (SUZHOU && id.startsWith('snap:') && !save.album.taughtPhoto) {
       save.album.taughtPhoto = true;
-      toast('旅行照片已收进相簿。在笔记里翻看，或在装修时选来挂上。', 4200);
+      toast('旅行照片已收进相簿。在书信里翻看，或在装修时选来挂上。', 4200);
     }
   }
   function openTravelAlbum(from = 'dex', focus) {
@@ -6522,6 +6903,41 @@ const stations = {};
     if (focus) travel.page = Math.max(0, travel.ids.indexOf(focus));
     travel.page = Math.max(0,Math.min(travel.page, travel.ids.length - 1));
     show('travel-album'); renderTravelAlbum();
+  }
+
+  function replySnapshot(place){
+    const photo=document.createElement('canvas');photo.width=380;photo.height=place==='shop'?183:214;
+    if(place==='shop'){
+      drawDecorPreview(save.decor,photo);
+    } else {
+      const painting=photo.getContext('2d'),old=ctx;
+      const art=gardenArt('yard_'+CUR_SE,'jpg');
+      if(!ok(art))return null;
+      ctx=painting;
+      try{ctx.setTransform(photo.width/W,0,0,photo.height/H,0,0);drawYard(false);}finally{ctx=old;}
+    }
+    return photo.toDataURL('image/webp',.68);
+  }
+  function renderReply(key, root=$('#mail-reply')){
+    const lines=['今天也有客人来吃面。','等你回来一起喝茶。','池塘起了风，院子里很好看。'];
+    const labels={shop:'餐厅',farm:'农场'};
+    const source=(place,season)=>place==='shop'?gardenArt(season==='winter'?'winter_g066':'spring_g066','jpg').src:gardenArt('yard_'+season,'jpg').src;
+    save.replies ||= {};
+    const snapshots={};
+    let photo=save.replies[key]?.photo||'shop',line=save.replies[key]?.text||lines[0];
+    const draw=()=>{
+      root.hidden=false;
+      const previous=save.replies[key];
+      snapshots[photo] ||= previous?.photo===photo&&previous.src || replySnapshot(photo) || source(photo,CUR_SE);
+      root.innerHTML=`<div class="reply-paper"><img alt="${labels[photo]}照片" src="${snapshots[photo]}"><div><b>${previous?'已寄出的回信':'给呆猫回信'}</b><label>照片 <select>${Object.entries(labels).map(([k,name])=>`<option value="${k}" ${k===photo?'selected':''}>${name}</option>`).join('')}</select></label><label>留言 <select>${lines.map(text=>`<option ${text===line?'selected':''}>${text}</option>`).join('')}</select></label><button type="button">${previous?'更新留底':'寄回信'}</button></div></div>`;
+      const [photoChoice,lineChoice]=root.querySelectorAll('select');
+      photoChoice.onchange=()=>{photo=photoChoice.value;draw();};
+      lineChoice.onchange=()=>{line=lineChoice.value;};
+      root.querySelector('button').onclick=()=>{
+        save.replies[key]={photo,text:line,season:CUR_SE,day:save.day,src:snapshots[photo]};persist();sfx.coin();toast('回信已寄出');draw();
+      };
+    };
+    draw();
   }
   function renderTravelAlbum() {
     const entries = photoEntries(), entry = entries[travel.page];
@@ -6541,55 +6957,23 @@ const stations = {};
     $('#album-prev').disabled = travel.page <= 0;
     $('#album-next').disabled = travel.page >= travel.ids.length - 1;
     $('#album-page-number').textContent = (travel.page + 1) + ' / ' + travel.ids.length;
-    const pick = $('#album-add-photo');
-    pick.value = ''; pick.innerHTML = '<option value="">选照片贴到留白处</option>';
-    for (const item of entries.filter((item) => item.kind !== '挂画')) pick.add(new Option(item.title + ' · ' + item.from, item.id));
-    pick.value = travel.placing;
-    const place = $('#album-paper');
-    place.classList.toggle('placing', !!travel.placing);
-    $('#album-paper-hint').hidden = !travel.placing;
-    const decorations = save.album.placements[entry.id] || [];
-    $('#album-stickers').replaceChildren();
-    decorations.forEach((d, i) => {
-      const item = entries.find((item) => item.id === d.id);
-      if (!item) return;
-      const button = document.createElement('button'), im = document.createElement('img');
-      button.type = 'button'; button.className = 'album-sticker';
-      button.style.left = d.x + '%'; button.style.top = d.y + '%';
-      button.style.rotate = d.angle + 'deg';
-      button.setAttribute('aria-label', '取下' + item.title);
-      im.src = item.src; im.alt = item.title; im.draggable = false; button.append(im);
-      button.onclick = (ev) => { ev.stopPropagation(); decorations.splice(i, 1); persist(); renderTravelAlbum(); };
-      $('#album-stickers').append(button);
-    });
   }
   $('#album-prev').onclick = () => { if (travel.page > 0) { travel.page--; travel.placing = ''; renderTravelAlbum(); } };
   $('#album-next').onclick = () => { if (travel.page + 1 < travel.ids.length) { travel.page++; travel.placing = ''; renderTravelAlbum(); } };
   $('#album-close').onclick = () => {
-    if (travel.from === 'dex') openDex('cust');
+    if (travel.from === 'collection') openCollection('post','hud-screen');
+    else if (travel.from === 'dex') openDex('cust');
     else if (travel.from === 'pause') show('pause');
     else { G.paused = false; show('hud-screen'); }
   };
   $('#album-clock').onchange = (e) => { save.album.clock = e.target.value; persist(); renderTravelAlbum(); };
-  $('#album-add-photo').onchange = (e) => { travel.placing = e.target.value; renderTravelAlbum(); };
-  $('#album-paper').onclick = (ev) => {
-    if (!travel.placing) return;
-    const r = ev.currentTarget.getBoundingClientRect();
-    const items = (save.album.placements[travel.ids[travel.page]] ||= []);
-    if (items.length >= 3) { toast('这页已经贴了三张照片'); return; }
-    items.push({ id: travel.placing, x: Math.max(14, Math.min(86, (ev.clientX - r.left) * 100 / r.width)),
-      y: Math.max(29, Math.min(71, (ev.clientY - r.top) * 100 / r.height)), angle: [-5, 4, -2][items.length] });
-    travel.placing = ''; persist(); renderTravelAlbum();
-  };
-
-
   function openHelp() {
     if (!G) return;
     G.paused = true;
     const pages = {
-      shop: ['营业','点候位客人、再点空桌。桌中央有桌号和状态。','点单后要去插单器送票。一桌菜齐后从出菜台取走，再点同号桌。','结账后收盘，到洗碗池放下，再点一次洗碗。老大空闲也会帮忙。'],
-      farm: ['农场','先跟左下的备料卡去早市领种，到第一畦种三格。','明早先收菜再钓鱼。到木钓台抛竿，浮漂动时收线。','定菜单后看缺货单。只补今天缺的，备料完成再开店。'],
-      decor: ['装修与收藏','农场点装修，先选桌面、墙面或门口的位置，再点一件藏品试摆。','保存才会换上新布置。至少留一张四人桌。','旅行照片去旅行相簿，画和全家福在艺术品仓库。呆猫寄来的唱片可在唱片柜播放。'],
+      shop: ['营业','点候位客人后点桌。按人点菜、选配料和饮品，再去插单器送票。','客人点了水或茶，先点茶壶倒水或泡茶，再点需要这杯的桌。','一桌菜齐后取餐。客人吃完结账，再收碗放进池子，点洗碗。老大做完菜偶尔会帮忙。','帅老头在门边，按招手、拍子、转身顺序跳舞，可招来一波客人。'],
+      farm: ['农场','先跟备料卡去早市领种，再到第一畦播种。','明早收菜与钓鱼。左上角体力可点开查看；睡一晚恢复。','小屋里有衣柜和布置。茶铺采叶，鸡舍收蛋。咪咪在院里可独立选种植、收成或垂钓。'],
+      decor: ['装修与收藏','农场点装修，先选桌面、墙面或门口的位置，再点一件藏品试摆。','保存才会换上布置并扣扩座费。四人客要四座桌。','旅行照片去旅行相簿，画和全家福在艺术品仓库。呆猫寄来的唱片可在唱片柜播放。'],
     };
     const draw = (tab) => {
       const [title,...steps] = pages[tab];
@@ -6628,17 +7012,20 @@ const stations = {};
       image.hidden=!entry?.src;if(entry?.src){image.src=entry.src;image.alt=entry.title;}
       $('#collection-name').textContent=entry?.title||'';
       $('#collection-message').textContent=entry?.msg||'';
+      const reply=$('#collection-replies');reply.hidden=place!=='post'||!entry;
+      if(!reply.hidden)renderReply(entry.id,reply);
       play.hidden=place!=='records'||!entry; edit.hidden=place!=='art'||G.mode!=='day'||save.day<2;
       if(place==='records'&&entry){
-        play.disabled=(save.record||'restaurant')===entry.id;
-        play.textContent=play.disabled?'已选这张唱片':'选为营业音乐';
-        play.onclick=()=>{ save.record=entry.id;persist();syncSound();draw(place,entry.id);toast('营业音乐已切换'); };
+        const setting=G.mode==='day'?'farmRecord':'record', label=setting==='farmRecord'?'农场':'营业';
+        play.disabled=(save[setting]||'guzheng')===entry.id;
+        play.textContent=play.disabled?'正在播放这张':'选为'+label+'音乐';
+        play.onclick=()=>{ save[setting]=entry.id;persist();syncSound();draw(place,entry.id);toast(label+'音乐已切换'); };
       }
       edit.onclick=()=>openDecor('wallLeft');
     };
     $('#collection-tabs').onclick=(e)=>{
       const tab=e.target.closest('button')?.dataset.c;
-      if(tab==='album')openTravelAlbum(from); else if(tab)draw(tab);
+      if(tab==='album')openTravelAlbum(from==='hud-screen'?'collection':from); else if(tab)draw(tab);
     };
     $('#collection-close').onclick=()=>{if(from==='dex')openDex('cust');else if(from==='pause')show('pause');else{G.paused=false;show('hud-screen');}};
     show('collection');draw(kind,focus);
@@ -6656,9 +7043,11 @@ const stations = {};
         const d = (save.dex || {})[t.id];
         if (!d || !d.met) return `<div class="dx locked"><div class="ph">？</div><b>？？？</b><small>还没来过</small></div>`;
         const known = (all, k, cls) => all.map((x) => (k.includes(x) ? tagChip(x, cls) : '<span class="chip unk">？</span>')).join('');
+        const regularTaste=SUZHOU?gardenTaste(t):null;
+        const normalNotes=regularTaste&&d.likes?.length?`<div>喜欢 ${d.likes.map(tag=>tagChip(tag,'want')).join('')}</div>`:'';
         const body = t.kind === 'omakase'
           ? `<div>喜欢：${known(t.likes, d.likes, 'want')}</div><div>不太喜欢：${known(t.dislikes, d.dislikes || [], 'meh')}</div><div>不吃：${known(t.hates, d.hates, 'hate')}</div>`
-          : `<div>常说：${d.reqs.length ? d.reqs.map((x) => `<span class="chip">${x}</span>`).join('') : '<span class="none">还没提过要求</span>'}</div>`;
+          : `<div>常说：${d.reqs.length ? d.reqs.map((x) => `<span class="chip">${x}</span>`).join('') : '<span class="none">还没提过要求</span>'}</div>${normalNotes}`;
         return `<div class="dx ${save.noteNew === t.id ? 'fresh' : ''}" data-id="${t.id}"><img alt="" src="${custURL(t.id)}"><b>${t.n}</b>${save.noteNew === t.id ? '<i class="newb">新</i>' : ''}<span class="kind ${t.kind}">${t.kind === 'omakase' ? '随缘客' : '点菜客'}</span><small>${t.blurb}　来过 ${d.met} 次</small>${body}<div class="tiph">小费：${TIP_TXT[t.tip] || ''}</div></div>`;
       }).join('');
     } else if (tab === 'fish') {
@@ -6695,16 +7084,35 @@ const stations = {};
   $('#p-resume').addEventListener('click', () => { G.paused = false; show('hud-screen'); });
   $('#p-look').style.display = 'none'; // 换样子改成在地图上照镜子
   $('#p-quit').addEventListener('click', () => { ask('回到存档列表？今天的进度不会保存。', '回去').then((ok) => { if (ok) { G = null; renderSaves(); show('title'); } }); });
+  function finishDance(){
+    G.dancer={t:4};G.danceCD=42;sfx.dance();
+    if(SUZHOU){G.burstGuests=3;G.spawnT=1;G.danceTaught=true;did('dance');}
+    for(const c of G.customers.filter(c=>inLine(c))){addHeart(c);const a=anchor(c);float(a.x,a.y-20,'+♥','#bd6677','heart',1.7);}
+  }
+  function openDance(){
+    G.paused=true;show('dance-steps');
+    const steps=[['✋','招手'],['◆','拍子'],['♪','转身']];let count=0;
+    const finish=()=>{G.paused=false;show('hud-screen');};
+    const draw=()=>{
+      $('#dance-instruction').textContent='照顺序点招手、拍子、转身。完成后，帅老头会迎来一波新客。';
+      $('#dance-options').replaceChildren(...steps.map(([icon,label],i)=>{
+        const b=document.createElement('button');b.textContent=icon+' '+label;b.setAttribute('aria-pressed',String(i<count));b.onclick=()=>{
+          if(i!==count){count=0;sfx.bad();draw();return;}
+          count++;sfx.crew('shuai');if(count===steps.length){finish();finishDance();}else draw();
+        };return b;
+      }));
+    }; $('#dance-close').onclick=finish;draw();
+  }
   $('#b-dance').addEventListener('click', () => {
     if (!G || G.mode !== 'shop' || G.danceCD > 0 || G.paused) return;
-    G.dancer = { t: 4 }; G.danceCD = 45; sfx.dance();
-    G.customers.forEach((c) => { if (c.state !== 'leaving') { addHeart(c); const a = anchor(c); float(a.x, a.y - 20, '+♥', '#ef6f7a'); } });
+    if(SUZHOU){openDance();return;}
+    finishDance();
   });
   $('#start-tip').addEventListener('click', () => { $('#start-tip').classList.remove('show'); if (G && G.mode === 'shop') G.paused = false; if (G && G.mode === 'day') { if (save.day === 1) openShop(); else if (save.menuDay !== save.day && !YARD && !teachingFarm()) openMenuPick(); } });
 
   // ---------- 老大试菜 ----------
   const INV = { target: null, ing: null, ware: null, running: false };
-  const PRACTICE = ['xiajiao', 'mian', 'mapo'];
+  const PRACTICE = ['xiajiao', REGULAR_DISH, 'mapo'];
   const practiceDishes = () => SUZHOU && save.day >= 2 && save.signature?.day !== save.day
     ? PRACTICE.filter((k) => menuNow().includes(k) && canCook(k)) : [];
   function openInvent() {
@@ -6839,7 +7247,11 @@ const stations = {};
     }
     if (G.teaOpen) { const b = shown('#teamenu .topt.want') || shown('#teamenu .topt:not([disabled])'); return b && need('drink') ? { type: 'drink', sel: b, text: '选这个' } : null; }
     const cand = [];
-    for (const c of G.customers) if (c.state === 'bill' && !qT(c.table)) cand.push(T(c.table, '收钱', 'pay'));
+    if(SUZHOU&&prog().dance&&!save.did.dance&&G.t>19&&G.danceCD<=0&&shown('#b-dance'))cand.push({type:'dance',sel:shown('#b-dance'),text:'按舞步招客'});
+    for(const c of G.customers)if(c.state==='bill'&&!qT(c.table)){
+      if(!SUZHOU)cand.push(T(c.table,'收钱','pay'));
+      else if(!save.did.pay){const box=tableRequestBox(c.table);cand.push(P(box.x+box.w/2,box.y+box.h/2,29,'','pay'));}
+    }
     for (const h of w.hands) if ((h.kind === 'dish' || h.kind === 'drink') && h.cust.table && !qT(h.cust.table)) cand.push(T(h.cust.table, '端过去', 'serve'));
     if (w.hands.some((h) => h.kind === 'water')) { const c = G.customers.find((c) => c.state === 'thirsty' && !qT(c.table)); if (c) cand.push(T(c.table, '送水', 'water')); }
     if (w.hands.some((h) => h.kind === 'plate') && w.sinkDrop === undefined && !queued((a) => a.kind === 'sink')) cand.push(P(SINK.x, SINK.y - 30, 50, '放碗', 'sink'));
@@ -6857,7 +7269,7 @@ const stations = {};
     const q = (G.selected && G.selected.state === 'queue' ? G.selected : null) || G.customers.filter((c) => c.state === 'queue').sort((a, b) => a.id - b.id)[0];
     if (q) {
       const free = G.tables.filter((t) => !t.cust && !t.dirty && !t.reserved && t.size >= q.size).sort((a, b) => a.size - b.size)[0];
-      if (free) { if (G.selected === q) cand.unshift(T(free, '坐这桌', 'seat')); else cand.push(P(q.x, q.y - 50, 50, '点客人', 'seat')); }
+      if (free) { if (G.selected === q) { if (!SUZHOU || save.day===1) cand.unshift(T(free, '坐这桌', 'seat')); } else cand.push(P(q.x, q.y - 50, 50, '点客人', 'seat')); }
     }
     for (const t of G.tables) if (t.dirty && !t.cust && !qT(t) && !t.busClaim) { cand.push(T(t, '收盘子', 'bus')); break; }
     if (save.noteNew && (!SUZHOU || save.day > 1) && shown('#b-dex2')) cand.push({ type: 'note', sel: shown('#b-dex2'), text: '看笔记' });
@@ -6865,6 +7277,23 @@ const stations = {};
   }
   function panelHint() {
     const c = G.orderOpen; if (!c) return null;
+    if (SUZHOU) {
+      if(save.day!==1) return null;
+      const focused=$('#order [data-person].on'), i=Number(focused?.dataset.person||0), m=c.members[i];
+      const dish=shown('#order [data-dish].on');
+      const choice=m.requested||m.dish||menuNow().find(key=>DISH[key].tags.includes(m.want)&&canCook(key));
+      const box=(sel,text)=>{const el=shown(sel);return el?{type:'go',sel:el,text}:null;};
+      if(!dish&&choice)return box('#order [data-dish='+choice+']:not(:disabled)','选客人点的菜');
+      if(dish) for(const [top,on] of DISH[dish.dataset.dish].tops){
+        if(!shown('#order [data-top="'+top+'"].on')){
+          const onSelected=m.req?.top===top?m.req.t==='add':m.want==='面'&&top==='辣油'?false:on;
+          return box('#order [data-top="'+top+'"][data-add="'+Number(onSelected)+'"]','选配料');
+        }
+      }
+      if(!shown('#order [data-cup].on')) {const tea=box('#order [data-cup='+(m.wishDrink||'none')+']','选饮品');if(tea)return tea;}
+      const next=[...document.querySelectorAll('#order [data-person]')].find(b=>!b.classList.contains('on')&&!b.textContent.includes('✓'));
+      return next?{type:'go',sel:next,text:'下一位客人'}:box('#order .go:not(:disabled)','下单');
+    }
     for (const [m, i] of c.members.map((m, i) => [m, i]).filter(([m]) => m.st === 'none')) {
       if (m.kind === 'menu' && m.req && (m.req.t === 'no') === !!m.tops[m.req.top] && need('req', 3)) return { type: 'req', sel: shown(`#order .tp.must[data-i="${i}"]`), text: m.req.t === 'no' ? `去掉${m.req.top}` : `加${m.req.top}` };
       if (m.kind === 'omakase' && !m.dish && need('oma')) {
@@ -6878,8 +7307,9 @@ const stations = {};
     if (YARD) {
       const f=G.D.fishing;
       if (f && f.stage!=='cast') return {type:f.stage==='bite'?'reel':'cast',sel:shown('#yard-fish-action'),text:''};
-      if (f || !teachingFarm() || G.D.path.length) return null;
+      if (f || G.D.path.length) return null;
       const goal=yardGoal();
+      if(!teachingFarm() && !goal?.key.endsWith('-guide'))return null;
       if (!goal?.place) return {type:'plan',sel:shown('#yard-task-go'),text:''};
       const p=goal.place.sign;
       return {type:goal.key,x:p.x,y:p.y+15,r:33,text:''};
@@ -6902,7 +7332,7 @@ const stations = {};
       else if (plotEmpty(i) && prog().seeds.some((k) => save.seeds[k] > 0)) cand.push(W_(x, y, 90, '种下', 'plant'));
       else if (plotEmpty(i) && spotOpen('market') && seedBuyable()) cand.push(W_(370, 430, 110, '买种子', 'seed'));
     }
-    const low = menuNow().map((k) => DISH[k].ing).find((ing) => prog().ings.includes(ing) && stockOf(ing) < 6 && save.coins >= priceOf(ing) * 5 && mktLeft(ing) >= 5);
+    const low = menuNow().map((k) => DISH[k].ing).find((ing) => marketIngs().includes(ing) && stockOf(ing) < 6 && save.coins >= priceOf(ing) * 5 && mktLeft(ing) >= 5);
     if (low && spotOpen('market')) cand.unshift(W_(370, 430, 110, `买${ING[low].n}`, 'buy'));
     if (spotOpen('pond') && D.energy > 0) cand.push(W_(1520, 990, 90, '钓鱼', 'fish'));
     if (spotOpen('coop') && save.coopDay !== save.day && D.energy > 0) cand.push(W_(2160, 430, 100, '捡蛋', 'egg'));
@@ -6931,7 +7361,7 @@ const stations = {};
     if (shown('#market.show')) {
       if (farmPhase() === 'seed') return { type: 'seed', sel: shown('#market .buy1[data-seed]'), text: '领种子' };
       if (farmPhase() === 'buy') return null;
-      const low = menuNow().map((k) => DISH[k].ing).find((ing) => prog().ings.includes(ing) && stockOf(ing) < 6 && save.coins >= priceOf(ing) * 5 && mktLeft(ing) >= 5);
+      const low = menuNow().map((k) => DISH[k].ing).find((ing) => marketIngs().includes(ing) && stockOf(ing) < 6 && save.coins >= priceOf(ing) * 5 && mktLeft(ing) >= 5);
       if (low && need('buy', 4)) return { type: 'buy', sel: shown(`#market .buy1:not([data-seed])[data-k="${low}"][data-n="5"]`), text: `买${ING[low].n}` };
       const sk = !prog().seeds.some((k) => save.seeds[k] > 0) && seedBuyable(), sn = sk && mktLeft(sk + '_seed') >= 9 && save.coins >= SEED_PRICE[sk] * 9 ? 9 : 3;
       if (sk && save.farm.some((f, i) => plotEmpty(i)) && need('seed')) return { type: 'seed', sel: shown(`#market .buy1[data-seed][data-k="${sk}"][data-n="${sn}"]`), text: '买种子' };

@@ -268,7 +268,7 @@ const WORLD_LABELS = [
 ];
 // ---------- 呆猫寄回来的明信片（照着你拍的风景画）viewBox 300×200 ----------
 const POSTCARDS = [ // 呆猫的旅行路线：先走山河各处，寄回当地风景和食谱；再到樱花之国，最后邀请盆盆去开分店
-  { id: 'snowpeak', n: '雪山和牦牛', from: '雪山牧场', se: 'winter', recipes: ['dandan'], gift: { ing: 'beef', n: 3 }, msg: '雪山脚下的小馆子，一碗担担面辣得我直哈气。方子抄给老大了！' },
+  { id: 'snowpeak', n: '雪山和牦牛', from: '雪山牧场', se: 'winter', recipes: ['yakmian'], gift: { ing: 'yakbeef', n: 3 }, msg: '雪山脚下的小馆子煮了一锅红烧牦牛肉。我抄下汤头的做法，寄一点肉给老大试试。' },
   { id: 'karst', selfie: 'left', n: '竹筏和山峰', from: '烟雨山水', se: 'summer', recipes: ['guihua'], gift: { ing: 'rice', n: 4 }, msg: '山像竹笋站在雾里。街上的桂花糕又软又香，做法寄回来啦。' },
   { id: 'river', n: '早茶楼', from: '骑楼茶镇', se: 'summer', recipes: ['xiajiao', 'chashao'], gift: { ing: 'shrimp', n: 4 }, msg: '早茶一坐就是一上午！虾饺和叉烧饭的方子都要来了。' },
   { id: 'huizhou', selfie: 'right', n: '马头墙老宅', from: '白墙黛瓦镇', se: 'spring', recipes: [], gift: { calcium: true }, msg: '白墙黛瓦，墙上有蜂窝一样的花纹。寄一瓶钙片，盆盆跑堂别累着。' },
