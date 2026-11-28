@@ -7,7 +7,7 @@
   const SUZHOU_PREVIEW = SUZHOU && typeof PENPEN_SUZHOU_PREVIEW !== 'undefined' && PENPEN_SUZHOU_PREVIEW;
   const PREVIEW_SEASON = SUZHOU_PREVIEW && new URLSearchParams(window.location.search).get('season');
   let gardenMode = false;
-  const SUZHOU_RELEASE = 'G062';
+  const SUZHOU_RELEASE = 'G066';
   const DAY_LEN = SUZHOU ? 230 : 150; // 每天营业秒数
   const cv = document.getElementById('game');
   const ctx = cv.getContext('2d');
@@ -126,6 +126,23 @@
     const key = guestKey(look, false);
     return key && key.replace(/_stand$/, '_dressed_' + pose);
   }
+  const GUEST_FRAMES = new Map();
+  function guestFrames(look) {
+    if (!GUEST_FRAMES.has(look)) {
+      const faces = {};
+      for (const pose of ['stand', 'walk', 'sit', 'rear', 'smile']) {
+        const name = guestNativeName(look, pose);
+        if (name) faces[pose] = gardenArt(name);
+      }
+      GUEST_FRAMES.set(look, faces);
+    }
+    return GUEST_FRAMES.get(look);
+  }
+  const guestLook = (c, i) => c.looks?.[i] || c.type.id;
+  const guestSeatReady = (c) => c.looks.every((look, i) => {
+    const frames = guestFrames(look);
+    return ok(frames[c.table.seats[i].front ? 'rear' : 'sit']);
+  });
   const custImgBack = (id) => custBack[id] || (custBack[id] = svgImg(catSVG(id, 'back', dressedFallback(id))));
   // D-022：伙计和盆盆换成水墨绘本图；灰盒或没图时仍用旧的 SVG 猫
   const P = (k) => { if (GREY) return null; const i = A(k); return ok(i) ? i : null; };
@@ -506,8 +523,13 @@
     // 菜地：每块 3×3 九格，每格种一颗种子（老存档：原来种着的算前三格）
     s.farm = (s.farm || []).concat([{}, {}, {}, {}]).slice(0, 4).map((f) => (f.cells ? f : { cells: Array.from({ length: 9 }, (_, j) => ((f.st === 'grow' || (!f.st && f.crop)) && j < 3 ? { k: f.crop, ready: f.ready || 1 } : null)) }));
     s.seeds = s.seeds || {}; s.did = s.did || {}; s.recipes = s.recipes || []; s.recipeDay = s.recipeDay || {}; s.history = s.history || [];
-    s.decor = { tables: {}, linen: '', flowers: '', curtain: '', bench: false, ...(s.decor || {}) };
+    s.decor = { tables: {}, linen: '', flowers: '', curtain: '', bench: false, wallLeft: 'bamboo', wallRight: 'canal', ...(s.decor || {}) };
     s.decor.tables ||= {};
+    s.album ||= { clock: 'game', notes: {}, placements: {} };
+    s.album.notes ||= {};
+    s.album.placements ||= {};
+    if (!s.farmLesson) s.farmLesson = s.day < 3 ? (s.did.plant ? 'wait' : s.did.seed ? 'plant' : 'seed')
+      : (s.did.harvest && !s.did.fish && s.day === 3 ? 'fish' : 'done');
     s.dex = s.dex || {}; s.dishDex = s.dishDex || {}; s.fishDex = s.fishDex || {};
     return s;
   }
@@ -564,6 +586,10 @@
       danceCD: 0, selected: null, orderOpen: null, dancer: null,
       D: { x: WMAP.shop.door.x, y: WMAP.shop.door.y + 30, path: [], face: 1, back: false, task: null, energy: save.energyDay === save.day && save.energy != null ? save.energy : ENERGY, fish: 0, cam: { x: 360, y: 300 }, manual: false },
     };
+    if (SUZHOU) {
+      for (const id of Object.keys(IDLE_BEATS)) gardenArt('s_' + id + '_idle');
+      for (const id of ['wall_bamboo','wall_canal','tea_set_g066','tea_bowl','tea_bowl_water']) gardenArt(id);
+    }
     TEA_IMG = (has('tea') || has('snack')) ? svgImg(teaCartSVG(has('tea'), has('snack'))) : null;
     setSeason(seasonOf(save.day)); G.parts = []; rollTrend();
     // 安排了农活的店员：一早去摘茶、收熟了的菜
@@ -586,6 +612,7 @@
     if (firstMorning && !save.mail && spotOpen('mail') && Math.random() < 0.35) { // 不是剧情的日子：随缘寄一张随手拍
       const left = snapsLeft(); if (left.length) { const sp = left[Math.floor(Math.random() * left.length)]; save.mail = `snap:${sp.id}:${sp.v}`; }
     }
+    updateFarmLesson();
     setMode('day');
   }
   function setMode(m) {
@@ -596,6 +623,7 @@
   }
   function openShop() {
     if (!G || G.mode !== 'day') return;
+    if (['seed','plant'].includes(farmPhase()) && !save.ck) { toast(teachingFarm().msg, 2600); return; }
     if (save.day === 1) { save.menu = ['mapo', 'mian']; save.menuDay = 1; }
     if (save.menuDay !== save.day && !G.menuAsked) { G.menuAsked = true; openMenuPick(); return; }
     if (staffIds().length && G.staffDay !== save.day) { G.staffDay = save.day; openStaff(true); return; } // 开店前先安排店员
@@ -631,6 +659,32 @@
   const seedBuyable = () => prog().seeds.find((k) => mktLeft(k + '_seed') >= 3 && save.coins >= SEED_PRICE[k] * 3);
   const spotOpen = (id) => ['door', 'plaza', 'onsen'].includes(id) || prog().map.includes(id);
   const did = (k) => { save.did[k] = (save.did[k] || 0) + 1; };
+
+  const FARM_LESSON = {
+    seed: { site: 'market', msg: '先去早市领三颗辣椒种子。', x: 370, y: 430 },
+    plant: { site: 'plot', msg: '去菜地，点一格空地种下辣椒。' },
+    harvest: { site: 'plot', msg: '辣椒熟了，去菜地收菜。' },
+    fish: { site: 'pond', msg: '去鱼塘抛竿，浮漂动了再收线。', x: 1520, y: 990 },
+    buy: { site: 'market', msg: '收菜钓鱼之后，再去早市看看菜单缺什么。', x: 370, y: 430 },
+  };
+  const farmPhase = () => SUZHOU && save.day >= 2 ? save.farmLesson : 'done';
+  const teachingFarm = () => FARM_LESSON[farmPhase()];
+  function setFarmPhase(next) {
+    save.farmLesson = next;
+    persist();
+  }
+  function updateFarmLesson() {
+    if (!SUZHOU) return;
+    if (farmPhase() === 'wait' && save.farm.some((f, i) => plotReady(i))) setFarmPhase('harvest');
+    if (farmPhase() === 'harvest' && !save.farm.some((f, i) => plotReady(i))) setFarmPhase('fish');
+    if (farmPhase() === 'buy' && !prog().ings.some((k) => needIngs()[k])) setFarmPhase('done');
+  }
+  function farmGate(h) {
+    if (farmPhase() === 'wait' && h.id === 'market') { toast('种子已经种下。收菜钓鱼之后，再来补缺的食材。', 3000); return true; }
+    const lesson = teachingFarm();
+    if (!lesson || !['market', 'plot', 'pond', 'coop', 'tea'].includes(h.id) || h.id === lesson.site) return false;
+    toast(lesson.msg, 2600); return true;
+  }
   function dayTap(p) {
     const D = G.D;
     const h = HOT.find((h) => inRect(p.x, p.y, h.r));
@@ -639,6 +693,7 @@
       const d = h.id === 'plot' ? openDay('plots', h.i + 1) : openDay('map', h.id);
       float(p.x, p.y - 30, `第 ${d} 天开放`, '#8a6a50'); sfx.tap(); return;
     }
+    if (h && farmGate(h)) return;
     if (h) { const sp = h.spot(); D.task = h; D.path = findPath(D, sp, WORLD_GRID) || (noWay('盆盆', sp), (D.task = null), []); D.manual = false; D.camGoal = null; sfx.tap(); return; }
     D.task = null; D.path = findPath(D, p, WORLD_GRID) || (noWay('盆盆', p), []); D.manual = false; D.camGoal = null;
   }
@@ -663,14 +718,19 @@
       if (!spend()) return;
       save.coopDay = save.day; gain('egg', 3, 2160, 420); did('egg'); return;
     }
-    if (h.id === 'pond') { if (!spend()) return; D.fish = 2.2; D.face = 1; did('fish'); return; }
+    if (h.id === 'pond') {
+      if (!spend()) return;
+      D.fish = 2.2; D.face = 1;
+      if (farmPhase() === 'fish') toast('浮漂动了就收线。');
+      return;
+    }
     if (h.id === 'mail') { if (save.mail) { openMail(); did('mail'); } else float(1317, 520, '今天没有信', '#8a6a50'); return; }
     if (h.id === 'onsen') { if (!save.soaked) { save.soaked = true; speedUp('泡了个温泉', 2200, 220); } else float(2200, 200, '店员休息时来泡温泉', '#3f6680'); return; }
     if (h.id === 'plaza') { if (!save.danced && save.day >= 3) { save.danced = true; speedUp('跟着帅老头练了练广场舞', 560, 900); } else float(560, 880, '帅老头在广场练舞', '#b04a3c'); return; }
   }
   function updateDay(dt) {
     const D = G.D;
-    if (D.fish > 0) { D.fish -= dt; if (D.fish <= 0) { D.fish = 0; catchFish(); } }
+    if (D.fish > 0) { D.fish -= dt; if (D.fish <= 0) { D.fish = 0; if (farmPhase() === 'fish') openFishLesson(); else catchFish(); } }
     else if (D.path.length) { if (moveAlong(D, 340 * SPD(), dt) && D.task) { const h = D.task; D.task = null; dayArrive(h); } }
     const tx = Math.max(0, Math.min(WORLD_W - W, D.x - W / 2)), ty = Math.max(0, Math.min(WORLD_H - H, D.y - H * 0.74));
     if (D.camGoal) { // 引导要指的地方不在画面里：镜头慢慢移过去
@@ -696,25 +756,35 @@
     const pc = POSTCARDS.find((p) => p.id === save.mail); if (!pc) return;
     G.paused = true;
     const gift = pc.gift.calcium ? '一瓶钙片（盆盆跑得更快）' : pc.gift.coins ? `存款 +¥${pc.gift.coins}` : `${ING[pc.gift.ing].n} +${pc.gift.n}`;
+    const wallGift = pc.id === 'huizhou' ? '<p class="gift">随信附画《白墙黛瓦》</p>' : '';
     const rec = (pc.recipes || []).map((k) => `<div class="prec"><img alt="" src="${dishURL(k)}"><b>${DISH[k].n}</b><small>新食谱</small></div>`).join('');
-    $('#mail-body').innerHTML = `<img class="pcard" alt="${pc.n}" src="${pcURL(pc.id)}"><div class="pmsg">${ajuURL(pc.id) && !(ART['pc_' + pc.id] && !GREY) ? `<img class="aju" alt="呆猫" src="${ajuURL(pc.id)}">` : ''}<b>呆猫从「${pc.from}」寄来：${pc.n}</b><p>「${pc.msg}」</p>${rec ? `<div class="precs">${rec}</div>` : ''}<p class="gift">还寄来：${gift}</p>${pc.invite ? '<p class="invite">✈ 呆猫邀请盆盆去樱花之国开分店！（下一版开放）</p>' : ''}</div>`;
+    $('#mail-body').innerHTML = `<img class="pcard" alt="${pc.n}" src="${pcURL(pc.id)}"><div class="pmsg">${ajuURL(pc.id) && !(ART['pc_' + pc.id] && !GREY) ? `<img class="aju" alt="呆猫" src="${ajuURL(pc.id)}">` : ''}<b>呆猫从「${pc.from}」寄来：${pc.n}</b><p>「${pc.msg}」</p>${rec ? `<div class="precs">${rec}</div>` : ''}<p class="gift">还寄来：${gift}</p>${wallGift}${pc.invite ? '<p class="invite">✈ 呆猫邀请盆盆去樱花之国开分店！（下一版开放）</p>' : ''}</div>`;
     show('mail');
   }
   $('#mail-ok').addEventListener('click', () => {
     const sn = snapOf(save.mail);
-    if (sn) { const g = save.snapGift || {}; if (g.coins) save.coins += g.coins; if (g.ing) save.stock[g.ing] = stockOf(g.ing) + 2;
+    if (sn) { const g = save.snapGift || {}; noteReceived('snap:' + sn.id + ':' + sn.v, g.msg); if (g.coins) save.coins += g.coins; if (g.ing) save.stock[g.ing] = stockOf(g.ing) + 2;
       save.snaps = (save.snaps || []).concat({ id: sn.id, v: sn.v, day: save.day }); save.mail = null; save.snapGift = null; persist(); sfx.coin(); G.paused = false; show('hud-screen'); return; }
     const pc = POSTCARDS.find((p) => p.id === save.mail);
     if (pc) {
       if (pc.gift.calcium) speedUp('吃了呆猫寄的钙片', G.D.x, G.D.y - 120); else if (pc.gift.coins) save.coins += pc.gift.coins; else save.stock[pc.gift.ing] = stockOf(pc.gift.ing) + pc.gift.n;
       (pc.recipes || []).forEach(learnRecipe); if (pc.invite) save.invite = pc.invite;
+      noteReceived('card:' + pc.id);
       save.cards = (save.cards || []).concat(pc.id); save.mail = null; save.mailDay = save.day + 2; persist(); sfx.coin();
     }
     G.paused = false; show('hud-screen');
   });
-  function catchFish() {
+  function openFishLesson() {
+    G.paused = true; sfx.tap(); show('fish-lesson');
+  }
+  $('#fish-reel').onclick = () => {
+    if (G?.mode !== 'day' || farmPhase() !== 'fish') return;
+    catchFish(true); setFarmPhase('buy'); updateFarmLesson();
+    G.paused = false; show('hud-screen');
+  };
+  function catchFish(lesson = false) {
     const se = CUR_SE, pool = FISH.filter((f) => f.se.includes(se));
-    const f = pickW(pool), cm = Math.round(rand(f.size[0], f.size[1]));
+    const f = (lesson && pool.find((f) => f.ing === 'fish')) || pickW(pool), cm = Math.round(rand(f.size[0], f.size[1]));
     const rec = (save.fishDex[f.id] = save.fishDex[f.id] || { n: 0, max: 0 }), first = !rec.n;
     rec.n++; rec.max = Math.max(rec.max, cm);
     const x = 1600, y = 900;
@@ -722,6 +792,7 @@
     if (f.coins) save.coins += f.coins;
     if (f.luck) save.luckDay = save.day;
     float(x, y, `钓到${f.n} ${cm}cm${f.ing ? ` · ${ING[f.ing].n}+${f.ing === 'shrimp' ? 2 : 1}` : f.coins ? ` · 卖了¥${f.coins}` : ' · 放生了'}`, '#3f6680', { fish: f.id }, 2.2);
+    did('fish'); persist();
     if (first) setTimeout(() => toast(`新的鱼：${f.n}！记进笔记啦`), 300);
     sfx.ding();
   }
@@ -802,11 +873,16 @@ const stations = {};
     G.paused = true;
     const sp = special();
     const box = $('#market-list');
-    box.innerHTML = prog().seeds.map((k) => { const p = SEED_PRICE[k], nw = openDay('seeds', k) === save.day;
+    const phase = farmPhase();
+    $('#market-lesson').hidden = !['seed','buy'].includes(phase);
+    $('#market-lesson').textContent = phase === 'seed' ? '第一包种子由早市送。先领三颗辣椒种子。' : '按今天的菜单补货。已有食材可以留着慢慢用。';
+    const canSeed = phase !== 'buy', canBuy = phase !== 'seed';
+    box.innerHTML = (canSeed ? prog().seeds : []).map((k) => { const p = SEED_PRICE[k], nw = openDay('seeds', k) === save.day;
       const left = mktLeft(k + '_seed');
+      if (phase === 'seed') return '<div class="mrow seed"><img alt="" src="' + ingURL(k) + '"><div><b>' + ING[k].n + '种子</b><small>种下后，下一天收成</small></div><button class="buy1" data-k="' + k + '" data-seed="1" data-n="3">领 3 颗</button></div>';
       return `<div class="mrow seed"><img alt="" src="${ingURL(k)}"><div><b>${ING[k].n}种子</b>${nw ? '<span class="tag-new">新</span>' : ''}<small>一颗种一格，明天收　·　有 ${save.seeds[k] || 0} 颗　·　<em class="left">今天还剩 ${left}</em></small></div>
         <span class="mp">¥${p}</span><button class="buy1" data-k="${k}" data-seed="1" data-n="3" ${save.coins >= p * 3 && left >= 3 ? '' : 'disabled'}>买 3</button><button class="buy1" data-k="${k}" data-seed="1" data-n="9" ${save.coins >= p * 9 && left >= 9 ? '' : 'disabled'}>买 9</button></div>`; }).join('')
-    + prog().ings.map((k) => {
+    + (canBuy ? prog().ings.filter((k) => phase !== 'buy' || needIngs()[k]) : []).map((k) => {
       const p = priceOf(k), uses = Object.keys(DISH).filter((d) => DISH[d].ing === k && knownDish(d)).map((d) => DISH[d].n).join('、') || '泡茶';
       const nd = needIngs()[k];
       const left = mktLeft(k), r = priceRate(k), trend = k === sp ? '' : r < 1 ? '<span class="tag-dn">今天便宜</span>' : r > 1 ? '<span class="tag-up">今天贵</span>' : '';
@@ -815,10 +891,16 @@ const stations = {};
     }).join('');
     $('#market-coins').textContent = `存款 ¥ ${save.coins}`;
     box.querySelectorAll('.buy1').forEach((b) => b.addEventListener('click', () => {
-      const k = b.dataset.k, n = +b.dataset.n, seed = !!b.dataset.seed, cost = (seed ? SEED_PRICE[k] : priceOf(k)) * n;
+      const k = b.dataset.k, n = +b.dataset.n, seed = !!b.dataset.seed;
+      if (farmPhase() === 'seed' && seed) {
+        save.seeds[k] = (save.seeds[k] || 0) + n; did('seed'); setFarmPhase('plant'); sfx.coin();
+        G.paused = false; show('hud-screen'); toast(teachingFarm().msg, 2600); return;
+      }
+      const cost = (seed ? SEED_PRICE[k] : priceOf(k)) * n;
       const lk = seed ? k + '_seed' : k; if (save.coins < cost || mktLeft(lk) < n) return;
-      save.mkt.left[lk] -= n; save.coins -= cost; if (seed) { save.seeds[k] = (save.seeds[k] || 0) + n; did('seed'); } else { save.stock[k] = stockOf(k) + n; did('buy'); } sfx.coin(); openMarket();
+      save.mkt.left[lk] -= n; save.coins -= cost; if (seed) { save.seeds[k] = (save.seeds[k] || 0) + n; did('seed'); } else { save.stock[k] = stockOf(k) + n; did('buy'); } persist(); sfx.coin(); openMarket();
     }));
+    $('#market-ok').textContent = phase === 'buy' ? '补货看好了' : '买好了';
     show('market');
   }
   function openPantry() {
@@ -867,6 +949,7 @@ const stations = {};
       members: [], say: '', sayT: 0, bob: Math.random() * 6, upset: false, watered: false, wantsWater: false,
       looks: Array.from({ length: size }, () => { const n = (GUEST_ART[type.id] || CUSTOMER_VARIANTS[type.id] || [0]).length; return n > 1 ? `${type.id}#${Math.floor(Math.random() * n)}` : type.id; }) };
     if (sc?.regular) { c.regular = true; c.looks[0] = G.visit.look || c.looks[0]; }
+    if (SUZHOU) c.looks.forEach(guestFrames);
     dexOf(type.id).met++;
     G.customers.push(c);
     if (!wouldEat(c)) { c.state = 'browse'; c.timer = 2.4; return c; } // 主人 11/25：不想吃的，在门口看完菜单就走，不进来排队
@@ -1331,6 +1414,11 @@ const stations = {};
       G.selected = null; sfx.ding();
       return;
     }
+    if (SUZHOU && !G.selected) {
+      const side = ['left', 'right'].find((key) => inRect(p.x, p.y, LAYOUT.scene.wallArt[key]));
+      if (side) { openTravelAlbum('hud-screen', save.decor[side === 'left' ? 'wallLeft' : 'wallRight']); return; }
+      if (inRect(p.x, p.y, RACK_HIT)) { openRack(); return; }
+    }
     { // G-006：先看点没点到人数牌，再按离哪组身子最近；和 queueChip 用同一套矩形
       const line = G.customers.filter(inLine);
       const c = line.find((q) => inRect(p.x, p.y, qCard(q))) || line.filter((q) => inRect(p.x, p.y, qBody(q))).sort((a, b) => Math.hypot(p.x - a.x, p.y - a.y + 40) - Math.hypot(p.x - b.x, p.y - b.y + 40))[0];
@@ -1548,6 +1636,7 @@ const stations = {};
   }
   function update(dt) {
     if (!G || G.paused || G.over) return;
+    G.ambientTime = (G.ambientTime || 0) + dt;
     if (G.mode === 'day') { G.idle = (G.idle || 0) + dt; updateDay(dt); hud(); return; }
     dt *= G.orderOpen ? 0.5 : 1;
     if (dt <= 0) return;
@@ -1583,7 +1672,18 @@ const stations = {};
         const dx = tx - c.x, dy = ty - c.y, d = Math.hypot(dx, dy);
         if (d > 6) { const st = Math.min(d, 330 * dt); c.x += (dx / d) * st; c.y += (dy / d) * st; c.face = dx > 0 ? 1 : -1; }
       }
-      else if (c.state === 'toSeat') { if (moveAlong(c, SUZHOU ? 165 : 190, dt)) { if (c.wantsWater) { c.state = 'thirsty'; speak(c, 'water'); } else { c.state = 'reading'; c.timer = SUZHOU ? 4 : 2.5; } } }
+      else if (c.state === 'toSeat' && moveAlong(c, SUZHOU ? 165 : 190, dt)) {
+        if (SUZHOU) {
+          c.seatWait = (c.seatWait || 0) + dt;
+          if (c.seatWait < 0.9 && !guestSeatReady(c)) continue;
+          c.seatEase = Math.min(1, (c.seatEase || 0) + dt / 0.28);
+          if (c.seatEase < 1) continue;
+          delete c.seatWait;
+          delete c.seatEase;
+        }
+        if (c.wantsWater) { c.state = 'thirsty'; speak(c, 'water'); }
+        else { c.state = 'reading'; c.timer = SUZHOU ? 4 : 2.5; }
+      }
       else if (c.state === 'reading') { c.timer -= dt; if (c.timer <= 0) startOrdering(c); }
       else if (c.state === 'eating') { c.timer -= dt; if (c.timer <= 0 && !dessertAsk(c)) c.state = 'bill'; }
       else if (c.state === 'linger') { c.timer -= dt; if (c.timer <= 0) { finishLeave(c); continue; } }
@@ -1730,18 +1830,19 @@ const stations = {};
   }
   const ART_ROOM = () => ok(A('room_courtyard'));
   const GARDEN_ART = new Map();
-  const GARDEN_ROOM_PAINT = new Set(['spring', 'winter', 'counter_spring', 'counter_winter', 'counter_rear_spring', 'counter_rear_winter']);
+  const GARDEN_ROOM_PAINT = new Set(['spring_g066', 'winter_g066', 'winter_open_g066', 'counter_g066', 'counter_winter_g066', 'counter_rear_spring', 'counter_rear_winter', 'table_small_g066', 'table_large_g066', 'wall_bamboo', 'wall_canal', 'tea_set_g066', 'tea_bowl', 'tea_bowl_water']);
   function gardenArt(name, extension = 'png') {
     if (!GARDEN_ART.has(name)) {
       const im = new Image();
-      const version = GARDEN_ROOM_PAINT.has(name) ? LAYOUT?.scene.paintRevision : null;
+      const version = GARDEN_ROOM_PAINT.has(name) ? LAYOUT?.scene.paintRevision : (/^(g_.+_dressed_|s_)/.test(name) ? SUZHOU_RELEASE : null);
       im.src = 'assets/suzhou/' + name + '.' + extension + (version ? '?v=' + version : '');
       GARDEN_ART.set(name, im);
     }
     return GARDEN_ART.get(name);
   }
   function gardenSprite(name, x, y, width) {
-    const im = gardenArt(name);
+    const revised = /^table_(large|small)$/.test(name) ? name + '_g066' : name;
+    const im = gardenArt(revised);
     if (!ok(im)) return false;
     const height = width * im.naturalHeight / im.naturalWidth;
     ctx.drawImage(im, x - width / 2, y - height, width, height);
@@ -1760,7 +1861,7 @@ const stations = {};
     G.doorBlend = moving ? Math.min(1, open + dt * 6) : Math.max(0, open - dt * 4);
   }
   function drawGardenRoom() {
-    const winter = CUR_SE === 'winter', room = gardenArt(winter ? 'winter' : 'spring', 'jpg');
+    const winter = CUR_SE === 'winter', room = gardenArt(winter ? 'winter_g066' : 'spring_g066', 'jpg');
     if (!ok(room)) return;
     const { height } = LAYOUT.scene;
     ctx.drawImage(room, 0, 0, W, height);
@@ -1773,7 +1874,7 @@ const stations = {};
     }
     drawGardenWindowFx(px * wx, py * wy, pw * wx, ph * wy, winter);
     if (winter) {
-      const open = gardenArt('winter_open', 'jpg');
+      const open = gardenArt('winter_open_g066', 'jpg');
       if (G.doorBlend && ok(open)) {
         const [x, y, w, h] = LAYOUT.scene.doorPatch;
         const sx = open.naturalWidth / W, sy = open.naturalHeight / height;
@@ -1783,6 +1884,7 @@ const stations = {};
         ctx.restore();
       }
     }
+    drawWallArt('left'); drawWallArt('right');
     const curtain = save.decor.curtain || CUR_SE;
     if (curtain !== 'winter') {
       const cloth = gardenArt('curtain_' + curtain);
@@ -1821,6 +1923,35 @@ const stations = {};
   }
   // 窗外飘落：春桃花瓣、夏蝴蝶、秋枫叶、冬雪
   const MENU_INK = '"Penpen Menu Ink","Kaiti SC",KaiTi,serif';
+  function drawWallArt(side) {
+    const id = save.decor[side === 'left' ? 'wallLeft' : 'wallRight'];
+    const mount = LAYOUT.scene.wallArt[side];
+    if (!id || !mount) return;
+    const { x, y, w, h } = mount;
+    if (id === 'bamboo' || id === 'canal') {
+      const art = gardenArt(id === 'bamboo' ? 'wall_bamboo' : 'wall_canal');
+      if (ok(art)) ctx.drawImage(art, x, y, w, h);
+      return;
+    }
+    const art = wallPhoto(id);
+    if (!ok(art)) return;
+    const width = w - 3, height = Math.min(h - 12, width * art.naturalHeight / art.naturalWidth + 16);
+    ctx.save(); ctx.translate(x + 1, y + (h - height) / 2);
+    ctx.transform(1, side === 'left' ? 0.18 : -0.12, 0, 1, 0, 0);
+    ctx.fillStyle = '#6f4a36'; ctx.fillRect(0, 0, width, height);
+    ctx.fillStyle = '#eee0c5'; ctx.fillRect(3, 3, width - 6, height - 6);
+    ctx.drawImage(art, 6, 6, width - 12, height - 12); ctx.restore();
+  }
+  const WALL_PHOTOS = new Map();
+  function wallPhoto(id) {
+    if (WALL_PHOTOS.has(id)) return WALL_PHOTOS.get(id);
+    const key = id.split(':');
+    const src = id === 'family' ? 'assets/suzhou/family_photo.jpg' : id === 'paint:huizhou' ? 'assets/suzhou/wall_huizhou.jpg' : pcURL(key[1], +key[2]);
+    if (!src) return null;
+    const image = new Image(); image.src = src;
+    WALL_PHOTOS.set(id, image);
+    return image;
+  }
   function drawWallMenu() {
     const [nearTop, farTop, nearFoot, farFoot] = LI.menurack.paper;
     const width = farTop[0] - nearTop[0];
@@ -1863,16 +1994,16 @@ const stations = {};
     ctx.font = '21px ' + MENU_INK; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     const titleInk = ctx.createLinearGradient(width * 0.14, -6, width * 0.85, 6);
     titleInk.addColorStop(0, '#42302a'); titleInk.addColorStop(0.55, '#735a47'); titleInk.addColorStop(1, '#433128');
-    ctx.fillStyle = titleInk; ctx.fillText('今日食单', width / 2, 0, width - 13); ctx.restore();
+    ctx.fillStyle = titleInk; ctx.fillText('今日食单', width / 2, 0, width - 8); ctx.restore();
     for (const [i, key] of menuNow().entries()) {
       const dish = DISH[key], art = DISH_IMG[key];
-      ctx.save(); row(0.311 + i * 0.178);
+      ctx.save(); row(0.308 + i * 0.174);
       if (stockOf(dish.ing) <= 0) ctx.globalAlpha = 0.47;
-      if (ok(art)) ctx.drawImage(art, 3, -13, 35, 27);
-      ctx.font = '14px ' + MENU_INK; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+      if (ok(art)) ctx.drawImage(art, 4, -7, 18, 15);
+      ctx.font = '15px ' + MENU_INK; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
       const ink = ctx.createLinearGradient(39, -7, width - 5, 8);
       ink.addColorStop(0, '#51382a'); ink.addColorStop(0.52, '#82654f'); ink.addColorStop(1, '#4b352b');
-      ctx.fillStyle = ink; ctx.fillText(dish.n, 39, 0, width - 43); ctx.restore();
+      ctx.fillStyle = ink; ctx.fillText(dish.n, 24, 0, width - 27); ctx.restore();
     }
     ctx.restore();
   }
@@ -1910,7 +2041,7 @@ const stations = {};
         : `<path d="M11 22 Q13 52 30 52 Q47 52 49 22 Z" fill="#f6f1e6" stroke="${ink}" stroke-width="2.4"/><ellipse cx="30" cy="22" rx="19" ry="5" fill="${d.col}" stroke="${ink}" stroke-width="2"/><path d="M24 14 q-4 -5 0 -10 M35 14 q-4 -5 0 -10" stroke="#b9a68c" stroke-width="2" fill="none"/>`;
     return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 60" width="120" height="120">${body}</svg>`;
   }
-  const cupURL = (k) => URLS['c' + k] || (URLS['c' + k] = dataURL(cupSVG(k)));
+  const cupURL = (k) => SUZHOU && ['water','jasmine','puer'].includes(k) ? 'assets/suzhou/tea_bowl' + (k === 'water' ? '_water' : '') + '.png' : URLS['c' + k] || (URLS['c' + k] = dataURL(cupSVG(k)));
   // ---------- 菜地面板：3×3 九格，先选种子再点空地 ----------
   const PLOT = { i: 0, seed: null, msg: '' };
   const cropURL = (k, r) => URLS['cr' + k + r] || (URLS['cr' + k + r] = dataURL(cropSVG(k, r)));
@@ -1923,6 +2054,7 @@ const stations = {};
     const f = save.farm[PLOT.i], k = PLOT.seed;
     if (f.cells[j] || !k || !(save.seeds[k] > 0)) return false;
     save.seeds[k]--; f.cells[j] = { k, ready: save.day + 1 }; did('plant');
+    if (farmPhase() === 'plant') setFarmPhase('wait');
     if (!(save.seeds[k] > 0)) PLOT.seed = prog().seeds.find((x) => save.seeds[x] > 0) || null;
     return true;
   }
@@ -1953,7 +2085,7 @@ const stations = {};
     const g = harvestPlot(PLOT.i), [x, y] = WMAP.farm.plots[PLOT.i];
     PLOT.msg = '收了 ' + Object.keys(g).map((k) => `${ING[k].n}×${g[k]}`).join('、');
     Object.keys(g).forEach((k, n) => float(x, y - 60 - n * 30, `${ING[k].n} +${g[k]}`, '#3f7a34'));
-    sfx.ding(); did('harvest'); persist(); renderPlot();
+    sfx.ding(); did('harvest'); updateFarmLesson(); persist(); renderPlot();
   }
   $('#plot-harvest').addEventListener('click', plotHarvest);
   $('#plot-fill').addEventListener('click', () => { let n = 0; save.farm[PLOT.i].cells.forEach((c, j) => { if (plantCell(j)) n++; }); PLOT.msg = n ? `种下 ${n} 格` : ''; if (n) sfx.ding(); renderPlot(); });
@@ -2020,10 +2152,26 @@ const stations = {};
     }
     paint.restore();
   }
-  const idlePulse = (offset) => {
-    const t = ((G.mode === 'shop' ? G.t : G.idle || 0) + offset) % 12.6;
-    return t < 1.25 ? Math.sin(t / 1.25 * Math.PI) : 0;
+  const IDLE_BEATS = {
+    laoda: { start: 1.1, gap: 6.2, duration: 0.74, sway: 0.020 },
+    laoer: { start: 1.7, gap: 6.8, duration: 0.88, sway: 0.024 },
+    penpen: { start: 0.8, gap: 4.8, duration: 0.37, sway: 0.011 },
+    mimi: { start: 2.3, gap: 7.4, duration: 0.95, sway: 0.024 },
+    shuai: { start: 2.8, gap: 7.8, duration: 1.16, sway: 0.017 },
   };
+  function crewIdle(id, active, gesture = active) {
+    if (!SUZHOU) return null;
+    const beats = G.crewIdleSince || (G.crewIdleSince = {});
+    if (!active) { delete beats[id]; return null; }
+    const clock = G.ambientTime || 0, spec = IDLE_BEATS[id];
+    beats[id] ??= clock;
+    const elapsed = clock - beats[id], phase = elapsed - spec.start;
+    return {
+      pose: gesture && phase >= 0 && phase % spec.gap < spec.duration,
+      lean: Math.sin(elapsed * 1.8) * spec.sway,
+      stretch: 1 + 0.017 * Math.sin(elapsed * 2.5),
+    };
+  }
   function drawKitchen() {
     const k = G.kitchen, t = performance.now();
     const busy = Object.keys(WARES).filter((w) => hasWare(w) && k.wares[w].cur);
@@ -2041,15 +2189,14 @@ const stations = {};
       if (Math.abs(dx) > 0.12) G.chefFace = Math.sign(dx);
       const prank = G.mischief;
       const moving = Math.abs(target - G.gardenChefX) > 2;
+      const idle = crewIdle('laoda', !busy.length && !G.chefWash && !moving && prank?.who !== 'laoda');
       let acted = false;
       if (prank?.who === 'laoda') {
         acted = gardenSprite(prank.caught ? 's_laoda_getup' : 's_laoda_nap', CHEF_NAP.x, CHEF_NAP.y, prank.caught ? 88 : 111);
         G.gardenChefX = CHEF_NAP.x;
-      } else if (!busy.length && !G.chefWash && !moving && idlePulse(8) > 0.3) {
-        acted = gardenSprite('s_laoda_groom', G.gardenChefX + 5, LA('chef').y, 83);
       }
-      if (!acted) drawCat(P('s_laoda') || SPR.chef, G.gardenChefX, LA('chef').y + bob * 0.18, G.chefFace || 1, moving, 1.04, 'laoda', G.chefWalk);
-      const counter = gardenArt(CUR_SE === 'winter' ? 'counter_winter' : 'counter_spring');
+      if (!acted) drawCat(P('s_laoda') || SPR.chef, G.gardenChefX, LA('chef').y + bob * 0.18, G.chefFace || 1, moving, 1.04, 'laoda', G.chefWalk, idle);
+      const counter = gardenArt(CUR_SE === 'winter' ? 'counter_winter_g066' : 'counter_g066');
       if (ok(counter)) {
         const [x, y] = LAYOUT.scene.counterForeground;
         const sx = W / LAYOUT.source.w, sy = LAYOUT.scene.height / LAYOUT.source.h;
@@ -2083,7 +2230,8 @@ const stations = {};
     // 出菜台上的菜、水壶、收碗处
     if (SUZHOU) readyMeals().forEach((meal, i) => { const [x, y] = PASS.slots[i]; drawMealTray(meal, x, y, 0.62); });
     else k.pass.forEach((o, i) => { const [x, y] = PASS.slots[i] || PASS.slots[PASS.slots.length - 1]; drawPlate(x, y, o, 0.72, true); });
-    if (!spr('water_set', WATER.x, WATER.y, ART_B() ? 46 : 66) && DISH_IMG.water.complete) ctx.drawImage(DISH_IMG.water, WATER.x - 21, WATER.y - 28, 42, 28);
+    if (SUZHOU) gardenSprite('tea_set_g066', WATER.x, WATER.y, 70);
+    else if (!spr('water_set', WATER.x, WATER.y, ART_B() ? 46 : 66) && DISH_IMG.water.complete) ctx.drawImage(DISH_IMG.water, WATER.x - 21, WATER.y - 28, 42, 28);
     drawVessels();
     drawRail(k);
     if (!SUZHOU) drawCleanPlates();
@@ -2250,6 +2398,7 @@ const stations = {};
     ctx.restore();
   }
   function drawCup(x, y, drink, s = 1) { // 茶杯 / 玻璃杯 / 豆浆碗（先用程序画）
+    if (SUZHOU && ['water','jasmine','puer'].includes(drink) && gardenSprite(drink === 'water' ? 'tea_bowl_water' : 'tea_bowl', x, y + 1, 24 * s)) return;
     const d = DRINKS[drink]; ctx.save(); ctx.translate(x, y); ctx.scale(s, s);
     ctx.fillStyle = '#00000018'; ctx.beginPath(); ctx.ellipse(0, 2, 13, 4, 0, 0, 7); ctx.fill();
     if (d.cup === 'glass') { ctx.fillStyle = '#e8f1f4cc'; ctx.beginPath(); ctx.moveTo(-9, -24); ctx.lineTo(9, -24); ctx.lineTo(7, 0); ctx.lineTo(-7, 0); ctx.closePath(); ctx.fill(); ctx.fillStyle = d.col; ctx.beginPath(); ctx.moveTo(-8, -16); ctx.lineTo(8, -16); ctx.lineTo(7, -1); ctx.lineTo(-7, -1); ctx.fill(); }
@@ -2260,6 +2409,7 @@ const stations = {};
   function drawHeld(h, hx, hy) {
     if (h.kind === 'drink') { drawCup(hx, hy + 8, h.drink, 1.1); if (h.cust) faceTag(h.cust, hx + 20, hy - 24, 17); if (h.table) tableTag(h.table, hx - 16, hy - 24); return; }
     if (h.kind === 'dish') drawPlate(hx, hy, h);
+    else if (SUZHOU && h.kind === 'water') drawCup(hx, hy + 5, 'water', 1.1);
     else if (DISH_IMG[h.kind] && DISH_IMG[h.kind].complete) ctx.drawImage(DISH_IMG[h.kind], hx - 30, hy - 26, 60, 40);
     else drawPlate(hx, hy, null);
   }
@@ -2342,27 +2492,37 @@ const stations = {};
     return true;
   }
   function drawGardenDiner(c, i, seat, t, surface, chairTop) {
-    const lk = (c.looks && c.looks[i]) || c.type.id;
-    const species = lk.split('#')[0], flip = seat.x < t.cx;
-    const motion = performance.now() / 1000 + i * 0.78 + c.bob;
-    const eating = c.state === 'eating' && c.members[i]?.st === 'served';
-    const nod = eating ? Math.max(0, Math.sin(motion * 2.1)) : 0;
-    const name = guestNativeName(lk, seat.front ? 'rear' : 'sit');
-    const h = (species === 'bunny' ? 69 : 58) * t.k;
-    const bottom = (seat.front ? chairTop + 18 * t.k : surface.y - 2 * t.k) + 2 * nod * t.k;
-    if (name && drawGardenSeatArt(name, seat.x, bottom, h - 2 * nod * t.k, flip)) return;
-    const im = seat.front ? custImgBack(lk) : custImg(lk);
-    if (!ok(im)) return;
-    const size = 116 * t.k, crop = 0.75;
+    const look = guestLook(c, i);
+    const frames = guestFrames(look);
+    const tasting = c.state === 'eating' && c.members[i]?.st === 'served';
+    const delighted = tasting && Math.sin(G.t * 1.25 + i * 0.78 + c.bob) > 0.1;
+    const im = seat.front ? frames.rear : delighted && ok(frames.smile) ? frames.smile : frames.sit;
+    const nod = tasting ? Math.max(0, Math.sin(G.t * 2.1 + i * 0.78 + c.bob)) : 0;
+    const settling = 1 - (c.seatEase ?? 1);
+    const h = (look.startsWith('bunny') ? 69 : 58) * t.k - 2 * nod * t.k;
+    const hem = seat.front ? 6 * t.k : 0;
+    const bottom = (seat.front ? chairTop + 18 * t.k : surface.y - 2 * t.k) + (2 * nod - 7 * settling) * t.k;
     ctx.save(); ctx.translate(seat.x, bottom);
-    if (flip) ctx.scale(-1, 1);
-    ctx.drawImage(im, 0, 0, im.naturalWidth, im.naturalHeight * crop,
-      -size * 0.52, -size * crop, size, size * crop);
+    if (seat.x < t.cx) ctx.scale(-1, 1);
+    if (ok(im)) {
+      const w = h * im.naturalWidth / im.naturalHeight;
+      if (hem) {
+        // Keep the painted head size and extend only the lower coat behind the chair.
+        const y = Math.floor(im.naturalHeight * 0.83), lower = h * (im.naturalHeight - y) / im.naturalHeight;
+        ctx.drawImage(im, 0, 0, im.naturalWidth, y, -w / 2, -h, w, h - lower);
+        ctx.drawImage(im, 0, y, im.naturalWidth, im.naturalHeight - y, -w / 2, -lower - 0.35, w, lower + hem + 0.35);
+      } else {
+        ctx.drawImage(im, -w / 2, -h, w, h);
+      }
+    } else if (ok(frames.stand)) {
+      const stand = frames.stand, w = stand.naturalWidth, height = stand.naturalHeight;
+      ctx.drawImage(stand, w * 0.13, height * 0.09, w * 0.74, height * 0.57, -h * 0.60, -h, h * 1.20, h + hem);
+    }
     ctx.restore();
   }
   function drawGardenTable(t) {
     const surface = gardenTableSurface(t), k = t.k;
-    const c = t.cust && seated(t.cust) && t.cust.state !== 'toSeat' ? t.cust : null;
+    const c = t.cust && seated(t.cust) && (t.cust.state !== 'toSeat' || t.cust.seatEase != null) ? t.cust : null;
     const selected = G.selected?.state === 'queue' && !t.cust && !t.reserved && !t.dirty;
     const selectable = selected && t.size >= G.selected.size && (!tableHeld(t) || G.selected.regular);
     const spare = selected && !selectable;
@@ -2451,18 +2611,24 @@ const stations = {};
   }
   function memberPos(c, i) {
     if (seated(c) && c.state !== 'toSeat') return c.table.seats[i];
-    if (c.state === 'toSeat' && c.table) { const sp = c.table.seats[i], f = Math.min(1, Math.hypot(c.x - sp.x, c.y - sp.y) / 200); return { x: sp.x + (c.x - sp.x) * f, y: sp.y + (c.y - sp.y) * f }; }
+    if (!SUZHOU && c.state === 'toSeat' && c.table) { const sp = c.table.seats[i], f = Math.min(1, Math.hypot(c.x - sp.x, c.y - sp.y) / 200); return { x: sp.x + (c.x - sp.x) * f, y: sp.y + (c.y - sp.y) * f }; }
     const n = c.size;
-    if (n <= 2) return { x: c.x + (i - (n - 1) / 2) * 30, y: c.y + (i % 2) * 6 - 3 };
-    const r = i < 2 ? 0 : 1, inRow = r ? n - 2 : 2; // D-006：3–4 位排成前后两排，一组只占两个身位宽
-    return { x: c.x + ((i % 2) - (inRow - 1) / 2) * 32 + (r ? 6 : -6), y: c.y + (r ? 10 : -12) };
+    const r = i < 2 ? 0 : 1, inRow = r ? n - 2 : 2;
+    const group = n <= 2
+      ? { x: c.x + (i - (n - 1) / 2) * 30, y: c.y + (i % 2) * 6 - 3 }
+      : { x: c.x + ((i % 2) - (inRow - 1) / 2) * 32 + (r ? 6 : -6), y: c.y + (r ? 10 : -12) };
+    if (!SUZHOU || c.state !== 'toSeat' || !c.table) return group;
+    const lead = c.table.seats[0], seat = c.table.seats[i];
+    const far = Math.min(1, Math.hypot(c.x - lead.x, c.y - lead.y) / 138);
+    const f = far * far * (3 - 2 * far);
+    return { x: seat.x + (group.x - seat.x) * f, y: seat.y + (group.y - seat.y) * f };
   }
   function anchor(c) {
     if (c.table && seated(c) && c.state !== 'toSeat') return { x: c.table.chip.x + 56, y: c.table.chip.y };
     return { x: c.x, y: c.y - 124 };
   }
   function drawGardenWalk(name, x, y, size, flip, distance) {
-    const im = gardenArt(name);
+    const im = typeof name === 'string' ? gardenArt(name) : name;
     if (!ok(im)) return false;
     const cell = im.naturalWidth / 4, frame = Math.floor((distance || 0) / 22) % 4;
     ctx.save(); ctx.translate(x, y);
@@ -2473,22 +2639,32 @@ const stations = {};
   }
   function drawMember(c, i) {
     const p = memberPos(c, i);
-    const moving = SUZHOU ? c.path.length > 0 : ['enter', 'toSeat', 'leaving', 'following'].includes(c.state);
+    if (SUZHOU) {
+      const frames = guestFrames(guestLook(c, i));
+      if (!ok(frames.stand)) return;
+      const scale = (c.size > 1 ? 0.95 : 1.02) * K(p.y), size = GUEST_S * scale;
+      const flip = c.face > 0;
+      ctx.fillStyle = '#00000018'; ctx.beginPath(); ctx.ellipse(p.x, p.y, 24 * scale, 7, 0, 0, 7); ctx.fill();
+      if (c.path.length && drawGardenWalk(frames.walk, p.x, p.y, size, flip, (c.walkDistance || 0) + 11 * i)) return;
+      ctx.save(); ctx.translate(p.x, p.y);
+      if (flip) ctx.scale(-1, 1);
+      ctx.drawImage(frames.stand, -size / 2, -0.875 * size, size, size);
+      ctx.restore(); return;
+    }
+    const moving = ['enter', 'toSeat', 'leaving', 'following'].includes(c.state);
     const bob = Math.sin(c.bob + i) * (moving ? 4 : 1.2);
     const sit = c.table && seated(c) && c.state !== 'toSeat', sp = sit ? c.table.seats[i] : null;
     const sc = (c.size > 1 ? 0.95 : 1.02) * K(p.y), w = 96 * sc, h = 106 * sc;
     if (!sit) { ctx.fillStyle = '#00000018'; ctx.beginPath(); ctx.ellipse(p.x, p.y, 24 * sc, 7, 0, 0, 7); ctx.fill(); }
     const away = (sp && sp.front) || c.state === 'leaving' || (moving && c.path.length && c.path[c.path.length - 1].y < c.y - 20);
     const lk = (c.looks && c.looks[i]) || c.type.id, gk = !GREY && guestKey(lk, sit);
-    const gi = gk && (SUZHOU ? gardenArt(guestNativeName(lk, 'stand')) : A(gk));
+    const gi = gk && A(gk);
     if (gi && ok(gi)) { // 新画的客人：图朝左；走向右边或坐在桌子左侧时翻过来
       const S = GUEST_S * sc, nx = c.path && c.path.length ? c.path[0].x : c.x;
-      const flip = sit ? (sp && sp.x < c.table.cx) : moving && (SUZHOU ? c.face > 0 : nx > c.x + 2);
-      if (SUZHOU && moving && !sit && drawGardenWalk(guestNativeName(lk, 'walk'), p.x, p.y, S, flip, (c.walkDistance || 0) + 11 * i)) return;
+      const flip = sit ? (sp && sp.x < c.table.cx) : moving && nx > c.x + 2;
       const t = performance.now() / 1000 + i * 0.37 + (c.bob || 0), m = c.members[i] || {};
       let hop = 0, rot = 0, sy = 1 + 0.012 * Math.sin(t * 2.2); // 呼吸
-      if (SUZHOU && moving && !sit) hop = -Math.abs(Math.sin(t * 4)) * sc;
-      else if (moving && !sit) { const ph = t * 8; hop = -Math.abs(Math.sin(ph)) * 6 * sc; rot = Math.sin(ph) * 0.13; sy = 1 - 0.05 * Math.abs(Math.cos(ph)); } // 主人：走路身体左右摇、上下颠，萌一点
+      if (moving && !sit) { const ph = t * 8; hop = -Math.abs(Math.sin(ph)) * 6 * sc; rot = Math.sin(ph) * 0.13; sy = 1 - 0.05 * Math.abs(Math.cos(ph)); } // 主人：走路身体左右摇、上下颠，萌一点
       else if (sit && c.state === 'eating' && m.st === 'served') { // 低头吃一口、抬头嚼
         const e = Math.max(0, Math.sin(t * 4.2)), dir = sp.x < c.table.cx - 4 ? 1 : sp.x > c.table.cx + 4 ? -1 : 0;
         rot = dir * 0.1 * e; sy = 1 - 0.045 * e; hop = (dir ? 0 : 3 * e) * sc;
@@ -2629,14 +2805,17 @@ const stations = {};
     else if (c.state === 'eating') bubbleIcon(a.x, a.y - 8, 'eat', '好香', '#fbf6ec', 16);
     else if (c.state === 'queue' || c.state === 'enter') bubbleIcon(a.x, a.y + 4, 'wait', `${c.size}位`, '#fbf6ec', 14);
   }
-  function drawCat(img, x, y, face, walking, s = 1, gait = null, distance = 0) {
+  function drawCat(img, x, y, face, walking, s = 1, gait = null, distance = 0, idle = null) {
     const t = performance.now() / 1000;
     const bob = walking ? -Math.abs(Math.sin(t * (SUZHOU ? 5 : 12))) * (SUZHOU ? 1 : 6) : 0;
     const rot = walking && !SUZHOU ? Math.sin(t * 12) * 0.06 : 0;
     ctx.fillStyle = '#00000020'; ctx.beginPath(); ctx.ellipse(x, y, 34 * s, 9 * s, 0, 0, 7); ctx.fill();
     if (SUZHOU && gait && walking && drawGardenWalk('s_' + gait + '_walk', x, y, 146 * s, face < 0, distance)) return 0;
     ctx.save(); ctx.translate(x, y + bob); ctx.rotate(rot); ctx.scale((face < 0 ? -1 : 1) * s, s);
-    if (PAINTED.has(img)) {
+    if (idle) ctx.transform(1, 0, idle.lean, idle.stretch, 0, 0);
+    const pose = idle?.pose && gait ? gardenArt('s_' + gait + '_idle') : null;
+    if (ok(pose)) ctx.drawImage(pose, -73, -128, 146, 146);
+    else if (PAINTED.has(img)) {
       if (ok(img)) {
         ctx.drawImage(img, -73, -128, 146, 146);
       }
@@ -2670,32 +2849,23 @@ const stations = {};
     const w = G.waiter, walking = !!w.busyAct && w.path.length;
     const k = K(w.y);
     const frame = walking && SPR.pWalk && SPR.pWalk[w.back ? 1 : 0][Math.floor((w.walkDistance || 0) / 22) % 4];
-    const greet = SUZHOU && !walking && !w.wash && G.customers.some((c) => c.state === 'enter') ? 1.6 * idlePulse(4) : 0;
-    const bob = drawCat(ok(frame) ? frame : penImg(w.back && walking, w.blinkT < 0), w.x, w.y - greet, w.face, walking, 1.05 * k, SPR.pPaint ? 'penpen' : null, w.walkDistance);
+    const idle = crewIdle('penpen', !walking && !w.busyAct && !w.wash && !w.brew && w.sinkDrop === undefined);
+    const blink = SUZHOU ? idle?.pose : w.blinkT < 0;
+    const bob = drawCat(ok(frame) ? frame : penImg(w.back && walking, blink), w.x, w.y, w.face, walking, 1.05 * k, SPR.pPaint ? 'penpen' : null, w.walkDistance, idle);
     if (w.sinkDrop === undefined) drawHands(w, k, bob);
     if (w.tickets.length) { const im = icon('order'); if (im.complete) ctx.drawImage(im, w.x + 18 * k, w.y - 132 * k, 30, 30); label(`单×${w.tickets.length}`, w.x + 33 * k, w.y - 92 * k, 17, '#8a5a10', '#fbf6ec'); }
   }
   function drawStaff(sf) {
     const moving = sf.task && sf.path.length, zz = !sf.task && resting(sf.id);
     const prank = G.mischief;
+    const idle = crewIdle(sf.id, !sf.task && !sf.hands.length && prank?.actor !== sf);
     if (SUZHOU && prank?.actor === sf && gardenSprite(prank.caught ? 's_laoer_caught' : 's_laoer_nibble', sf.x, sf.y, 70)) return;
-    const idle = !sf.task && !sf.hands.length ? idlePulse(sf.id === 'mimi' ? 4.7 : 0.8) : 0;
-    if (SUZHOU && sf.id === 'laoer' && idle > 0.28 && gardenSprite('s_laoer_ball', sf.x + 4, sf.y, 85)) return;
-    if (SUZHOU && sf.id === 'mimi' && idle) drawClothBall(sf.x - 22 - 10 * idle, sf.y - 2);
-    drawCat(P('s_' + sf.id) || (sf.back && moving ? custImgBack(sf.id) : custImg(sf.id)), sf.x, sf.y - idle, sf.face, moving, (sf.id === 'mimi' ? 0.8 : 0.92) * K(sf.y), sf.id, sf.walkDistance);
+    drawCat(P('s_' + sf.id) || (sf.back && moving ? custImgBack(sf.id) : custImg(sf.id)), sf.x, sf.y, sf.face, moving, (sf.id === 'mimi' ? 0.8 : 0.92) * K(sf.y), sf.id, sf.walkDistance, idle);
     if (sf.sinkDrop === undefined) drawHands(sf, K(sf.y), 0, true);
     if (zz) { const t = performance.now() / 1000; ctx.fillStyle = '#4a6384'; ctx.font = `bold 18px ${FONT}`; ctx.textAlign = 'center'; ctx.fillText('z', sf.x + 26, sf.y - 96 - (t * 8 % 10)); ctx.fillText('Z', sf.x + 38, sf.y - 112 - (t * 8 % 10)); } // 主人 11/26：店员脚下不写字
   }
-  function drawClothBall(x, y) {
-    ctx.fillStyle = '#bd8c87'; ctx.strokeStyle = '#8a6b60'; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.ellipse(x, y, 6, 5, 0.4, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-    ctx.strokeStyle = '#e3c1ac'; ctx.beginPath(); ctx.moveTo(x - 4, y - 1); ctx.lineTo(x + 3, y + 2); ctx.stroke();
-  }
-  function drawFan(x, y, lift) {
-    ctx.save(); ctx.translate(x, y); ctx.rotate(-0.35 + lift * 0.55);
-    ctx.fillStyle = '#e0b480'; ctx.strokeStyle = '#86614e'; ctx.lineWidth = 1.5;
-    ctx.beginPath(); ctx.moveTo(0, 10); ctx.arc(0, 10, 17, -2.3, -0.8); ctx.closePath(); ctx.fill(); ctx.stroke();
-    ctx.restore();
+  function drawIdleShuai(x, y) {
+    drawCat(P('s_shuai') || SPR.dancer, x, y, 1, false, 0.87, 'shuai', 0, crewIdle('shuai', true));
   }
   const DANCE_SPOT = SUZHOU ? { x: LAYOUT.scene.dance[0], y: LAYOUT.scene.dance[1] } : { x: 760, y: 690 };
   function drawDancer(x0, y0, k = 1) {
@@ -2783,7 +2953,7 @@ const stations = {};
     for (const [id, x, y] of [['market', 370, 560], ['pond', 1520, 960], ['coop', 2160, 540], ['mail', 1317, 700], ['tea', 1170, 1010]]) if (!spotOpen(id)) items.push({ y: 9998, d: () => sign(x, y, openDay('map', id)) });
     if (spotOpen('coop') && save.coopDay !== save.day) items.push({ y: 9999, d: () => { const im = ING_IMG.egg; if (im.complete) ctx.drawImage(im, 2190, 470, 40, 40); label('有蛋', 2210, 466, 16, '#fbf3e2', '#7a5a2c'); } });
     if (spotOpen('market')) items.push({ y: WMAP.market.y + 150, d: () => { drawCat(SPR.vendor, WMAP.market.x + 150, WMAP.market.y + 150, 1, false, 0.8); label(`今日特价：${ING[special()].n}`, WMAP.market.x + 150, WMAP.market.y + 186, 17, '#fbf3e2', '#8a3a2c'); } });
-    items.push({ y: WMAP.plaza.cy, d: () => drawDancer(WMAP.plaza.cx, WMAP.plaza.cy, 1) });
+    items.push({ y: WMAP.plaza.cy, d: () => SUZHOU ? drawIdleShuai(WMAP.plaza.cx, WMAP.plaza.cy) : drawDancer(WMAP.plaza.cx, WMAP.plaza.cy, 1) });
     if (MAP_SPR) { // GPT 画的房子、摊子、鸡舍、邮筒、路牌、稻草人
       items.push({ y: 640, d: () => { if (spr('m_shop', 1000 + 0.08 * 480, 646, 480)) label('盆盆餐厅', 1000, 486, 20, '#f3e3c0', '#2a201a'); } });
       items.push({ y: 520, d: () => spr('m_market', 370, 526, 330) });
@@ -2793,12 +2963,13 @@ const stations = {};
       items.push({ y: 480, d: () => spr('m_scarecrow', 1600, 484, 0, { h: 112 }) });
     }
     if (save.mail && spotOpen('mail')) items.push({ y: 9999, d: () => { const b = Math.sin(performance.now() / 200) * 4; ctx.fillStyle = '#fbf6ec'; ctx.strokeStyle = '#2c2420'; ctx.lineWidth = 2; rr(1296, 546 + b, 44, 30, 4); ctx.fill(); ctx.stroke(); ctx.beginPath(); ctx.moveTo(1296, 546 + b); ctx.lineTo(1318, 562 + b); ctx.lineTo(1340, 546 + b); ctx.stroke(); label('有信！', 1318, 530 + b, 18, '#fbf3e2', '#b04a3c'); } });
-    if (staffIds().includes('laoer')) items.push({ y: 720, d: () => drawCat(staffImg('laoer'), 1120, 720, -1, false, 0.8) });
-    if (staffIds().includes('mimi')) items.push({ y: 1040, d: () => { const idle = SUZHOU ? idlePulse(4.7) : 0; if (idle) drawClothBall(1266 - idle * 8, 1038); drawCat(staffImg('mimi'), 1290, 1040 - idle, -1, false, 0.7); label('咪咪', 1290, 1056, 15, '#fbf3e2', '#4f7d3a'); } }); // 咪咪在茶园边上
+    if (staffIds().includes('laoer')) items.push({ y: 720, d: () => drawCat(staffImg('laoer'), 1120, 720, -1, false, 0.8, 'laoer', 0, crewIdle('laoer', true)) });
+    if (staffIds().includes('mimi')) items.push({ y: 1040, d: () => { drawCat(staffImg('mimi'), 1290, 1040, -1, false, 0.7, 'mimi', 0, crewIdle('mimi', true)); label('咪咪', 1290, 1056, 15, '#fbf3e2', '#4f7d3a'); } }); // 咪咪在茶园边上
     items.push({ y: D.y, d: () => {
       const walking = D.path.length > 0;
       const frame = walking && SPR.pWalk && SPR.pWalk[D.back ? 1 : 0][Math.floor((D.walkDistance || 0) / 22) % 4];
-      drawCat(ok(frame) ? frame : penImg(D.back && walking), D.x, D.y, D.face, walking, 1, SPR.pPaint ? 'penpen' : null, D.walkDistance);
+      const idle = crewIdle('penpen', !walking && !D.fish);
+      drawCat(ok(frame) ? frame : penImg(D.back && walking, idle?.pose), D.x, D.y, D.face, walking, 1, SPR.pPaint ? 'penpen' : null, D.walkDistance, idle);
       if (D.fish > 0) { const t = performance.now() / 300; ctx.strokeStyle = '#2c2420'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(D.x + 30, D.y - 70); ctx.quadraticCurveTo(D.x + 90, D.y - 110, D.x + 130, D.y - 10 + Math.sin(t) * 3); ctx.stroke(); ctx.fillStyle = '#d9453a'; ctx.beginPath(); ctx.arc(D.x + 130, D.y - 8 + Math.sin(t) * 3, 6, 0, 7); ctx.fill(); label('钓鱼中…', D.x, D.y - 130, 18, '#fbf3e2', '#3f6680'); }
     } });
     items.sort((a, b) => a.y - b.y).forEach((i) => i.d());
@@ -2873,13 +3044,8 @@ const stations = {};
     if (SUZHOU) {
       items.push({ y: SINK.y, d: drawSink });
       if (G.staff.some((sf) => sf.id === 'laoer')) items.push({ y: 555, d: () => spr('d_catbed', 441, 564, 63) });
-      if (prog().dance && !G.dancer) {
-        items.push({ y: DANCE_SPOT.y, d: () => {
-          const lift = idlePulse(3.2);
-          drawCat(P('s_shuai') || SPR.dancer, DANCE_SPOT.x, DANCE_SPOT.y - lift * 1.4, 1, false, 0.87);
-          drawFan(DANCE_SPOT.x + 28, DANCE_SPOT.y - 52, lift);
-        } });
-      }
+      if (prog().dance && !G.dancer) items.push({ y: DANCE_SPOT.y, d: () => drawIdleShuai(DANCE_SPOT.x, DANCE_SPOT.y) });
+      else crewIdle('shuai', false);
     }
     else if (ART_ROOM() && !GREY) {
       items.push({ y: SINK.y, d: drawSink });
@@ -2887,7 +3053,7 @@ const stations = {};
       items.push({ y: 704, d: () => { spr('d_catbed', 1168, 712, 90); spr('d_cattree', 1236, 706, 60); } });
     }
     G.customers.forEach((c) => {
-      if (SUZHOU && seated(c) && c.state !== 'toSeat') return;
+      if (SUZHOU && seated(c) && (c.state !== 'toSeat' || c.seatEase != null)) return;
       for (let i = 0; i < c.size; i++) {
         const p = memberPos(c, i);
         const d = () => {
@@ -2997,6 +3163,7 @@ const stations = {};
   function startSave(id) {
     save = loadSaves().find((s) => s.id === id); if (!save) return;
     fixSave(save);
+    travel.page = 0;
     buildPlayerSprites(save.look || CATS.penpen.look);
     const ck = save.ck && save.ck.day === save.day ? save.ck : null;
     if (ck) Object.assign(save, { stock: ck.stock, seeds: ck.seeds, coins: ck.coins, menu: ck.menu, menuDay: ck.menuDay, farm: ck.farm, energy: ck.energy, energyDay: save.day }); // 营业中退出：回到开店那一刻
@@ -3090,6 +3257,7 @@ const stations = {};
     for (const id of add.tables || []) if (save.day > 1) it.push(tile(`assets/${TABLES.find((t) => t.id === id).size === 4 ? 'table_m' : 'table_s'}.webp`, TABLES.find((t) => t.id === id).size === 4 ? '四人桌' : '两人桌'));
     const tr = save.trend && save.trend.day === save.day ? save.trend : null;
     const note = dailyNote();
+    if (teachingFarm()) it.unshift('<div class="nt farm"><b>今天的备料</b><small>' + teachingFarm().msg + '</small></div>');
     if (note) it.unshift('<div class="nt farm"><b>街坊消息</b><small>' + note + '</small></div>');
     const paper = tr ? `<div class="paper"><div class="mast">猫猫日报 <small>第 ${save.day} 天</small></div><div class="hl"><img alt="" src="${iconURL(tr.hot)}"><b>今天流行「${tr.hot}」</b></div><div class="cold"><img alt="" src="${iconURL(tr.cold)}">「${tr.cold}」没人点</div></div>` : '';
     $('#tip-close').innerHTML = save.day === 1 ? '<button class="primary tip-open">开始营业</button>' : '点这里关闭'; // T-02：第一天一个大按钮
@@ -3236,12 +3404,14 @@ const stations = {};
     const draft = { ...save.decor, tables: { ...save.decor.tables } };
     const box = $('#decor-body');
     const title = { linen: '大桌桌布', flowers: '插花', curtain: '门帘' };
+    const wallItems = travelEntries();
     const large = TABLES.filter((t) => t.size === 4 && prog().tables.includes(t.id));
     box.innerHTML = Object.entries(DECOR_OPTIONS).map(([key, names]) =>
       '<label>' + title[key] + '<select data-field="' + key + '">' +
       DECOR_SEASONS.map((season, i) => '<option value="' + season + '">' + names[i] + '</option>').join('') +
       (key === 'flowers' && save.regular?.flower ? '<option value="gift">狸猫阿姨的候位花</option>' : '') + '</select></label>').join('')
       + large.map((t) => '<label>后排桌 ' + t.id + '<select data-table="' + t.id + '"><option value="4">四人桌</option><option value="2">两人桌</option></select></label>').join('')
+      + [['wallLeft', '左墙'], ['wallRight', '食单上方']].map(([field, label]) => '<label>' + label + '<select data-field="' + field + '">' + wallItems.map((item) => '<option value="' + item.id + '">' + escapeHTML(item.title) + '</option>').join('') + '</select></label>').join('')
       + '<label class="bench"><input type="checkbox" data-field="bench"> 门边候位凳</label>';
     for (const el of box.querySelectorAll('[data-field]')) {
       const field = el.dataset.field;
@@ -3285,8 +3455,125 @@ const stations = {};
   for (const id of ['market-ok', 'pantry-ok']) $('#' + id).addEventListener('click', () => { G.paused = false; show('hud-screen'); });
   $('#dex-ok').addEventListener('click', () => { if (save) did('dexok'); if (G && !G.over) { G.paused = false; show('hud-screen'); } else show('result'); });
   document.querySelectorAll('#dex .tabs button').forEach((b) => b.addEventListener('click', () => openDex(b.dataset.tab)));
+
+  // 旅行收件、纸相簿和墙上装饰共用同一份收藏。
+  const TRAVEL_PAINTINGS = {
+    bamboo: { title: '竹石卷轴', from: '苏式首店', msg: '墨竹随窗外的春光一起挂着。', src: 'assets/suzhou/wall_bamboo.png' },
+    canal: { title: '春水石桥', from: '江南水乡', msg: '呆猫沿河走过一座石桥，把春天画下来寄回了店里。', src: 'assets/suzhou/wall_canal.png' },
+  };
+  const travel = { from: 'hud-screen', page: 0, placing: '', ids: [] };
+  const zhNumber = (n) => n < 10 ? '〇一二三四五六七八九'[n] : (n < 20 ? '' : zhNumber(Math.floor(n / 10))) + '十' + (n % 10 ? zhNumber(n % 10) : '');
+  function albumDate(info) {
+    if (save.album.clock === 'real') {
+      if (!info?.at) return '收件日期未记';
+      const d = new Date(info.at);
+      return Number.isFinite(d.getTime()) ? d.toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric' }) : '收件日期未记';
+    }
+    if (!info?.day) return '收件日期未记';
+    const year = Math.ceil(info.day / 28);
+    const day = (info.day - 1) % 7 + 1;
+    return (year === 1 ? '元' : year < 100 ? zhNumber(year) : year) + '年 · ' + SEASONS[seasonOf(info.day)].n + zhNumber(day) + '日';
+  }
+  function travelEntries() {
+    const notes = save.album.notes;
+    const cards = (save.cards || []).flatMap((id) => {
+      const p = POSTCARDS.find((entry) => entry.id === id);
+      return p ? [{ id: 'card:' + id, title: p.n, from: p.from, msg: p.msg, src: pcURL(id), date: notes['card:' + id], kind: '明信片' }] : [];
+    });
+    const photos = (save.snaps || []).flatMap(({ id, v, day }) => {
+      const p = POSTCARDS.find((entry) => entry.id === id), key = 'snap:' + id + ':' + v, src = pcURL(id, v);
+      return p && src ? [{ id: key, title: '路上的一张照片', from: p.from, msg: notes[key]?.msg || '呆猫在旅途中拍下的风景。', src, date: notes[key] || { day }, kind: '相片' }] : [];
+    });
+    const paintings = Object.entries(TRAVEL_PAINTINGS).map(([id, p]) => ({ ...p, id, kind: '挂画', date: notes[id] }));
+    if ((save.cards || []).includes('huizhou')) paintings.push({ id: 'paint:huizhou', title: '白墙黛瓦', from: POSTCARDS.find((p) => p.id === 'huizhou').from,
+      msg: '桥那头的青瓦在雨里特别好看。想把这一抹墨色也寄给你们。', src: 'assets/suzhou/wall_huizhou.jpg', date: notes['card:huizhou'], kind: '挂画' });
+    if (save.day >= 6 && save.history.some((h) => h.day >= 5)) paintings.push({ id: 'family', title: '首店全家福', from: '苏式首店',
+      msg: '灶边忙完，大家难得都在。', src: 'assets/suzhou/family_photo.jpg', kind: '相片' });
+    return [...cards, ...photos, ...paintings];
+  }
+  function noteReceived(id, msg) {
+    const notes = save.album.notes;
+    notes[id] ||= { day: save.day, at: new Date().toISOString(), ...(msg ? { msg } : {}) };
+    if (SUZHOU && !save.album.taught) {
+      save.album.taught = true;
+      toast('照片收进了旅行相簿。开店前可把照片或挂画布置到墙上。', 4500);
+    }
+  }
+  function openTravelAlbum(from = 'dex', focus) {
+    if (!G || !save) return;
+    G.paused = true; travel.from = from; travel.placing = '';
+    travel.ids = travelEntries().map((item) => item.id);
+    if (focus) travel.page = Math.max(0, travel.ids.indexOf(focus));
+    travel.page = Math.min(travel.page, travel.ids.length - 1);
+    show('travel-album'); renderTravelAlbum();
+  }
+  function renderTravelAlbum() {
+    const entries = travelEntries(), entry = entries.find((item) => item.id === travel.ids[travel.page]);
+    if (!entry) return;
+    const format = $('#album-clock');
+    format.value = save.album.clock;
+    $('#album-title').textContent = entry.title;
+    $('#album-sender').textContent = entry.id === 'family' || entry.id === 'bamboo' ? entry.from : '呆猫 · 寄自' + entry.from;
+    $('#album-date').textContent = albumDate(entry.date);
+    $('#album-message').textContent = entry.msg;
+    $('#album-photo').src = entry.src; $('#album-photo').alt = entry.title;
+    $('#album-photo').classList.toggle('narrow', entry.id === 'bamboo');
+    $('#album-prev').disabled = travel.page <= 0;
+    $('#album-next').disabled = travel.page >= travel.ids.length - 1;
+    $('#album-page-number').textContent = (travel.page + 1) + ' / ' + travel.ids.length;
+    $('#album-wall-controls').hidden = !SUZHOU || G.mode !== 'day';
+    $('#album-hang-left').disabled = save.decor.wallLeft === entry.id;
+    $('#album-hang-right').disabled = save.decor.wallRight === entry.id;
+    const pick = $('#album-add-photo');
+    pick.value = ''; pick.innerHTML = '<option value="">选照片贴到留白处</option>';
+    for (const item of entries.filter((item) => item.kind !== '挂画')) pick.add(new Option(item.title + ' · ' + item.from, item.id));
+    pick.value = travel.placing;
+    const place = $('#album-paper');
+    place.classList.toggle('placing', !!travel.placing);
+    $('#album-paper-hint').hidden = !travel.placing;
+    const decorations = save.album.placements[entry.id] || [];
+    $('#album-stickers').replaceChildren();
+    decorations.forEach((d, i) => {
+      const item = entries.find((item) => item.id === d.id);
+      if (!item) return;
+      const button = document.createElement('button'), im = document.createElement('img');
+      button.type = 'button'; button.className = 'album-sticker';
+      button.style.left = d.x + '%'; button.style.top = d.y + '%';
+      button.style.rotate = d.angle + 'deg';
+      button.setAttribute('aria-label', '取下' + item.title);
+      im.src = item.src; im.alt = item.title; im.draggable = false; button.append(im);
+      button.onclick = (ev) => { ev.stopPropagation(); decorations.splice(i, 1); persist(); renderTravelAlbum(); };
+      $('#album-stickers').append(button);
+    });
+  }
+  function hangAlbumEntry(side) {
+    if (G?.mode !== 'day') return;
+    save.decor[side] = travel.ids[travel.page];
+    persist(); renderTravelAlbum(); toast(side === 'wallLeft' ? '已经挂在左墙' : '已经挂在食单上方');
+  }
+  $('#album-prev').onclick = () => { if (travel.page > 0) { travel.page--; travel.placing = ''; renderTravelAlbum(); } };
+  $('#album-next').onclick = () => { if (travel.page + 1 < travel.ids.length) { travel.page++; travel.placing = ''; renderTravelAlbum(); } };
+  $('#album-close').onclick = () => {
+    if (travel.from === 'dex') openDex('cust');
+    else { G.paused = false; show('hud-screen'); }
+  };
+  $('#album-clock').onchange = (e) => { save.album.clock = e.target.value; persist(); renderTravelAlbum(); };
+  $('#album-hang-left').onclick = () => hangAlbumEntry('wallLeft');
+  $('#album-hang-right').onclick = () => hangAlbumEntry('wallRight');
+  $('#album-add-photo').onchange = (e) => { travel.placing = e.target.value; renderTravelAlbum(); };
+  $('#album-paper').onclick = (ev) => {
+    if (!travel.placing) return;
+    const r = ev.currentTarget.getBoundingClientRect();
+    const items = (save.album.placements[travel.ids[travel.page]] ||= []);
+    if (items.length >= 3) { toast('这页已经贴了三张照片'); return; }
+    items.push({ id: travel.placing, x: Math.max(14, Math.min(86, (ev.clientX - r.left) * 100 / r.width)),
+      y: Math.max(29, Math.min(71, (ev.clientY - r.top) * 100 / r.height)), angle: [-5, 4, -2][items.length] });
+    travel.placing = ''; persist(); renderTravelAlbum();
+  };
+
   // ---------- 图鉴 ----------
   function openDex(tab) {
+    if (SUZHOU && tab === 'card') { openTravelAlbum(); return; }
     if (G) G.paused = true;
     document.querySelectorAll('#dex .tabs button').forEach((b) => b.classList.toggle('on', b.dataset.tab === tab));
     const box = $('#dex-list');
@@ -3330,7 +3617,7 @@ const stations = {};
     G.dancer = { t: 4 }; G.danceCD = 45; sfx.dance();
     G.customers.forEach((c) => { if (c.state !== 'leaving') { addHeart(c); const a = anchor(c); float(a.x, a.y - 20, '+♥', '#ef6f7a'); } });
   });
-  $('#start-tip').addEventListener('click', () => { $('#start-tip').classList.remove('show'); if (G && G.mode === 'shop') G.paused = false; if (G && G.mode === 'day') { if (save.day === 1) openShop(); else if (save.menuDay !== save.day) openMenuPick(); } });
+  $('#start-tip').addEventListener('click', () => { $('#start-tip').classList.remove('show'); if (G && G.mode === 'shop') G.paused = false; if (G && G.mode === 'day') { if (save.day === 1) openShop(); else if (save.menuDay !== save.day && !teachingFarm()) openMenuPick(); } });
 
   // ---------- 老大试菜 ----------
   const INV = { target: null, ing: null, ware: null, running: false };
@@ -3474,7 +3761,7 @@ const stations = {};
     const readyIndex = SUZHOU ? readyMeals().findIndex((meal) => meal.every((dish) => !dish.claim && !queued((a) => a.order === dish))) : k.pass.findIndex((dish) => !dish.claim);
     if (readyIndex >= 0 && w.hands.length < (SUZHOU ? 1 : 2) && !queued((a) => a.kind === 'pass')) {
       const [x, y] = SUZHOU ? PASS.slots[readyIndex] : [PASS_POINT.x, PASS_POINT.y];
-      cand.push(P(x, y - 4, SUZHOU ? 34 : 60, SUZHOU ? '取整桌的菜' : '取菜', 'pick'));
+      cand.push(P(x, y - 4, SUZHOU ? 34 : 60, SUZHOU ? '' : '取菜', 'pick'));
     }
     if (G.customers.some((c) => c.state === 'thirsty') && !w.hands.some((h) => h.kind === 'water') && !queued((a) => a.kind === 'water')) cand.push(P(TEA_POINT.x, TEA_POINT.y, 46, '倒水', 'water'));
     const brewer = G.staff.some((sf) => jobsOf(sf.id).includes('drink') && !resting(sf.id));
@@ -3504,6 +3791,11 @@ const stations = {};
     const D = G.D; if (D.path.length || D.fish > 0) return null;
     const W_ = (x, y, r, text, type) => ({ type, x: x - D.cam.x, y: y - D.cam.y, r, text, wx: x, wy: y });
     const cand = [], plots = WMAP.farm.plots;
+    const lesson = teachingFarm();
+    if (lesson) {
+      const [x, y] = lesson.site === 'plot' ? plots[0] : [lesson.x, lesson.y];
+      return W_(x, y, 90, lesson.msg, farmPhase());
+    }
     if (save.noteNew && need('note')) return { type: 'note', sel: shown('#b-dex'), text: '看笔记' };
     if (save.menuNew && save.menuDay === save.day && need('remenu', 2)) return { type: 'remenu', sel: shown('#b-menu'), text: '加新菜' };
     if (ideaNow() && need('invent', 2)) return { type: 'invent', sel: shown('#b-invent'), text: '老大想试菜' };
@@ -3528,6 +3820,7 @@ const stations = {};
     if (!G || !save) return null;
     if (SUZHOU && G.mode === 'shop' && !DBG.all && G.idle < 8) return null;
     if (shown('#ask.show')) return need('ask') ? { type: 'ask', sel: shown('#ask .yes'), text: '好' } : null;
+    if (shown('#fish-lesson.show')) return { type: 'reel', sel: shown('#fish-reel'), text: '收线' };
     if (shown('#plot.show')) {
       const f = save.farm[PLOT.i];
       if (f.cells.some(cellRipe) && G.D.energy > 0 && need('harvest')) return { type: 'harvest', sel: shown('#plot-harvest'), text: '收菜' };
@@ -3576,13 +3869,14 @@ const stations = {};
     Object.assign(ring.style, { left: `${x - w / 2}px`, top: `${y - hh / 2}px`, width: `${w}px`, height: `${hh}px` });
     Object.assign(paw.style, { left: `${x + Math.min(w, 120) * 0.22}px`, top: `${y + Math.min(hh, 120) * 0.12}px` });
     cap.textContent = h.text;
+    cap.hidden = !h.text;
     const above = y - hh / 2 - 48 > 64 && !(h.sel && h.sel.closest && h.sel.closest('#order, #ask')); // 提示框里的按钮：字放在按钮下面，不压提示文字
     const below = y + hh / 2 + 10, capTop = above || below > UH - 50 ? Math.max(8, y - hh / 2 - 48) : below; // 屏幕下面放不下就放上面
     Object.assign(cap.style, { left: `${Math.max(60, Math.min(UW - 60, x))}px`, top: `${capTop}px`, transform: 'translateX(-50%)' });
     el.classList.toggle('box', box); el.classList.add('show');
   }
   $('#b-next').addEventListener('click', () => did('next'));
-  $('#market-ok').addEventListener('click', () => did('mok'));
+  $('#market-ok').addEventListener('click', () => { did('mok'); if (farmPhase() === 'buy') setFarmPhase('done'); });
   $('#menu-ok').addEventListener('click', () => { if (save) { did('menu'); save.menuNew = false; } });
 
   // ---------- 主循环 ----------

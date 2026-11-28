@@ -117,6 +117,33 @@
   .card .buy1 { font-size: 18px; min-height: 46px; padding: 6px 14px; background: #b04a3c; color: #fff; }
   .card .buy1:disabled { background: #d9c7b5; color: #7b6352; }
   .prow { grid-template-columns: 56px 90px 70px 1fr; } .prow .cnt { font-weight: 700; } .prow.zero { opacity: 0.55; }
+
+  @font-face{font-family:"Penpen Album Ink";src:url("assets/suzhou/album-brush.woff2") format("woff2");font-display:swap}
+  #travel-album .travel-book{width:min(1000px,94%);padding:12px 24px 17px;background:#cbb698;color:#624533;border:3px solid #aa8b66;border-radius:15px;box-shadow:0 13px 42px #39271869}
+  .album-bar{display:flex;align-items:center;gap:12px;justify-content:space-between}
+  .album-bar h2{margin:0 auto 0 0;font:33px "Penpen Album Ink","KaiTi",serif;color:#543c2c}
+  .album-bar button,.album-bar select{font:18px "KaiTi",serif;padding:5px 12px;background:#fbefdb;border:1px solid #aa8a66;border-radius:7px;color:#644837;min-height:37px}
+  .album-bar :disabled{opacity:.47}
+  .album-spread{display:grid;grid-template-columns:1fr 1fr;margin:8px 0;background:radial-gradient(ellipse at 29% 38%,#fff7e6 6%,#f3e2c1 71%,#dac09b 100%);border-radius:12px;box-shadow:inset 0 0 14px #82623d50,0 3px 2px #745a3d6b;min-height:390px}
+  .album-left{margin:0;padding:32px 31px 18px;min-width:0;box-shadow:inset -20px 0 25px -30px #553615b9;text-align:center}
+  .album-print{display:grid;place-items:center;height:295px;padding:11px 11px 26px;background:#fffbec;box-shadow:0 4px 8px #7b542c56,0 0 0 1px #c4aa88;transform:rotate(-2deg)}
+  .album-print img{width:100%;height:100%;min-height:0;object-fit:cover;border:1px solid #e2d1b4}
+  .album-print img.narrow{object-fit:contain}
+  #album-title,.album-letter{font-family:"Penpen Album Ink","Kaiti SC",KaiTi,serif}
+  #album-title{font-size:26px;margin:14px 0 0}
+  .album-right{position:relative;padding:26px 34px 12px;box-shadow:inset 22px 0 26px -30px #553615cc}
+  .album-letter{font-size:24px;line-height:1.45}
+  .album-letter p{margin:10px 0 0;white-space:normal;overflow-wrap:anywhere}
+  #album-date{font-size:21px;color:#85684e}
+  .album-letter .stamp{float:right;display:grid;place-items:center;transform:rotate(8deg);color:#a35c4b;border:2px double #a35c4b;border-radius:4px;padding:3px 7px;font-size:21px}
+  #album-paper{position:relative;min-height:175px;margin-top:9px}
+  #album-paper.placing{cursor:crosshair;border-radius:9px;outline:1px dashed #a87b58;outline-offset:1px}
+  #album-paper-hint{position:absolute;bottom:3px;right:4px;color:#85684e;font-size:15px;pointer-events:none}
+  #album-stickers .album-sticker{position:absolute;z-index:1;transform:translate(-50%,-50%);width:122px;height:82px;padding:5px 5px 10px;background:#fdf5e4;border:1px solid #c2a884;border-radius:2px;box-shadow:0 3px 5px #7150314f;cursor:pointer}
+  .album-sticker img{width:100%;height:100%;object-fit:cover}
+  .album-pages{display:flex;align-items:center;gap:9px;color:#543f31}
+  .album-pages button{min-width:46px}#album-wall-controls:not([hidden]){display:flex;gap:7px}
+
   #dex .tabs { display: flex; gap: 10px; justify-content: center; } #dex .tabs button { min-width: 140px; } #dex .tabs button.on { background: #b04a3c; color: #fff; }
   #dex-list { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; overflow-y: auto; max-height: 450px; }
   .dx { background: #f3ead9; border-radius: 18px; padding: 10px 14px; display: flex; flex-direction: column; gap: 4px; font-size: 17px; }
@@ -428,10 +455,19 @@
       </div>
     </section>
 
+
+    <section id="fish-lesson" class="screen modal">
+      <div class="card">
+        <h2>浮漂动了</h2>
+        <p class="goal">鱼咬钩了，点一下收线。</p>
+        <button type="button" class="primary" id="fish-reel">收线</button>
+      </div>
+    </section>
     <section id="market" class="screen modal">
       <div class="card" style="width:900px">
         <h2>早市</h2>
         <p class="goal" id="market-coins"></p>
+        <p class="goal" id="market-lesson" hidden></p>
         <div id="market-list"></div>
         <button class="primary" id="market-ok">买好了</button>
       </div>
@@ -444,6 +480,39 @@
         <button class="primary" id="pantry-ok">关上</button>
       </div>
     </section>
+
+    <section id="travel-album" class="screen modal" aria-label="旅行相簿">
+      <div class="card travel-book">
+        <header class="album-bar">
+          <h2>旅行相簿</h2>
+          <select id="album-clock" aria-label="收件日期显示方式"><option value="game">店里日历</option><option value="real">现实收件日</option></select>
+          <button type="button" id="album-close">合上</button>
+        </header>
+        <div class="album-spread">
+          <figure class="album-left">
+            <div class="album-print"><img id="album-photo" alt=""></div>
+            <figcaption id="album-title"></figcaption>
+          </figure>
+          <div class="album-right">
+            <div class="album-letter">
+              <div class="stamp" aria-hidden="true">寄</div>
+              <div id="album-date"></div><div id="album-sender"></div>
+              <p id="album-message"></p>
+            </div>
+            <div id="album-paper" aria-label="相簿留白">
+              <div id="album-stickers"></div>
+              <span id="album-paper-hint" hidden>点一下这里贴上照片</span>
+            </div>
+          </div>
+        </div>
+        <footer class="album-bar">
+          <div class="album-pages"><button type="button" id="album-prev" aria-label="上一页">‹</button><span id="album-page-number"></span><button type="button" id="album-next" aria-label="下一页">›</button></div>
+          <select id="album-add-photo" aria-label="选择要贴的照片"></select>
+          <div id="album-wall-controls"><button type="button" id="album-hang-left">挂左墙</button><button type="button" id="album-hang-right">挂右墙</button></div>
+        </footer>
+      </div>
+    </section>
+
     <section id="dex" class="screen modal">
       <div class="card" style="width:1100px;max-height:680px">
         <h2>盆盆的笔记</h2>
