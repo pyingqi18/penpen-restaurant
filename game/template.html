@@ -470,6 +470,21 @@
    .sound-field { display:grid; gap:10px; margin:14px 0; }
    .sound-field label { display:flex; align-items:center; gap:10px; min-height:44px; font-size:23px; }
    .sound-field input { width:24px; height:24px; accent-color:#9b6951; }
+
+ #coach .tap-finger { display:none;position:absolute;width:34px;height:38px;pointer-events:none;filter:drop-shadow(0 2px 2px #56352364); }
+ #coach.route-hand .tap-finger { display:block;animation:guide-touch 1.09s ease-in-out infinite; }
+ #coach.route-hand .paw { opacity:0; }
+ #coach.route-hand:not(.paper-hint) .ring { border-color:#a95a34;box-shadow:0 0 0 3px #fff2d3; }
+ @keyframes guide-touch { 0%,100%{transform:translateY(-7px)} 52%{transform:translateY(6px)} }
+ #yard-fishing[data-stage="bite"] #yard-fish-action { background:#a95239;box-shadow:0 0 0 3px #ffebba; }
+ #yard-fishing button:disabled { opacity:.62; }
+ #yard-catch-note:not([hidden]) { pointer-events:auto;display:flex;gap:10px;align-items:center;position:absolute;right:14px;bottom:12px;padding:9px;background:#eff4e8;border:1.5px solid #779480;border-radius:10px;font-size:20px;color:#465d49; }
+ #yard-catch-note button { min-height:44px;padding:6px 11px;border-radius:6px;background:#68846e;color:white; }
+ @media(prefers-reduced-motion:reduce){#coach.route-hand .tap-finger{animation:none}}
+
+  #dex-list .fish-count{grid-column:1/-1;margin:0 0 6px;color:#526b5d;font-weight:700;text-align:left}
+  #dex-list .fish{object-fit:contain;width:106px;height:76px}
+  #dex-list .dx.locked .ph{margin-top:8px}
 </style>
 </head>
 <body>
@@ -525,15 +540,16 @@
         <div aria-live="polite"><small id="yard-task-progress"></small><b id="yard-task-title"></b><div id="yard-task-text"></div></div><button id="yard-task-go"></button><button id="yard-decor-intro" hidden>试试装修</button>
       </section>
       <section id="yard-fishing" class="day-only" hidden>
-        <span id="yard-fish-text"></span><button id="yard-fish-action">抛竿</button><button id="yard-fish-close">离开钓台</button>
+        <span id="yard-fish-text" aria-live="polite"></span><button id="yard-fish-action">抛竿</button><button id="yard-fish-close">离开钓台</button>
       </section>
+      <section id="yard-catch-note" class="day-only" hidden><b id="yard-catch-name"></b><button id="yard-fish-book">看水产图鉴</button></section>
       <div id="start-tip">
         <div id="tip-body"></div>
         <p id="tip-close" style="margin:8px 0 0;color:#8a6a50;text-align:center">点这里关闭</p>
       </div>
       <div id="order" role="dialog" aria-label="点单"></div>
       <div id="teamenu" role="menu" aria-label="选饮品"></div>
-      <div id="coach"><div class="ring"></div><button type="button" class="paw" aria-label="取菜"><svg aria-hidden="true" viewBox="0 0 60 60"><g fill="#fbf6ec" stroke="#2c2420" stroke-width="3"><ellipse cx="30" cy="38" rx="15" ry="13"/><circle cx="14" cy="20" r="6"/><circle cx="25" cy="12" r="6"/><circle cx="37" cy="12" r="6"/><circle cx="47" cy="20" r="6"/></g><g fill="#f2a9b4"><ellipse cx="30" cy="39" rx="8" ry="6"/><circle cx="14" cy="20" r="2.6"/><circle cx="25" cy="12" r="2.6"/><circle cx="37" cy="12" r="2.6"/><circle cx="47" cy="20" r="2.6"/></g></svg></button><button type="button" class="cap"></button></div>
+      <div id="coach"><div class="ring"></div><button type="button" class="paw" aria-label="取菜"><svg aria-hidden="true" viewBox="0 0 60 60"><g fill="#fbf6ec" stroke="#2c2420" stroke-width="3"><ellipse cx="30" cy="38" rx="15" ry="13"/><circle cx="14" cy="20" r="6"/><circle cx="25" cy="12" r="6"/><circle cx="37" cy="12" r="6"/><circle cx="47" cy="20" r="6"/></g><g fill="#f2a9b4"><ellipse cx="30" cy="39" rx="8" ry="6"/><circle cx="14" cy="20" r="2.6"/><circle cx="25" cy="12" r="2.6"/><circle cx="37" cy="12" r="2.6"/><circle cx="47" cy="20" r="2.6"/></g></svg></button><button type="button" class="cap"></button><svg class="tap-finger" aria-hidden="true" viewBox="0 0 48 54"><path d="M8 40c-3-5 1-9 5-6l5 4V11c0-7 9-7 9 0v14c4-3 7-2 9 2 4-1 7 2 7 6v8c0 8-5 12-13 12h-5c-7 0-12-7-17-13Z" fill="#fff3d3" stroke="#7c5032" stroke-width="3" stroke-linejoin="round"/><path d="M15 6l-4-4M31 6l4-4" fill="none" stroke="#a76236" stroke-width="3" stroke-linecap="round"/></svg></div>
     </section>
 
     <section id="pause" class="screen modal">
@@ -634,7 +650,7 @@
     <section id="dex" class="screen modal">
       <div class="card" style="width:1100px;max-height:680px">
         <h2>盆盆的笔记</h2>
-        <div class="tabs"><button data-tab="cust">客人</button><button data-tab="dish">菜谱</button><button data-tab="fish">鱼</button><button data-tab="card">明信片</button><button class="suzhou-tab" data-tab="album">旅行相簿</button><button class="suzhou-tab" data-tab="art">艺术品仓库</button><button class="suzhou-tab" data-tab="records">唱片柜</button></div>
+        <div class="tabs"><button data-tab="cust">客人</button><button data-tab="dish">菜谱</button><button data-tab="fish">水产图鉴</button><button data-tab="card">明信片</button><button class="suzhou-tab" data-tab="album">旅行相簿</button><button class="suzhou-tab" data-tab="art">艺术品仓库</button><button class="suzhou-tab" data-tab="records">唱片柜</button></div>
         <div id="dex-list"></div>
         <button class="primary" id="dex-ok">关上</button>
       </div>
