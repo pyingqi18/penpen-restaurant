@@ -8,10 +8,10 @@
   const PREVIEW_SEASON = SUZHOU_PREVIEW && new URLSearchParams(window.location.search).get('season');
   let gardenMode = false;
   let yardMode = false;
-  const SUZHOU_RELEASE = 'G068';
+  const SUZHOU_RELEASE = 'G069';
   const DAY_LEN = SUZHOU ? 230 : 150; // 每天营业秒数
   const cv = document.getElementById('game');
-  const ctx = cv.getContext('2d');
+  let ctx = cv.getContext('2d');
   const stage = document.getElementById('stage');
   const ui = document.getElementById('ui');
   const $ = (s) => document.querySelector(s);
@@ -21,20 +21,17 @@
   // T-01（D-005）：界面层不再跟着场景一起缩。界面铺满安全区（手机横屏两侧的空白也能放按钮），
   // 缩放取 uiScale = max(场景缩放, UI_MIN)，所以小屏上字和按钮比场景大一些；UW×UH 是界面层的逻辑尺寸。
   const UI_MIN = 0.66; // 22–24 px 的字在 844×390 上约 15–16 CSS px（主人 D-006：字「还行」，不放特别大）
-  let uiScale = 1, UW = W, UH = H, OX = 0, OY = 0, SX = 0, SY = 0; // SX/SY：中间 16:9 场景在画布里的偏移（CSS px），两侧画延伸背景（T-15 / D-009 全屏）
+  let uiScale = 1, UW = W, UH = H, OX = 0, OY = 0, SX = 0, SY = 0; // SX/SY：等比场景在画布里的居中偏移（CSS px）
   const toUI = (x, y) => ({ x: (OX + x * scale) / uiScale, y: (OY + y * scale) / uiScale }); // 场景坐标 → 界面坐标
   function resize() {
     const vw = window.innerWidth, vh = window.innerHeight, cs = getComputedStyle(document.body);
     const pl = parseFloat(cs.paddingLeft) || 0, pr = parseFloat(cs.paddingRight) || 0, pt = parseFloat(cs.paddingTop) || 0, pb = parseFloat(cs.paddingBottom) || 0;
-    const aw = Math.max(200, vw - pl - pr), ah = Math.max(150, vh - pt - pb);
-
+    const aw = Math.max(1, vw - pl - pr), ah = Math.max(1, vh - pt - pb);
 
     const stageHeight = gardenMode ? LAYOUT.scene.height : H;
-    const visibleHeight = gardenMode ? stageHeight - 26 : yardMode ? 590 : stageHeight;
-    scale = Math.min(aw / W, ah / visibleHeight);
+    scale = Math.min(aw / W, ah / stageHeight);
     SX = pl + (aw - W * scale) / 2;
-    const topRatio = yardMode && ah < stageHeight * scale ? 0.16 : 0.5;
-    SY = pt + (ah - stageHeight * scale) * topRatio;
+    SY = pt + (ah - stageHeight * scale) / 2;
     stage.style.width = vw + 'px';
     stage.style.height = vh + 'px';
     cv.width = Math.round(vw * dpr);
@@ -461,6 +458,7 @@
   const TEA_HIT = LI.teacart && LI.teacart.hit;
   const qCard = (c) => {
     const spot = SUZHOU && QSPOTS[c.qi];
+    if (spot?.zone === 'outside' && c.y < doorLine(c.x)) return { x: c.x + 28, y: c.y - 42, w: 50, h: 32 };
     if (spot) return { x: c.x + (c.x > 1162 ? -115 : 55), y: c.y - 73, w: 58, h: 40 };
     return { x: c.x - 118, y: c.y - 95, w: 68, h: 50 };
   }; // 排队人数牌（左上）
@@ -591,10 +589,10 @@
     if (regularDue()) lines.push('狸猫阿姨带姐妹来，共四位，想点两份清汤面。');
     return lines.join(' ');
   }
-  function tableSetup() {
+  function tableSetup(decor = save.decor) {
     return TABLES.filter((t) => prog().tables.includes(t.id)).map((t) => {
       const state = { ...t, cust: null, dirty: false, reserved: null, busClaim: null };
-      if (!SUZHOU || t.size !== 4 || save.decor.tables[t.id] !== 2) return state;
+      if (!SUZHOU || t.size !== 4 || decor.tables[t.id] !== 2) return state;
       const center = (p) => t.cx + (p - t.cx) * 0.7;
       return { ...state, size: 2, rx: TW[2] * t.k / 2 + 22,
         seats: SEATS[2].map(([dx, dy, front], i) => ({ x: t.cx + (i ? -27 : 26) * t.k, y: t.cy + dy * t.k * 0.62, front: !!front })),
@@ -664,7 +662,7 @@
     if (!G || G.mode !== 'day') return;
     if (YARD && teachingFarm() && save.ck?.day !== save.day) { toast(teachingFarm().msg, 2900); return; }
     if (save.day === 1) { save.menu = ['mapo', 'mian']; save.menuDay = 1; }
-    if (save.menuDay !== save.day && !G.menuAsked) { G.menuAsked = true; openMenuPick(); return; }
+    if (save.menuDay !== save.day && !G.menuAsked) { G.menuAsked = true; openMenuPick(true); return; }
     if (staffIds().length && G.staffDay !== save.day) { G.staffDay = save.day; openStaff(true); return; } // 开店前先安排店员
     if (!(save.ck && save.ck.day === save.day)) save.ck = JSON.parse(JSON.stringify({ day: save.day, stock: save.stock, seeds: save.seeds, coins: save.coins, menu: save.menu, menuDay: save.menuDay, farm: save.farm, energy: G.D.energy })); // T-03：开店那一刻的存档点
     G.brief = briefNow();
@@ -925,8 +923,10 @@
       .map(([k, n]) => [k, n - stockOf(k)]));
   }
   const needIngs = () => { const n = {}; for (const k of menuNow()) { const ing = DISH[k].ing; if (stockOf(ing) < 6) n[ing] = true; } return n; };
-  function openMenuPick() {
+  function openMenuPick(thenOpen) {
     if (!G) return; G.paused = true;
+    const confirmingOpening = thenOpen === true && G.mode === 'day';
+    $('#menu-ok').textContent = confirmingOpening ? '确认菜单并营业' : '定好了';
     const pick = new Set(mains(menuNow()));
     const sizes = G.tables.filter((t) => t.size === 4);
     const res = $('#menu-reserve');
@@ -971,7 +971,7 @@ const stations = {};
       if (farmPhase() === 'plan') { setFarmPhase('buy'); updateFarmLesson(); }
       persist();
       G.paused = false; show('hud-screen');
-
+      if (confirmingOpening) openShop();
     };
     show('menu');
   }
@@ -1997,34 +1997,31 @@ const stations = {};
     G.doorBlend = moving ? Math.min(1, open + dt * 6) : Math.max(0, open - dt * 4);
   }
 
-  function paintGardenMargins(room, h, landscape = false) {
-    const l = Math.max(0, SX / scale), r = Math.max(0, (cv.width / dpr - SX) / scale - W);
-    const up = Math.max(0, SY / scale), down = Math.max(0, (cv.height / dpr - SY) / scale - h);
-    const iw = room.naturalWidth, ih = room.naturalHeight;
-    const side = landscape ? Math.min(196, iw * 0.12) : Math.min(15, iw * 0.012), edge = Math.min(74, ih * 0.09);
-    if (l + r > 0.5) {
-      ctx.save(); ctx.scale(-1, 1);
-      if (landscape) ctx.filter = 'blur(6px)';
-      if (l > 0.2) ctx.drawImage(room, 0, 0, side, ih, 0, 0, l + 0.3, h);
-      if (r > 0.2) ctx.drawImage(room, iw - side, 0, side, ih, -W - r - 0.3, 0, r + 0.3, h);
-      ctx.restore();
+
+  const SCENERY_TONES = new WeakMap();
+  function sceneryTone(image, yard = false) {
+    if (!SCENERY_TONES.has(image)) {
+      const surface = document.createElement('canvas');
+      surface.width = image.naturalWidth; surface.height = image.naturalHeight;
+      const layer = surface.getContext('2d');
+      layer.filter = yard ? 'saturate(0.81) contrast(0.93) brightness(1.03)' : 'saturate(0.73) contrast(0.93) brightness(1.035)';
+      layer.drawImage(image, 0, 0);
+      SCENERY_TONES.set(image, surface);
     }
-    if (up > 0.2) ctx.drawImage(room, 0, 0, iw, edge, -l, -up, W + l + r, up + 0.3);
-    if (down > 0.2) ctx.drawImage(room, 0, ih - edge, iw, edge, -l, h - 0.2, W + l + r, down + 0.3);
+    return SCENERY_TONES.get(image);
   }
-  function drawGardenRoom() {
+  function drawGardenRoom(decor = save.decor) {
     const winter = CUR_SE === 'winter', room = gardenArt(winter ? 'winter_g066' : 'spring_g066', 'jpg');
     if (!ok(room)) return;
     const { height } = LAYOUT.scene;
-    paintGardenMargins(room, height);
-    ctx.drawImage(room, 0, 0, W, height);
+    ctx.drawImage(sceneryTone(room), 0, 0, W, height);
     drawKitchenPlane();
     const patch = LAYOUT.scene.windowSource;
     const wx = W / LAYOUT.source.w, wy = height / LAYOUT.source.h;
     const [px, py, pw, ph] = patch;
     if (CUR_SE === 'summer' || CUR_SE === 'autumn') {
       const view = gardenArt('window_' + CUR_SE);
-      if (ok(view)) ctx.drawImage(view, px * wx, py * wy, pw * wx, ph * wy);
+      if (ok(view)) ctx.drawImage(sceneryTone(view), px * wx, py * wy, pw * wx, ph * wy);
     }
     drawGardenWindowFx(px * wx, py * wy, pw * wx, ph * wy, winter);
     if (winter) {
@@ -2034,12 +2031,12 @@ const stations = {};
         const sx = open.naturalWidth / W, sy = open.naturalHeight / height;
         ctx.save();
         ctx.globalAlpha = G.doorBlend;
-        ctx.drawImage(open, x * sx, y * sy, w * sx, h * sy, x, y, w, h);
+        ctx.drawImage(sceneryTone(open), x * sx, y * sy, w * sx, h * sy, x, y, w, h);
         ctx.restore();
       }
     }
-    drawWallArt('left'); drawWallArt('right');
-    const curtain = save.decor.curtain || CUR_SE;
+    drawWallArt('left', decor); drawWallArt('right', decor);
+    const curtain = decor.curtain || CUR_SE;
     if (curtain !== 'winter') {
       const cloth = gardenArt('curtain_' + curtain);
       if (ok(cloth)) ctx.drawImage(cloth, 1459 * W / 1813, 55 * height / 868, 142 * W / 1813, 110 * height / 868);
@@ -2077,24 +2074,73 @@ const stations = {};
   }
   // 窗外飘落：春桃花瓣、夏蝴蝶、秋枫叶、冬雪
   const MENU_INK = '"Penpen Menu Ink","Kaiti SC",KaiTi,serif';
-  function drawWallArt(side) {
-    const id = save.decor[side === 'left' ? 'wallLeft' : 'wallRight'];
+
+  const WALL_FRAMES = new WeakMap();
+  const WALL_ART_INSETS = {
+    bamboo: { left: 37, right: 161, top: [134, 148], bottom: [484, 452] },
+    canal: { left: 10, right: 150, top: [36, 15], bottom: [157, 164] },
+  };
+  function drawWallArt(side, decor = save.decor) {
+    const id = decor[side === 'left' ? 'wallLeft' : 'wallRight'];
     const mount = LAYOUT.scene.wallArt[side];
     if (!id || !mount) return;
     const { x, y, w, h } = mount;
-    if (id === 'bamboo' || id === 'canal') {
+    const native = side === 'left' ? 'bamboo' : 'canal';
+    if (id === native) {
       const art = gardenArt(id === 'bamboo' ? 'wall_bamboo_g067' : 'wall_canal');
-      if (ok(art)) ctx.drawImage(art, x, y, w, h);
+      if (ok(art)) {
+        const fit = Math.min(w / art.naturalWidth, h / art.naturalHeight);
+        const aw = art.naturalWidth * fit, ah = art.naturalHeight * fit;
+        ctx.drawImage(art, x + (w - aw) / 2, y + (h - ah) / 2, aw, ah);
+      }
       return;
     }
-    const art = wallPhoto(id);
+    const art = id === 'bamboo' ? gardenArt('wall_bamboo_g067') : id === 'canal' ? gardenArt('wall_canal') : wallPhoto(id);
     if (!ok(art)) return;
-    const width = w - 3, height = Math.min(h - 12, width * art.naturalHeight / art.naturalWidth + 16);
-    ctx.save(); ctx.translate(x + 1, y + (h - height) / 2);
-    ctx.transform(1, side === 'left' ? 0.18 : -0.12, 0, 1, 0, 0);
-    ctx.fillStyle = '#6f4a36'; ctx.fillRect(0, 0, width, height);
-    ctx.fillStyle = '#eee0c5'; ctx.fillRect(3, 3, width - 6, height - 6);
-    ctx.drawImage(art, 6, 6, width - 12, height - 12); ctx.restore();
+    const insetArt = WALL_ART_INSETS[id];
+    const naturalWidth = insetArt ? insetArt.right - insetArt.left : art.naturalWidth;
+    const naturalHeight = insetArt ? (insetArt.bottom[0] + insetArt.bottom[1] - insetArt.top[0] - insetArt.top[1]) / 2 : art.naturalHeight;
+    const width = w - 8, height = Math.min(h - 13, width * naturalHeight / naturalWidth + 12);
+    let frame = WALL_FRAMES.get(art);
+    if (!frame) {
+      frame = document.createElement('canvas');
+      const frameWidth = 220;
+      frame.width = frameWidth;
+      frame.height = Math.min(510, Math.round(frameWidth * naturalHeight / naturalWidth + 31));
+      const p = frame.getContext('2d');
+      p.fillStyle = '#705039'; p.fillRect(0, 0, frame.width, frame.height);
+      p.fillStyle = '#f4e3c9'; p.fillRect(9, 9, frame.width - 18, frame.height - 18);
+      const inset = 14, ratio = Math.min((frame.width - inset * 2) / naturalWidth, (frame.height - inset * 2) / naturalHeight);
+      const iw = Math.round(naturalWidth * ratio), ih = Math.round(naturalHeight * ratio);
+      const imageLeft = (frame.width - iw) / 2, imageTop = (frame.height - ih) / 2;
+      if (insetArt) { // 旧画已带原墙透视，换墙时先取画芯，再按新墙的方向挂上。
+        const cropY = (edge, u) => edge[0] + (edge[1] - edge[0]) * u;
+        for (let i = 0; i < iw; i++) {
+          const u = (i + 0.5) / iw, y = cropY(insetArt.top, u);
+          p.drawImage(art, insetArt.left + i * naturalWidth / iw, y, naturalWidth / iw, cropY(insetArt.bottom, u) - y,
+            imageLeft + i, imageTop, 1, ih);
+        }
+      } else p.drawImage(art, imageLeft, imageTop, iw, ih);
+      WALL_FRAMES.set(art, frame);
+    }
+    // 保持两条竖边直立，上下边都沿这面墙的消失方向收束。
+    const slope = side === 'left' ? 1 : -1, riseTop = Math.min(9, height * 0.13), riseBottom = Math.min(11, height * 0.16);
+    const start = (u) => (slope > 0 ? u : 1 - u) * riseTop;
+    const end = (u) => height - (slope > 0 ? u : 1 - u) * riseBottom;
+    const top = y + (h - height) / 2, left = x + 4;
+    ctx.save();
+    ctx.fillStyle = '#4b352426';
+    ctx.beginPath(); ctx.moveTo(left + 2, top + start(0) + 3);
+    ctx.lineTo(left + width + 2, top + start(1) + 3);
+    ctx.lineTo(left + width + 2, top + end(1) + 4); ctx.lineTo(left + 2, top + end(0) + 4);
+    ctx.closePath(); ctx.fill();
+    const bands = Math.ceil(width * 1.3), dx = width / bands;
+    for (let i = 0; i < bands; i++) {
+      const u = (i + 0.5) / bands, offset = start(u);
+      ctx.drawImage(frame, i * frame.width / bands, 0, frame.width / bands, frame.height,
+        left + i * dx, top + offset, dx + (i < bands - 1 ? 0.35 : 0), end(u) - offset);
+    }
+    ctx.restore();
   }
   const WALL_PHOTOS = new Map();
   function wallPhoto(id) {
@@ -2353,6 +2399,28 @@ const stations = {};
     ctx.fillStyle = '#77605295'; rr(x - width / 2, y, width, 4, 2); ctx.fill();
     if (p > 0) { ctx.fillStyle = '#f5cd8f'; rr(x - width / 2, y, width * p, 4, Math.min(2, width * p / 2)); ctx.fill(); }
   }
+  function drawCookware(k, t) {
+    for (const [wid, wd] of Object.entries(WARES)) {
+      if (!hasWare(wid)) continue;
+      const ws = k.wares[wid];
+      if (SUZHOU) gardenSprite('burner', wd.x, wd.y + 5, 49);
+      if (!spr('ware_' + wid, wd.x, wd.y - (SUZHOU ? 5 : 0), SUZHOU ? 42 : wid === 'steamer' ? 44 : 60)) { const img = WARE_IMG[wid]; if (img.complete) ctx.drawImage(img, wd.x - 32, wd.y - 45, 64, 45); }
+      if (ws.cur) {
+        const p = Math.min(1, ws.cur.t / ws.cur.cook);
+        if (SUZHOU) {
+          drawSteam(wd.x, wd.y - (wid === 'steamer' ? 49 : 33), (G.ambientTime || 0) + wd.x * 0.01);
+          drawCookProgress(wd.x, wd.y + 3, p);
+        } else {
+        ctx.fillStyle = '#ffffff'; ctx.globalAlpha = 0.5 + 0.25 * Math.sin(t / 150);
+        ctx.beginPath(); ctx.arc(wd.x - 6, wd.y - 52 - p * 8, 8, 0, 7); ctx.arc(wd.x + 8, wd.y - 60 - p * 10, 10, 0, 7); ctx.fill(); ctx.globalAlpha = 1;
+        ctx.fillStyle = '#fbf6ecdd'; rr(wd.x - 28, wd.y + 2, 56, 8, 4); ctx.fill();
+        ctx.fillStyle = '#c9862f'; rr(wd.x - 28, wd.y + 2, 56 * p, 8, 4); ctx.fill();
+        }
+      }
+      if (ws.q.length && SUZHOU) label('×' + ws.q.length, wd.x + 25, wd.y - 23, 14, '#614b3d', '#f9eedb');
+      else if (ws.q.length) { ctx.fillStyle = '#b04a3c'; ctx.beginPath(); ctx.arc(wd.x + 26, wd.y - 40, 11, 0, 7); ctx.fill(); label(`${ws.q.length}`, wd.x + 26, wd.y - 39, 15, '#fff'); }
+    }
+  }
   function drawKitchen() {
     const k = G.kitchen, t = performance.now();
     const busy = Object.keys(WARES).filter((w) => hasWare(w) && k.wares[w].cur);
@@ -2361,6 +2429,7 @@ const stations = {};
     const bob = busy.length ? Math.sin(t / (SUZHOU ? 410 : 120)) * 3 : 0;
     const art = ART_ROOM();
     if (SUZHOU) {
+      drawCookware(k, t);
       const [lo, hi] = LI.chef.range.map(([x]) => x);
       const target = G.chefWash && !busy.length ? LI.chef.wash[0] : Math.max(lo, Math.min(hi, cx - 22));
       G.gardenChefX ??= LA('chef').x;
@@ -2389,26 +2458,7 @@ const stations = {};
       const kf = A('kitchen_fg'), m = ART.kitchen_fg, sc = W / 1536;
       if (ok(kf) && !GREY) ctx.drawImage(kf, m.x * sc, m.y * sc, m.w * sc, m.h * sc);
     } else if (SPR.chef.complete) ctx.drawImage(SPR.chef, G.chefX - 45, 2 + bob, 90, 99);
-    for (const [wid, wd] of Object.entries(WARES)) {
-      if (!hasWare(wid)) continue;
-      const ws = k.wares[wid];
-      if (SUZHOU) gardenSprite('burner', wd.x, wd.y + 5, 49);
-      if (!spr('ware_' + wid, wd.x, wd.y - (SUZHOU ? 5 : 0), SUZHOU ? 42 : wid === 'steamer' ? 44 : 60)) { const img = WARE_IMG[wid]; if (img.complete) ctx.drawImage(img, wd.x - 32, wd.y - 45, 64, 45); }
-      if (ws.cur) {
-        const p = Math.min(1, ws.cur.t / ws.cur.cook);
-        if (SUZHOU) {
-          drawSteam(wd.x, wd.y - (wid === 'steamer' ? 49 : 33), (G.ambientTime || 0) + wd.x * 0.01);
-          drawCookProgress(wd.x, wd.y + 3, p);
-        } else {
-        ctx.fillStyle = '#ffffff'; ctx.globalAlpha = 0.5 + 0.25 * Math.sin(t / 150);
-        ctx.beginPath(); ctx.arc(wd.x - 6, wd.y - 52 - p * 8, 8, 0, 7); ctx.arc(wd.x + 8, wd.y - 60 - p * 10, 10, 0, 7); ctx.fill(); ctx.globalAlpha = 1;
-        ctx.fillStyle = '#fbf6ecdd'; rr(wd.x - 28, wd.y + 2, 56, 8, 4); ctx.fill();
-        ctx.fillStyle = '#c9862f'; rr(wd.x - 28, wd.y + 2, 56 * p, 8, 4); ctx.fill();
-        }
-      }
-      if (ws.q.length && SUZHOU) label('×' + ws.q.length, wd.x + 25, wd.y - 23, 14, '#614b3d', '#f9eedb');
-      else if (ws.q.length) { ctx.fillStyle = '#b04a3c'; ctx.beginPath(); ctx.arc(wd.x + 26, wd.y - 40, 11, 0, 7); ctx.fill(); label(`${ws.q.length}`, wd.x + 26, wd.y - 39, 15, '#fff'); }
-    }
+    if (!SUZHOU) drawCookware(k, t);
     // 出菜台上的菜、水壶、收碗处
     if (SUZHOU) readyMeals().forEach((meal, i) => { const [x, y] = PASS.slots[i]; drawMealTray(meal, x, y, 0.85); });
     else k.pass.forEach((o, i) => { const [x, y] = PASS.slots[i] || PASS.slots[PASS.slots.length - 1]; drawPlate(x, y, o, 0.72, true); });
@@ -2622,8 +2672,8 @@ const stations = {};
       sprite: large ? 'table_large' : 'table_small' };
   }
   const GARDEN_RUNNERS = new Map();
-  function drawGardenRunner(surface, k) {
-    const linen = save.decor.linen || CUR_SE;
+  function drawGardenRunner(surface, k, decor) {
+    const linen = decor.linen || CUR_SE;
     const runner = A(linen + '_runner');
     if (!ok(runner)) return;
     const { x, y, rx, ry, width } = surface;
@@ -2722,7 +2772,7 @@ const stations = {};
     }
     ctx.restore();
   }
-  function drawGardenTable(t) {
+  function drawGardenTable(t, decor = save.decor, preview = false) {
     const surface = gardenTableSurface(t), k = t.k;
     const c = t.cust && seated(t.cust) && (t.cust.state !== 'toSeat' || t.cust.seatEase != null) ? t.cust : null;
     const selected = G.selected?.state === 'queue' && !t.cust && !t.reserved && !t.dirty;
@@ -2750,8 +2800,8 @@ const stations = {};
       if (c && i < c.size) drawGardenDiner(c, i, seat, t, surface, bottom - h);
     }
     gardenSprite(surface.sprite, surface.x, surface.bottom, surface.width);
-    if (t.size === 4) drawGardenRunner(surface, k);
-    else spr((save.decor.flowers && save.decor.flowers !== 'gift' ? save.decor.flowers : CUR_SE)
+    if (t.size === 4) drawGardenRunner(surface, k, decor);
+    else spr((decor.flowers && decor.flowers !== 'gift' ? decor.flowers : CUR_SE)
       + '_vase', surface.x + surface.rx * 0.61, surface.y - surface.ry * 0.1, 17 * k);
     if (tableHeld(t) && !c && !t.dirty) label('熟客留桌', t.cx, surface.y + 2, 15, '#f9eedb', '#7d5745');
     t.topY = [surface.y - 0.43 * surface.ry, surface.y + 0.48 * surface.ry];
@@ -2775,6 +2825,7 @@ const stations = {};
       drawGardenSeatArt('chair_near', seat.x, bottom, h, seat.x < t.cx);
     }
     ctx.globalAlpha = 1;
+    if (preview) return;
     const tx = t.cx - surface.rx * 0.86, ty = surface.y + surface.ry * 0.52;
     tableTag(t.id, tx, ty - 4 * k, 18);
     t.sizeAt = { x: tx, y: ty + 12 * k };
@@ -2821,7 +2872,7 @@ const stations = {};
     const n = c.size;
     if (SUZHOU && inLine(c) && QSPOTS[c.qi]?.zone === 'outside' && c.y < doorLine(c.x)) {
       const row = Math.floor(i / 2), count = Math.min(2, n - row * 2);
-      return { x: c.x + (i % 2 - (count - 1) / 2) * 26 - row * 6, y: c.y - row * 12 + (i % 2) * 5 };
+      return { x: c.x + (i % 2 - (count - 1) / 2) * 16 - row * 5, y: c.y - row * 11 + (i % 2) * 3 };
     }
     const r = i < 2 ? 0 : 1, inRow = r ? n - 2 : 2;
     const group = n <= 2
@@ -2873,7 +2924,10 @@ const stations = {};
 
       const look = guestLook(c, i), frames = guestFrames(look);
       if (!ok(frames.stand)) return;
-      const scale = (c.size > 1 ? 0.95 : 1.02) * K(p.y) * 1.23, size = GUEST_S * scale;
+  
+      const depth = p.x >= 991 && p.x <= 1168 ? Math.max(0, doorLine(p.x) - p.y) : 0;
+      const distanceScale = 1 - Math.min(0.47, depth * 0.0053);
+      const scale = (c.size > 1 ? 0.95 : 1.02) * K(p.y) * 1.23 * distanceScale, size = GUEST_S * scale;
       const called = c.state === 'called' ? G.t - (c.calledAt ?? G.t) - i * 0.06 : -1;
       const time = G.t + c.bob + i * 0.62;
       const moving = c.path.length > 0, flip = c.face > 0;
@@ -2939,15 +2993,16 @@ const stations = {};
 
     if (SUZHOU) {
       ctx.save(); ctx.font = '16px "PingFang SC","Microsoft YaHei",sans-serif';
-      const w = Math.min(125, Math.max(83, 40 + ctx.measureText(text || '').width));
-      const left = Math.max(12, Math.min(x, W - w - 12)), top = y - 24;
-      ctx.fillStyle = '#faf0dd'; ctx.strokeStyle = '#ad9178'; ctx.lineWidth = 1.15;
-      rr(left, top, w, 46, 8); ctx.fill(); ctx.stroke();
+      const urgent = c.hearts < 2.5;
+      const w = Math.min(117, Math.max(75, 34 + ctx.measureText(text || '').width));
+      const left = Math.max(12, Math.min(x, W - w - 12)), top = y - 15;
+      ctx.fillStyle = '#fcf2e1'; ctx.strokeStyle = urgent ? '#a77563' : '#ad9178'; ctx.lineWidth = 1.15;
+      rr(left, top, w, urgent ? 43 : 28, 8); ctx.fill(); ctx.stroke();
       const im = dish ? DISH_IMG[dish] : icon(ic);
       if (ok(im)) ctx.drawImage(im, left + 5, top + 2, 25, dish ? 19 : 25);
       ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#5a4336';
-      ctx.fillText(text || '', left + 35, top + 13, w - 40);
-      for (let i = 0; i < 5; i++) heart(left + 14 + i * 12, top + 34, 8.5, c.hearts >= i + 0.5 ? '#bb766b' : '#dcd0be');
+      ctx.fillText(text || '', left + 33, top + 13, w - 36);
+      if (urgent) for (let i = 0; i < 5; i++) heart(left + 14 + i * 12, top + 34, 8.5, c.hearts >= i + 0.5 ? '#bb766b' : '#dcd0be');
       ctx.restore();
       return;
     }
@@ -2976,9 +3031,10 @@ const stations = {};
       ctx.fillStyle = called ? '#f6e6ce' : '#f9f0df';
       rr(r.x, r.y, r.w, r.h, 7); ctx.fill(); ctx.stroke();
       const left = r.x > c.x, p = left ? r.x + 1 : r.x + r.w - 1;
-      ctx.beginPath(); ctx.moveTo(p, r.y + 17); ctx.lineTo(p + (left ? -7 : 7), r.y + 21); ctx.lineTo(p, r.y + 24); ctx.fill();
-      label(called ? '已叫到' : c.size + ' 位', r.x + r.w / 2, r.y + 13, 15, '#655044');
-      for (let i = 0; i < 5; i++) heart(r.x + 9 + i * 10, r.y + 28, 8.5, c.hearts >= i + 0.5 ? '#bb766b' : '#dcd0be');
+      ctx.beginPath(); ctx.moveTo(p, r.y + 17); ctx.lineTo(p + (left ? -7 : 7), r.y + 17); ctx.lineTo(p, r.y + 20); ctx.fill();
+      const low = c.hearts < 3, named = called ? '已叫到' : c.size + ' 位';
+      label(named, r.x + r.w / 2, r.y + (low ? 11 : r.h / 2), 14, '#655044');
+      if (low) for (let i = 0; i < 5; i++) heart(r.x + 7 + i * ((r.w - 14) / 4), r.y + 24, 7, c.hearts >= i + 0.5 ? '#bb766b' : '#dcd0be');
       ctx.restore();
       return;
     }
@@ -3038,7 +3094,7 @@ const stations = {};
   function drawPartyUI(c) {
     const a = anchor(c); drawMood(c); drawDrinkWants(c);
     if (inLine(c)) {
-      if (SUZHOU && c.sayT > 0 && (c.regular || c.state === 'called')) drawGardenSpeech(c.x, c.y - 106, c.say);
+      if (SUZHOU && c.sayT > 0 && (c.regular || c.state === 'called')) drawGardenSpeech(c.x, c.y - (c.y < 322 ? 70 : 106), c.say);
       else if (c.sayT > 0 && c.state === 'called') bubble(c.x, c.y - 112, c.say, { size: 19 });
       queueChip(c); return;
     }
@@ -3287,7 +3343,7 @@ const stations = {};
   function drawYard() {
     const art = gardenArt('yard_' + CUR_SE, 'jpg');
     if (!ok(art)) return;
-    paintGardenMargins(art, H, true); ctx.drawImage(art, 0, 0, W, H);
+    ctx.drawImage(sceneryTone(art, true), 0, 0, W, H);
     const D = G.D, lesson = yardGoal(), target = lesson?.place;
     const nodes = [];
     for (const [i, bed] of YARD.beds.entries()) {
@@ -3339,6 +3395,7 @@ const stations = {};
   function refreshYardTask() {
     const box = $('#yard-task'), goal = yardGoal();
     box.hidden = !goal || Boolean(G.D.fishing);
+    $('#yard-decor-intro').hidden = box.hidden || goal.key !== 'wait' || Boolean(save.decorTaught);
     if (box.hidden) return;
     const button = $('#yard-task-go');
     if (button.dataset.step === goal.key) return;
@@ -3424,11 +3481,12 @@ const stations = {};
     drawFloats(cam.x, cam.y);
   }
   function render() {
-    ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.fillStyle = '#e9dcc4'; ctx.fillRect(0, 0, cv.width, cv.height);
+    ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.fillStyle = SUZHOU ? '#d8ceba' : '#e9dcc4'; ctx.fillRect(0, 0, cv.width, cv.height);
     ctx.setTransform(scale * dpr, 0, 0, scale * dpr, SX * dpr, SY * dpr);
     if (!G) { ctx.fillStyle = '#f3ead9'; ctx.fillRect(0, 0, W, H); return; }
-    if (G.mode === 'day') { renderDay(); return; }
-    drawShopScene();
+    if (SUZHOU) { ctx.save(); ctx.beginPath(); ctx.rect(0, 0, W, G.mode === 'day' ? H : LAYOUT.scene.height); ctx.clip(); }
+    if (G.mode === 'day') renderDay(); else drawShopScene();
+    if (SUZHOU) ctx.restore();
   }
   function sideFill() { // 美术还没有两侧延伸图之前：把场景最边上一截镜像过去，再压一点暗角，让画面铺满不留空条
     const sx = Math.round(SX * dpr), sy = Math.round(SY * dpr), w = cv.width, h = Math.round(H * scale * dpr);
@@ -3465,7 +3523,7 @@ const stations = {};
       }
       ctx.clip();
     }
-    ctx.drawImage(art, left, top, w, h);
+    ctx.drawImage(sceneryTone(art), left, top, w, h);
     ctx.restore();
   }
   function drawShopScene() {
@@ -3593,7 +3651,8 @@ const stations = {};
       row.querySelector('.play').addEventListener('click', () => startSave(s.id));
       row.querySelector('.look').addEventListener('click', () => openCreator(s, false));
       const av = document.createElement('img'); av.className = 'avatar'; av.alt = '';
-      av.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(catSVG({ ...CATS.penpen.look, ...(s.look || {}) }, 'front', { w: 120, h: 132 }));
+      av.src = SUZHOU && plainLook(s.look) ? gardenArt('s_penpen_empty').src
+        : 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(catSVG({ ...CATS.penpen.look, ...(s.look || {}) }, 'front', { w: 120, h: 132 }));
       row.prepend(av);
       row.querySelector('.del').addEventListener('click', () => {
         ask(`确定删除「${escapeHTML(s.name)}」的存档吗？删除后找不回来。`, '删除').then((ok) => { if (ok) { storeSaves(loadSaves().filter((x) => x.id !== s.id)); renderSaves(); } });
@@ -3708,9 +3767,10 @@ const stations = {};
     const tr = save.trend && save.trend.day === save.day ? save.trend : null;
     const note = dailyNote();
     if (teachingFarm()) it.unshift('<div class="nt farm"><b>今天的备料</b><small>' + teachingFarm().msg + '</small></div>');
+    if (SUZHOU && save.day === 2 && !save.decorTaught) it.push('<div class="nt farm"><b>可以装修了</b><small>种完地，试着给餐厅换块桌布。</small></div>');
     if (note) it.unshift('<div class="nt farm"><b>街坊消息</b><small>' + note + '</small></div>');
     const paper = tr ? `<div class="paper"><div class="mast">猫猫日报 <small>第 ${save.day} 天</small></div><div class="hl"><img alt="" src="${iconURL(tr.hot)}"><b>今天流行「${tr.hot}」</b></div><div class="cold"><img alt="" src="${iconURL(tr.cold)}">「${tr.cold}」没人点</div></div>` : '';
-    $('#tip-close').innerHTML = save.day === 1 ? '<button class="primary tip-open">开始营业</button>' : '点这里关闭'; // T-02：第一天一个大按钮
+    $('#tip-close').innerHTML = save.day === 1 ? '<button type="button" class="primary tip-open">开始营业</button>' : SUZHOU ? '<button type="button" class="tip-go">开始备料</button>' : '点这里关闭'; // T-02：第一天一个大按钮
     $('#tip-body').innerHTML = `<h3>第 ${save.day} 天${add.title ? ` · ${add.title}` : ''}</h3>${paper}${it.length ? `<div class="newrow">${it.join('')}</div>` : ''}`;
     $('#start-tip').classList.add('show');
   }
@@ -3848,10 +3908,25 @@ const stations = {};
     curtain: ['随四季','淡紫','松绿','赭红','靛蓝'],
   };
   const DECOR_SEASONS = ['', 'spring', 'summer', 'autumn', 'winter'];
+
+  function drawDecorPreview(draft) {
+    const frame = $('#decor-room');
+    const drawing = frame.getContext('2d'), previous = ctx;
+    ctx = drawing;
+    try {
+      ctx.setTransform(frame.width / W, 0, 0, frame.height / LAYOUT.scene.height, 0, 0);
+      ctx.fillStyle = '#eee4d3'; ctx.fillRect(0, 0, W, LAYOUT.scene.height);
+      drawGardenRoom(draft);
+      if (draft.bench) drawGardenBench();
+      tableSetup(draft).sort((x, y) => x.cy - y.cy).forEach((table) => drawGardenTable(table, draft, true));
+    } finally { ctx = previous; }
+  }
   function openDecor() {
     if (!SUZHOU || G?.mode !== 'day' || save.day < 2) return;
     G.paused = true;
     const draft = { ...save.decor, tables: { ...save.decor.tables } };
+    let refreshPreview;
+    $('#decor-guide').hidden = Boolean(save.decorTaught);
     const box = $('#decor-body');
     const title = { linen: '大桌桌布', flowers: '插花', curtain: '门帘' };
     const wallItems = travelEntries();
@@ -3873,22 +3948,20 @@ const stations = {};
       el.onchange = () => { draft.tables[el.dataset.table] = Number(el.value); preview(); };
     }
     function preview() {
-      const season = draft.linen || CUR_SE;
-      const flowers = draft.flowers === 'gift' ? 'spring' : draft.flowers || CUR_SE;
-      $('#decor-preview').innerHTML = '<figure><img alt="" src="assets/' + season + '_runner.webp"><figcaption>桌布</figcaption></figure>'
-        + '<figure><img alt="" src="assets/' + flowers + '_vase.webp"><figcaption>' + (draft.flowers === 'gift' ? '门外候位花' : '桌花') + '</figcaption></figure>'
-        + '<figure><img alt="" src="assets/suzhou/table_' + (large.some((t) => draft.tables[t.id] !== 2) ? 'large' : 'small')
-        + '.png"><figcaption>桌型</figcaption></figure>';
+      drawDecorPreview(draft);
+      clearTimeout(refreshPreview);
+      refreshPreview = setTimeout(() => { if ($('#decorate').classList.contains('show')) drawDecorPreview(draft); }, 350);
       const seats = TABLES.filter((t) => prog().tables.includes(t.id)).reduce((n, t) => n + (draft.tables[t.id] || t.size), 0);
       $('#decor-info').textContent = seats + ' 个座位。' + (draft.bench ? '候位凳让门口客人等得更久。' : '')
         + (draft.flowers === 'gift' ? '门外候位的客人看花时耐心多一点。' : '');
     }
     preview();
-    const close = () => { G.paused = false; show('hud-screen'); };
+    const close = () => { clearTimeout(refreshPreview); G.paused = false; show('hud-screen'); };
     $('#decor-close').onclick = close;
     $('#decor-apply').onclick = () => {
       if (large.length && large.every((t) => draft.tables[t.id] === 2)) { toast('保留一张四人桌，才能招待四位同行的客人'); return; }
       save.decor = draft;
+      save.decorTaught = true;
       if (save.prep?.day === save.day && draft.tables[save.prep.table] === 2) save.prep.table = null;
       G.tables = tableSetup();
       G.plates.clean = startingPlates(G.tables);
@@ -3897,6 +3970,7 @@ const stations = {};
     show('decorate'); fitPanels();
   }
   $('#b-decor').addEventListener('click', openDecor);
+  $('#yard-decor-intro').addEventListener('click', openDecor);
   $('#b-open').addEventListener('click', () => { if (G && G.mode === 'day') ask(`开门营业吗？${G.D.energy ? `（体力还剩 ${G.D.energy}）` : ''}`, '开店').then((ok) => ok && openShop()); });
   $('#b-pantry').addEventListener('click', openPantry);
   $('#b-dex').addEventListener('click', () => openDex('cust'));
@@ -4213,9 +4287,9 @@ const stations = {};
     for (const c of G.customers) if (c.state === 'bill' && !qT(c.table)) cand.push(T(c.table, '收钱', 'pay'));
     for (const h of w.hands) if ((h.kind === 'dish' || h.kind === 'drink') && h.cust.table && !qT(h.cust.table)) cand.push(T(h.cust.table, '端过去', 'serve'));
     if (w.hands.some((h) => h.kind === 'water')) { const c = G.customers.find((c) => c.state === 'thirsty' && !qT(c.table)); if (c) cand.push(T(c.table, '送水', 'water')); }
-    if (w.hands.some((h) => h.kind === 'plate') && !queued((a) => a.kind === 'sink')) cand.push(P(SINK.x, SINK.y - 30, 50, '放碗', 'sink'));
+    if (w.hands.some((h) => h.kind === 'plate') && w.sinkDrop === undefined && !queued((a) => a.kind === 'sink')) cand.push(P(SINK.x, SINK.y - 30, 50, '放碗', 'sink'));
     if ((G.plates.clean <= 2 || SUZHOU && (G.closing || !save.did.wash)) && G.plates.dirty > 0 && !w.hands.length && !w.wash && !queued((a) => a.kind === 'sink')) cand.unshift(P(SINK.x, SINK.y - 30, 50, '洗碗', 'wash'));
-    if (w.tickets.length && !queued((a) => a.kind === 'pass')) cand.push(P(TICKET_POINT.x, TICKET_POINT.y, 50, '送单子', 'pass'));
+    if (w.tickets.length && !queued((a) => a.kind === 'pass')) cand.push(P(TICKET_POINT.x, TICKET_POINT.y, 50, SUZHOU ? '插单给老大' : '送单子', 'pass'));
     const readyIndex = SUZHOU ? readyMeals().findIndex((meal) => meal.every((dish) => !dish.claim && !queued((a) => a.order === dish))) : k.pass.findIndex((dish) => !dish.claim);
     if (readyIndex >= 0 && w.hands.length < (SUZHOU ? 1 : 2) && !queued((a) => a.kind === 'pass')) {
       const [x, y] = SUZHOU ? PASS.slots[readyIndex] : [PASS_POINT.x, PASS_POINT.y];
@@ -4231,7 +4305,7 @@ const stations = {};
       if (free) { if (G.selected === q) cand.unshift(T(free, '坐这桌', 'seat')); else cand.push(P(q.x, q.y - 50, 50, '点客人', 'seat')); }
     }
     for (const t of G.tables) if (t.dirty && !t.cust && !qT(t) && !t.busClaim) { cand.push(T(t, '收盘子', 'bus')); break; }
-    if (save.noteNew && shown('#b-dex2')) cand.push({ type: 'note', sel: shown('#b-dex2'), text: '看笔记' });
+    if (save.noteNew && (!SUZHOU || save.day > 1) && shown('#b-dex2')) cand.push({ type: 'note', sel: shown('#b-dex2'), text: '看笔记' });
     return cand.find((h) => need(h.type)) || null;
   }
   function panelHint() {
@@ -4277,7 +4351,6 @@ const stations = {};
   }
   function currentHint() {
     if (!G || !save) return null;
-    if (SUZHOU && G.mode === 'shop' && !DBG.all && G.idle < 8) return null;
     if (shown('#ask.show')) return need('ask') ? { type: 'ask', sel: shown('#ask .yes'), text: '好' } : null;
     if (shown('#fish-lesson.show')) return { type: 'reel', sel: shown('#fish-reel'), text: '收线' };
     if (shown('#plot.show')) {
@@ -4312,11 +4385,24 @@ const stations = {};
     if (shown('#mail.show')) return { type: 'mailok', sel: shown('#mail-ok'), text: '收下' };
     if (shown('#staff.show')) return { type: 'staffok', sel: shown('#staff-ok'), text: staffThen ? '开店' : '好了' };
     if (!shown('#hud-screen.show') || G.paused || G.over) return null;
-    if (G.mode === 'shop') return G.orderOpen ? panelHint() : shopHint();
+    if (G.mode === 'shop') {
+      if (G.orderOpen) return panelHint();
+      if (SUZHOU && !DBG.all && G.idle < (save.day === 1 ? 1.1 : 8)) return null;
+      return shopHint();
+    }
     return dayHint();
   }
   let HINT = null;
   let lastDayHint = '';
+  function followCoach() {
+    if (!HINT || G?.mode !== 'shop') return;
+    if (HINT.sel) { HINT.sel.click(); return; }
+    if (G.paused || G.over) return;
+    G.idle = 0;
+    shopTap({ x: HINT.x, y: HINT.y });
+  }
+  $('#coach .cap').addEventListener('click', followCoach);
+  $('#coach .paw').addEventListener('click', followCoach);
   function updateCoach() {
     const el = $('#coach'), h = currentHint(); HINT = h;
     if (h && h.wx != null && G.mode === 'day') { // 地图上的新提示：不在画面里就把镜头挪过去
@@ -4331,6 +4417,7 @@ const stations = {};
     Object.assign(ring.style, { left: `${x - w / 2}px`, top: `${y - hh / 2}px`, width: `${w}px`, height: `${hh}px` });
     Object.assign(paw.style, { left: `${x + Math.min(w, 120) * 0.22}px`, top: `${y + Math.min(hh, 120) * 0.12}px` });
     cap.textContent = h.text;
+    paw.setAttribute('aria-label', h.type === 'pick' ? '取菜' : '操作提示');
     cap.hidden = !h.text;
     const above = y - hh / 2 - 48 > 64 && !(h.sel && h.sel.closest && h.sel.closest('#order, #ask')); // 提示框里的按钮：字放在按钮下面，不压提示文字
     const below = y + hh / 2 + 10, capTop = above || below > UH - 50 ? Math.max(8, y - hh / 2 - 48) : below; // 屏幕下面放不下就放上面
@@ -4338,7 +4425,11 @@ const stations = {};
     const paper = SUZHOU && G.mode === 'shop';
     el.classList.toggle('paper-hint', paper);
     el.classList.toggle('has-text', !!h.text);
-    if (paper && h.text) cap.style.top = String(Math.max(56, y - Math.min(44, hh * 0.36) - 29)) + 'px';
+    if (paper && h.text) {
+      const sinkCue = h.type === 'sink' || h.type === 'wash';
+      const top = sinkCue ? y - 13 : Math.max(56, y - Math.min(44, hh * 0.36) - (h.type === 'seat' && !G.selected ? 40 : 29));
+      cap.style.top = top + 'px';
+    }
     el.classList.toggle('box', box); el.classList.add('show');
   }
   $('#b-next').addEventListener('click', () => did('next'));
@@ -4352,7 +4443,7 @@ const stations = {};
     requestAnimationFrame(loop);
     try { for (let i = 0; i < DBG.speed; i++) update(dt); render(); updateCoach(); } catch (e) { console.error(e); }
   }
-  $('#logo-cat').src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(catSVG('penpen', 'front', { w: 400, h: 440 }));
+  $('#logo-cat').src = SUZHOU ? gardenArt('s_penpen_empty').src : 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(catSVG('penpen', 'front', { w: 400, h: 440 }));
   resize(); renderSaves(); show('title');
   requestAnimationFrame(loop);
   // ---------- 灰盒（T-07）：色块画场景，叠上占地 / 站位 / 点按区 / 碰撞格 / 安全区 / 走位 / 不可达 ----------
